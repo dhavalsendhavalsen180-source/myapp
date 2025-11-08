@@ -20,5 +20,8 @@ app.register_blueprint(basic_bp)
 app.register_blueprint(auth_bp, url_prefix="/auth")
 app.register_blueprint(posts_bp, url_prefix="/posts")
 
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
