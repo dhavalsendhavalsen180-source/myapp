@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📸 InsChat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+  <!-- Top Navbar -->
+  <div class="bg-white shadow flex items-center justify-between px-4 py-3">
+    <h1 class="text-xl font-bold">📸 InsChat</h1>
+    <div class="flex items-center space-x-4">
+      <a href="/posts/upload" class="text-2xl">➕</a>
+      <a href="/auth/logout" class="text-2xl">🚪</a>
+    </div>
+  </div>
+
+  <!-- Feed -->
+  <div class="max-w-xl mx-auto mt-5 space-y-6">
+    {% for post in posts %}
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      
+      <!-- User -->
+      <div class="flex items-center px-4 py-3">
+        <div class="bg-gradient-to-r from-pink-500 to-yellow-500 rounded-full w-10 h-10 flex items-center justify-center text-white font-bold">
+          {{ post.user[0]|upper }}
+        </div>
+        <div class="ml-3 font-semibold">{{ post.user }}</div>
+      </div>
+
+      <!-- Post Image -->
+      <img src="/{{ post.image }}" class="w-full max-h-[500px] object-cover">
+
+      <!-- Actions -->
+      <div class="flex items-center px-4 py-2 space-x-4 text-2xl">
+        ❤️
+        💬
+        <a href="/{{ post.image }}" target="_blank">🔗</a>
+      </div>
+
+      <!-- Likes -->
+      <div class="px-4 text-sm font-semibold">
+        {{ post.likes }} likes
+      </div>
+
+      <!-- Caption -->
+      <div class="px-4 py-2">
+        <span class="font-semibold">{{ post.user }}</span>
+        {{ post.caption }}
+      </div>
+
+      <!-- Comments -->
+      <div class="px-4 pb-3 text-sm text-gray-600">
+        {% for comment in post_comments.get(post.id, []) %}
+          <p><span class="font-semibold">{{ comment[0] }}</span> {{ comment[1] }}</p>
+        {% endfor %}
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+</body>
+</html>

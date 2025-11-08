@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>📸 InsChat Feed</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .carousel { position: relative; overflow: hidden; }
+    .carousel-track { display: flex; transition: transform 0.3s ease-in-out; }
+    .carousel img { flex: 0 0 100%; object-fit: cover; max-height: 400px; }
+    .carousel-btn {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(0,0,0,0.5); color: white; border: none;
+      padding: 6px 10px; border-radius: 9999px; cursor: pointer;
+    }
+    .carousel-btn.left { left: 10px; }
+    .carousel-btn.right { right: 10px; }
+
+    /* ❤️ Like animation */
+    .like-heart {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 5rem;
+      color: white;
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      pointer-events: none;
+    }
+    .like-heart.show {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- ✅ Navbar (Instagram style) -->
+  <div class="flex justify-between items-center p-4 bg-white shadow">
+    <!-- Left: Logo -->
+    <div class="flex items-center space-x-2">
+      <img src="{{ url_for('static', filename='inschat_logo.png') }}" alt="InsChat Logo" class="h-8">
+      <h1 class="text-xl font-bold">InsChat</h1>
+    </div>
+
+    <!-- Center: Search -->
+    <div class="hidden md:block">
+      <input type="text" placeholder="Search" class="border rounded-full px-3 py-1 text-sm w-64">
+    </div>
+
+    <!-- Right: Actions -->
+    <div class="flex space-x-4 text-xl">
+      <a href="/posts/upload" title="Upload">➕</a>
+      <a href="/notifications" title="Notifications">❤️</a>
+      <a href="/auth/logout" class="text-red-500" title="Logout">🚪</a>
+    </div>
+  </div>
+
+  <!-- Feed -->
+  <div class="max-w-xl mx-auto mt-4 space-y-6">
+    {% for post in posts %}
+    <div class="bg-white shadow rounded-xl p-4 relative">
+
+      <!-- User header -->
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center">
+            {{ post.user[0]|upper }}
+          </div>
+          <span class="font-semibold">{{ post.user }}</span>
+        </div>
+        {% if post.user == current_user %}
+        <form method="POST" action="/posts/delete/{{ post.id }}">
+          <button type="submit" class="text-red-500 text-sm">🗑️ Delete</button>
+        </form>
+        {% endif %}
+      </div>
+
+      <!-- Carousel or single image -->
+      <div class="relative" ondblclick="likePost('{{ post.id }}')">
+        {% if post.images|length > 1 %}
+        <div class="carousel" id="carousel-{{ post.id }}">
+          <div class="carousel-track">
+            {% for img in post.images %}
+            <img src="{{ url_for('static', filename='uploads/' ~ img) }}" class="rounded-lg w-full">
+            {% endfor %}
+          </div>
+          <button class="carousel-btn left" onclick="prevSlide('{{ post.id }}')">‹</button>
+          <button class="carousel-btn right" onclick="nextSlide('{{ post.id }}')">›</button>
+        </div>
+        {% else %}
+        <img src="{{ url_for('static', filename='uploads/' ~ post.images[0]) }}" class="rounded-lg w-full">
+        {% endif %}
+
+        <!-- ❤️ Animation -->
+        <div id="heart-{{ post.id }}" class="like-heart">❤️</div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center space-x-4 mt-2">
+        <form method="POST" action="/posts/like/{{ post.id }}">
+          <button type="submit">❤️</button>
+        </form>
+        <span>💬</span>
+      </div>
+
+      <!-- Likes -->
+      <div class="text-sm font-semibold mt-1">
+        {{ post.likes }} likes
+      </div>
+
+      <!-- Caption -->
+      <div class="text-sm">
+        <b>{{ post.user }}</b> {{ post.caption }}
+      </div>
+
+      <!-- Comments -->
+      <div class="text-sm text-gray-600 mt-1 space-y-1">
+        {% for c in post.comments %}
+        <p><b>{{ c.username }}</b> {{ c.comment }}</p>
+        {% endfor %}
+      </div>
+
+      <!-- Add comment -->
+      <form method="POST" action="/posts/comment/{{ post.id }}" class="mt-2 flex">
+        <input type="text" name="comment" placeholder="Add a comment..." class="flex-grow border rounded-lg px-2 py-1 text-sm">
+        <button type="submit" class="ml-2 text-blue-500 text-sm">Post</button>
+      </form>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  <script>
+    // ❤️ Double-tap like animation
+    function likePost(postId) {
+      const heart = document.getElementById(`heart-${postId}`);
+      heart.classList.add("show");
+      setTimeout(() => heart.classList.remove("show"), 800);
+    }
+
+    // Carousel (basic)
+    function prevSlide(postId) {
+      const track = document.querySelector(`#carousel-${postId} .carousel-track`);
+      track.scrollBy({ left: -track.offsetWidth, behavior: "smooth" });
+    }
+    function nextSlide(postId) {
+      const track = document.querySelector(`#carousel-${postId} .carousel-track`);
+      track.scrollBy({ left: track.offsetWidth, behavior: "smooth" });
+    }
+  </script>
+</body>
+</html>
