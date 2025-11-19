@@ -7,36 +7,42 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+
+        if not username or not password:
+            flash("Username and password cannot be empty!", "error")
+            return redirect(url_for("auth.register"))
 
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
 
-        # check duplicate user
-        c.execute("SELECT * FROM users WHERE username=?", (username,))
+        # duplicate check
+        c.execute("SELECT id FROM users WHERE username=?", (username,))
         if c.fetchone():
             conn.close()
             flash("Username already exists!", "error")
             return redirect(url_for("auth.register"))
 
+        # insert new user
         c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
         conn.commit()
         conn.close()
 
-        flash("Registration successful! Please login.", "success")
+        flash("Registration successful!", "success")
         return redirect(url_for("auth.login"))
 
     return render_template("register.html")
 
 
 # ---------------- Login ----------------
-
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+
+        print(f"🟢 Login attempt: {username} / {password}")
 
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
@@ -44,21 +50,15 @@ def login():
         user = c.fetchone()
         conn.close()
 
+        print("🟢 Query result:", user)
+
         if user:
-            session["user_id"] = user[0]    # ✅ id save
-            session["user"] = user[1]       # ✅ username save
+            session["user_id"] = user[0]
+            session["user"] = user[1]
             flash("Login successful!", "success")
-            return redirect(url_for("posts.feed"))  # ✅ feed redirect
+            return redirect(url_for("posts.feed"))
         else:
-            flash("Invalid username or password", "error")
+            flash("Invalid username or password!", "error")
             return render_template("login.html")
 
     return render_template("login.html")
-
-
-# ---------------- Logout ----------------
-@auth_bp.route("/logout")
-def logout():
-    session.clear()   # ✅ pura session clear
-    flash("Logged out successfully!", "info")
-    return redirect(url_for("auth.login"))

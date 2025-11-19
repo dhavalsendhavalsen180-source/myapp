@@ -8,21 +8,21 @@ posts_bp = Blueprint("posts", __name__, url_prefix="/posts")
 UPLOAD_FOLDER = "static/uploads"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 
-# ✅ Helper: allowed file check
+# ✅ Helper
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# ✅ Feed route
 
+# ✅ FEED PAGE
 @posts_bp.route("/feed")
 def feed():
-    if "user_id" not in session:   # ✅ ab user_id check kar
+    if "user_id" not in session:
         return redirect(url_for("auth.login"))
 
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
 
-    # Get posts with username
+    # sab posts ke data + username
     c.execute("""
         SELECT posts.id, users.username, posts.caption
         FROM posts
@@ -35,22 +35,27 @@ def feed():
     for row in rows:
         post_id, username, caption = row
 
-        # Get images
+        # images
         c.execute("SELECT image_path FROM post_images WHERE post_id=?", (post_id,))
         images = [r[0] for r in c.fetchall()]
 
-        # Get likes
+        # likes count
         c.execute("SELECT COUNT(*) FROM likes WHERE post_id=?", (post_id,))
         likes = c.fetchone()[0]
 
-        # Get comments
-        c.execute("SELECT username, comment FROM comments WHERE post_id=?", (post_id,))
+        # comments
+        c.execute("""
+            SELECT users.username, comments.comment
+            FROM comments
+            JOIN users ON comments.user_id = users.id
+            WHERE comments.post_id=?
+            ORDER BY comments.id ASC
+        """, (post_id,))
         comments = [{"username": r[0], "comment": r[1]} for r in c.fetchall()]
 
-        # ✅ Consistent dict keys
         posts.append({
             "id": post_id,
-            "user": username,      # ⚡ feed.html me post.user use hoga
+            "user": username,
             "caption": caption,
             "images": images,
             "likes": likes,
@@ -59,16 +64,11 @@ def feed():
 
     conn.close()
 
-    return render_template(
-        "feed.html",
-        posts=posts,
-        current_user=session["user"]   # ✅ username session me
-    )
+    # ✅ yahan sirf posts bhej, feed.html me post.comments use ho raha hai
+    return render_template("feed.html", posts=posts, current_user=session.get("user"))
 
 
-
-# ✅ Upload post (multi-image)
-
+# ✅ UPLOAD POST
 @posts_bp.route("/upload", methods=["GET", "POST"])
 def upload():
     if "user_id" not in session:
@@ -83,28 +83,28 @@ def upload():
                   (session["user_id"], caption))
         post_id = c.lastrowid
 
-        # Save images if uploaded
+        # multiple image upload
         if "images" in request.files:
             for img in request.files.getlist("images"):
-                filename = secure_filename(img.filename)
-                path = os.path.join("static/uploads", filename)
-                img.save(path)
+                if img.filename and allowed_file(img.filename):
+                    filename = secure_filename(img.filename)
+                    path = os.path.join(UPLOAD_FOLDER, filename)
+                    img.save(path)
 
-                c.execute(
-                    "INSERT INTO post_images (post_id, image_path) VALUES (?, ?)",
-                    (post_id, path)
-                )
+                    c.execute(
+                        "INSERT INTO post_images (post_id, image_path) VALUES (?, ?)",
+                        (post_id, path)
+                    )
 
         conn.commit()
         conn.close()
-
         flash("Post uploaded!", "success")
         return redirect(url_for("posts.feed"))
 
-    # GET → show upload form
     return render_template("upload.html")
 
-# ✅ Delete post
+
+# ✅ DELETE POST
 @posts_bp.route("/delete/<int:post_id>", methods=["POST"])
 def delete(post_id):
     if "user" not in session:
@@ -113,9 +113,14 @@ def delete(post_id):
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
 
-    # Check owner
-    c.execute("SELECT username FROM posts WHERE id=?", (post_id,))
+    c.execute("""
+        SELECT users.username
+        FROM posts
+        JOIN users ON posts.user_id = users.id
+        WHERE posts.id=?
+    """, (post_id,))
     row = c.fetchone()
+
     if not row:
         conn.close()
         flash("Post not found!", "error")
@@ -126,7 +131,7 @@ def delete(post_id):
         flash("You cannot delete others' posts!", "error")
         return redirect(url_for("posts.feed"))
 
-    # Delete images from disk + db
+    # delete images
     c.execute("SELECT image_path FROM post_images WHERE post_id=?", (post_id,))
     for img_row in c.fetchall():
         try:
@@ -135,12 +140,11 @@ def delete(post_id):
             pass
     c.execute("DELETE FROM post_images WHERE post_id=?", (post_id,))
 
-    # Delete likes + comments
+    # delete likes + comments + post
     c.execute("DELETE FROM likes WHERE post_id=?", (post_id,))
     c.execute("DELETE FROM comments WHERE post_id=?", (post_id,))
-
-    # Delete post
     c.execute("DELETE FROM posts WHERE id=?", (post_id,))
+
     conn.commit()
     conn.close()
 
