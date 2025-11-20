@@ -5,36 +5,42 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>📸 InsChat — Feed</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
     .carousel { position: relative; overflow: hidden; }
-    .carousel-track { display:flex; transition: transform 0.3s ease-in-out; scroll-snap-type: x mandatory; overflow-x: auto; -webkit-overflow-scrolling: touch;}
+    .carousel-track { display:flex; transition: transform 0.3s ease-in-out; scroll-snap-type: x mandatory; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .carousel-track img { flex:0 0 100%; scroll-snap-align:center; object-fit:cover; max-height: 650px; width:100%; }
-    .carousel-btn { position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.45); color:white; border:none; padding:8px 10px; border-radius:9999px; cursor:pointer; }
+    .carousel-btn { position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.45); color:white; padding:8px 12px; border-radius:9999px; font-size:22px; }
     .carousel-btn.left { left:10px; } .carousel-btn.right { right:10px; }
-    .like-heart { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); font-size:4.5rem; color:white; opacity:0; transition: transform .25s ease, opacity .25s ease; pointer-events:none; text-shadow:0 2px 10px rgba(0,0,0,.6); }
+
+    .like-heart {
+      position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%) scale(0);
+      font-size:4.5rem; color:white;
+      opacity:0; pointer-events:none;
+      transition: transform .25s ease, opacity .25s ease;
+    }
     .like-heart.show { transform:translate(-50%,-50%) scale(1); opacity:1; }
-    .no-scrollbar::-webkit-scrollbar { display:none; } /* hide mobile scrollbar */
+
+    .no-scrollbar::-webkit-scrollbar { display:none; }
+
     .story-ring { padding:3px; background: linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5); border-radius:9999px; }
   </style>
 </head>
+
 <body class="bg-gray-100">
 
-  <!-- Navbar -->
+  <!-- NAVBAR -->
   <div class="flex items-center justify-between p-4 bg-white shadow">
-    <div class="flex items-center space-x-2">
-      <img src="{{ url_for('static', filename='inschat_logo.png') }}" class="h-8" alt="logo">
-      <h1 class="text-xl font-bold">InsChat</h1>
-    </div>
-    <div class="hidden md:block">
-      <input type="text" placeholder="Search" class="border rounded-full px-3 py-1 text-sm w-64">
-    </div>
+    <h1 class="text-xl font-bold">InsChat</h1>
+
     <div class="flex space-x-4 text-xl">
-      <a href="/posts/upload" title="Upload">➕</a>
-      <a href="/auth/logout" title="Logout">🚪</a>
+      <a href="/posts/upload">➕</a>
+      <a href="/auth/logout">🚪</a>
     </div>
   </div>
 
-  <!-- Stories bar (example) -->
+  <!-- STORIES -->
   <div class="bg-white border-b p-3 overflow-x-auto flex space-x-4 no-scrollbar">
     {% for i in range(8) %}
     <div class="flex flex-col items-center text-xs">
@@ -46,12 +52,12 @@
     {% endfor %}
   </div>
 
-  <!-- Feed -->
+  <!-- FEED -->
   <div class="max-w-xl mx-auto mt-4 space-y-6 pb-24">
     {% for post in posts %}
     <div class="bg-white rounded-xl shadow overflow-hidden">
 
-      <!-- header -->
+      <!-- HEADER -->
       <div class="flex items-center justify-between px-4 py-3">
         <div class="flex items-center space-x-3">
           <div class="story-ring w-10 h-10 rounded-full flex items-center justify-center">
@@ -61,55 +67,76 @@
           </div>
           <div class="font-semibold">{{ post.user }}</div>
         </div>
+
         {% if post.user == current_user %}
-        <form method="POST" action="/posts/delete/{{ post.id }}" onsubmit="return confirm('Delete post?')">
-          <button class="text-sm text-red-500">Delete</button>
+        <form method="POST" action="/posts/delete/{{ post.id }}">
+          <button class="text-red-500 text-sm">Delete</button>
         </form>
         {% endif %}
       </div>
 
-      <!-- carousel (or single image) -->
-      <div class="relative" ondblclick="likePost({{ post.id }})">
+      <!-- IMAGES (CAROUSEL + DOUBLE TAP) -->
+      <div class="relative">
+
+        <!-- MULTIPLE IMAGES -->
         {% if post.images and post.images|length > 1 %}
         <div class="carousel">
           <div id="track-{{ post.id }}" class="carousel-track no-scrollbar">
             {% for img in post.images %}
-            <img src="{{ url_for('static', filename='uploads/' ~ img) }}" alt="post image">
+            <img src="{{ url_for('static', filename='uploads/' ~ img) }}"
+                 ondblclick="toggleLike({{ post.id }}, document.querySelector('#like-btn-{{ post.id }}'))"
+                 ontouchend="onImageTap({{ post.id }})">
             {% endfor %}
           </div>
+
           <button class="carousel-btn left" onclick="scrollByTrack('{{ post.id }}', -1)">‹</button>
           <button class="carousel-btn right" onclick="scrollByTrack('{{ post.id }}', +1)">›</button>
         </div>
+
+        <!-- SINGLE IMAGE -->
         {% elif post.images and post.images|length == 1 %}
-        <img src="{{ url_for('static', filename='uploads/' ~ post.images[0]) }}" class="w-full max-h-[650px] object-cover">
+        <img src="{{ url_for('static', filename='uploads/' ~ post.images[0]) }}"
+             class="w-full max-h-[650px] object-cover"
+             ondblclick="toggleLike({{ post.id }}, document.querySelector('#like-btn-{{ post.id }}'))"
+             ontouchend="onImageTap({{ post.id }})">
         {% endif %}
+
+        <!-- HEART ANIMATION -->
         <div id="heart-{{ post.id }}" class="like-heart">❤️</div>
       </div>
 
-      <!-- actions -->
+      <!-- ACTION BUTTONS -->
       <div class="flex items-center px-4 py-2 space-x-4 text-2xl">
-        <form method="POST" action="/posts/like/{{ post.id }}">
-          <button type="submit" title="Like">❤️</button>
-        </form>
-        <a href="#comment-{{ post.id }}" class="text-xl">💬</a>
+        <button id="like-btn-{{ post.id }}"
+                onclick="toggleLike({{ post.id }}, this)">❤️</button>
+
+        <a href="#comment-{{ post.id }}">💬</a>
       </div>
 
-      <!-- likes and caption -->
-      <div class="px-4 pb-2">
-        <div class="text-sm font-semibold">{{ post.likes }} likes</div>
-        <div class="text-sm"><span class="font-semibold">{{ post.user }}</span> {{ post.caption }}</div>
-      </div>
+      <!-- LIKES + CAPTION -->
+<div class="px-4 pb-2">
+  <div id="like-count-{{ post.id }}" class="text-sm font-semibold">
+      {{ post.likes }} likes
+  </div>
 
-      <!-- comments (rendered) -->
+  <div class="text-sm">
+    <span class="font-semibold">{{ post.user }}</span> {{ post.caption }}
+  </div>
+</div>    
+
+      <!-- COMMENTS -->
       <div class="px-4 pb-3 text-sm text-gray-700 space-y-1">
         {% for c in post.comments %}
         <p><span class="font-semibold">{{ c.username }}</span> {{ c.comment }}</p>
         {% endfor %}
       </div>
 
-      <!-- add comment -->
-      <form id="comment-{{ post.id }}" method="POST" action="/posts/comment/{{ post.id }}" class="px-4 pb-4 flex items-center space-x-2">
-        <input name="comment" placeholder="Add a comment..." required class="flex-grow rounded-lg border px-3 py-2 text-sm" />
+      <!-- ADD COMMENT -->
+      <form id="comment-{{ post.id }}" method="POST"
+            action="/posts/comment/{{ post.id }}"
+            class="px-4 pb-4 flex items-center space-x-2">
+        <input name="comment" placeholder="Add a comment..." required
+               class="flex-grow rounded-lg border px-3 py-2 text-sm" />
         <button class="text-blue-500 font-semibold">Post</button>
       </form>
 
@@ -117,37 +144,48 @@
     {% endfor %}
   </div>
 
-  <!-- bottom nav -->
+  <!-- BOTTOM NAV -->
   <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-inner flex justify-around py-2 text-2xl">
     <a href="/posts/feed">🏠</a>
     <a href="#">🔍</a>
     <a href="/posts/upload">➕</a>
     <a href="#">🎬</a>
-    <a href="#">👤</a>
+    <a href="/profile/{{ current_user }}">👤</a>
   </div>
 
-  <script>
-    // Carousel scroll by track (dir = -1 or +1)
-    function scrollByTrack(postId, dir){
-      const track = document.getElementById(`track-${postId}`);
-      if(!track) return;
-      const w = track.offsetWidth;
-      // scroll by container width
-      track.scrollBy({ left: dir * w, behavior: 'smooth' });
-    }
+<script>
 
-    // Double-tap like animation
-    function likePost(postId){
-      const heart = document.getElementById(`heart-${postId}`);
-      if(!heart) return;
-      heart.classList.add('show');
-      setTimeout(()=> heart.classList.remove('show'), 700);
-      // NOTE: This only animates UI. If you want to auto-submit like on double-tap,
-      // you can send a POST via fetch to /posts/like/<postId>.
-    }
+  /* ============= LIKE (AJAX + ANIMATION) ============= */
 
-    // Optional: double-tap mobile detection (if you want to auto-like)
-    // You can implement time-difference logic per post and then post via fetch.
-  </script>
+async function toggleLike(postId, btnEl) {
+  const res = await fetch(`/social/posts/like/${postId}`, {
+    method: "POST",
+    headers: { "X-Requested-With": "XMLHttpRequest" }
+  });
+
+  const j = await res.json();
+  if (!j.ok) return alert("Login required");
+
+  const heart = document.getElementById(`heart-${postId}`);
+  const countEl = document.getElementById(`like-count-${postId}`);
+
+  if (j.action === "liked") {
+    btnEl.classList.add("text-red-600");
+
+    // ❤️ animation
+    heart.classList.add("show");
+    setTimeout(() => heart.classList.remove("show"), 800);
+  } else {
+    btnEl.classList.remove("text-red-600");
+  }
+
+  // Like count update
+  if (j.count !== undefined) {
+    countEl.innerText = `${j.count} likes`;
+  }
+}
+
+</script>
+
 </body>
 </html>

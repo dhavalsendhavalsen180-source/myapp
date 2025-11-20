@@ -150,3 +150,55 @@ def delete(post_id):
 
     flash("Post deleted!", "success")
     return redirect(url_for("posts.feed"))
+# add coment beckend 
+
+@posts_bp.route("/comment/<int:post_id>", methods=["POST"])
+def comment(post_id):
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    comment_text = request.form.get("comment", "").strip()
+
+    if not comment_text:
+        return redirect(url_for("posts.feed"))
+
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+
+    c.execute("""
+        INSERT INTO comments (post_id, user_id, comment)
+        VALUES (?, ?, ?)
+    """, (post_id, session["user_id"], comment_text))
+
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for("posts.feed"))
+
+# like unlike system
+
+@posts_bp.route("/like/<int:post_id>", methods=["POST"])
+def like(post_id):
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+
+    # check already liked
+    c.execute("SELECT id FROM likes WHERE post_id=? AND username=?", (post_id, session["user"]))
+    liked = c.fetchone()
+
+    if liked:
+        # unlike
+        c.execute("DELETE FROM likes WHERE id=?", (liked[0],))
+    else:
+        # like
+        c.execute("INSERT INTO likes (post_id, username) VALUES (?, ?)", (post_id, session["user"]))
+
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for("posts.feed"))
+
+

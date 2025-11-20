@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ user[1] }} • Profile</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+<!-- TOP NAVBAR -->
+<div class="flex justify-between items-center px-4 py-3 bg-white shadow">
+  <h1 class="text-xl font-bold">{{ user[1] }}</h1>
+  <a href="/auth/logout" class="text-2xl">🚪</a>
+</div>
+
+<!-- PROFILE HEADER -->
+<div class="bg-white p-4">
+  <div class="flex items-center">
+
+    <!-- Profile Photo -->
+    <div class="w-24 h-24 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500 p-1">
+      <div class="w-full h-full bg-white rounded-full flex items-center justify-center text-3xl font-bold">
+        {{ user[1][0] | upper }}
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="flex-grow flex justify-around text-center">
+      <div>
+        <p class="text-xl font-bold">{{ posts|length }}</p>
+        <p class="text-sm text-gray-500">Posts</p>
+      </div>
+
+      <div>
+        <p class="text-xl font-bold">{{ followers }}</p>
+        <p class="text-sm text-gray-500">Followers</p>
+      </div>
+
+      <div>
+        <p class="text-xl font-bold">{{ following }}</p>
+        <p class="text-sm text-gray-500">Following</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Username / Bio -->
+  <div class="mt-3">
+    <p class="font-semibold">{{ user[1] }}</p>
+    <p class="text-sm text-gray-700">Bio coming soon...</p>
+  </div>
+
+  <!-- Follow / Edit Profile -->
+  <div class="mt-4 flex space-x-3">
+
+    {% if current_user != user[1] %}
+      <form method="POST" action="/follow/{{ user[1] }}">
+        <button class="w-full py-2 bg-blue-500 text-white rounded-lg font-semibold">Follow</button>
+      </form>
+    {% else %}
+      <a href="#" class="w-full py-2 border rounded-lg text-center font-semibold">Edit Profile</a>
+    {% endif %}
+
+  </div>
+
+</div>
+
+<!-- HIGHLIGHTS -->
+<div class="bg-white p-3 flex space-x-4 overflow-x-auto no-scrollbar">
+  {% for i in range(5) %}
+  <div class="text-center">
+    <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+      ⭐
+    </div>
+    <p class="text-xs mt-1">Highlight</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- POSTS GRID -->
+<div class="grid grid-cols-3 gap-1 mt-2">
+  {% for p in posts %}
+  <a href="/posts/view/{{ p[0] }}">
+    <img src="{{ url_for('static', filename='uploads/' ~ p[0]|string ~ '.jpg') }}"
+         class="w-full h-32 object-cover bg-gray-200">
+  </a>
+  {% endfor %}
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="fixed bottom-0 left-0 right-0 bg-white flex justify-around py-2 text-2xl shadow-inner">
+  <a href="/posts/feed">🏠</a>
+  <a href="/explore">🔍</a>
+  <a href="/posts/upload">➕</a>
+  <a href="/reels">🎬</a>
+  <a href="/profile/{{ current_user }}">👤</a>
+</div>
+
+</body>
+</html>
