@@ -26,31 +26,261 @@
 
     .story-ring { padding:3px; background: linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5); border-radius:9999px; }
   </style>
+<script>
+async function uploadStoryInstant(event) {
+    let file = event.target.files[0];
+    if (!file) return;
+    let form = new FormData();
+    form.append("story", file);
+    let res = await fetch("/stories/add/insta", { method: "POST", body: form });
+    let out = await res.json();
+    if (out.ok) { window.location.reload(); } else { alert("Story upload failed"); }
+}
+</script>
 </head>
 
 <body class="bg-gray-100">
+<input type="file" id="storyPicker" accept="image/*,video/*" style="display:none" onchange="uploadStoryInstant(event)">
 
   <!-- NAVBAR -->
-  <div class="flex items-center justify-between p-4 bg-white shadow">
-    <h1 class="text-xl font-bold">InsChat</h1>
 
-    <div class="flex space-x-4 text-xl">
-      <a href="/posts/upload">➕</a>
-      <a href="/auth/logout">🚪</a>
-    </div>
+<div class="flex items-center justify-between p-4 bg-white shadow">
+  <h1 class="text-xl font-bold">InsChat</h1>
+
+  <div class="flex space-x-4 text-xl">
+
+    <a href="/social/notifications" class="relative">
+      🔔
+      <span id="notif-badge"></span>
+    </a>
+
+    <a href="/posts/upload">➕</a>
+
+    <a href="/auth/logout">🚪</a>
+
+    <!-- DM Link (Correct Place) -->
+    <a href="/messages" class="text-xl">💬</a>
+
   </div>
+</div>
 
-  <!-- STORIES -->
-  <div class="bg-white border-b p-3 overflow-x-auto flex space-x-4 no-scrollbar">
-    {% for i in range(8) %}
-    <div class="flex flex-col items-center text-xs">
-      <div class="story-ring w-16 h-16 rounded-full flex items-center justify-center">
-        <img src="https://i.pravatar.cc/150?img={{ i }}" class="w-14 h-14 rounded-full" />
-      </div>
-      <span class="mt-1 text-gray-600">user{{ i }}</span>
+<!-- STORIES bubble -->
+
+<!-- ADD STORY BUTTON (Your Story bubble par + icon) -->
+<style>
+.add-story-btn {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    background: #0095f6;
+    color: white;
+    font-size: 16px;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid white;
+}
+.my-story-wrapper {
+    position: relative;
+    display: inline-block;
+}
+</style>
+
+<script>
+    document.getElementById("storyPopup").style.display = "flex";
+}
+function closeStoryPopup() {
+    document.getElementById("storyPopup").style.display = "none";
+}
+function previewStoryFile(event) {
+    const media_path = event.target.files[0];
+    if (!media_path) return;
+
+    document.getElementById("preview").src = URL.createObjectURL(media_path);
+}
+</script>
+
+<!-- Popup -->
+<div id="storyPopup" class="popup">
+    <div class="popup-content">
+
+        <h3>New Story</h3>
+
+        <form action="/stories/add" method="POST" enctype="multipart/form-data">
+
+            <label>Select Image / Video</label>
+            <input type="media_path" name="story" accept="image/*,video/*" onchange="previewStoryFile(event)" required>
+
+            <img id="preview" style="width:100%; margin-top:10px; border-radius:10px; display:block;">
+
+            <label>Story Text</label>
+            <input type="text" name="text" placeholder="Write something...">
+
+            <label>Background Color</label>
+            <input type="color" name="bg" value="#000000">
+
+            <label>Music URL (optional)</label>
+            <input type="text" name="music" placeholder="Paste music URL">
+
+            <button type="submit" class="upload-btn">Upload Story</button>
+        </form>
+
+        <button onclick="closeStoryPopup()" class="close-btn">Close</button>
+    </div>
+</div>
+
+<style>
+.popup {
+    display:none;
+    position:fixed;
+    top:0;left:0;
+    width:100%;height:100%;
+    background:rgba(0,0,0,0.6);
+    justify-content:center;
+    align-items:center;
+    z-index:10000;
+}
+.popup-content {
+    background:white;
+    padding:20px;
+    width:90%;
+    max-width:400px;
+    border-radius:15px;
+}
+.upload-btn {
+    width:100%;
+    background:#0095f6;
+    border:none;
+    padding:10px;
+    color:white;
+    border-radius:8px;
+    margin-top:10px;
+    font-size:16px;
+}
+.close-btn {
+    margin-top:10px;
+    width:100%;
+    padding:10px;
+    border:none;
+    background:#ff4444;
+    color:white;
+    border-radius:8px;
+}
+</style>
+
+<!-- STORY BAR CONTAINER -->
+<div class="story-bar">
+    
+    <!-- YOUR STORY -->
+
+<div class="story-item my-story-wrapper" onclick="document.getElementById('storyPicker').click()">
+    <div class="story-ring my-story">
+         <img src="{{ url_for('static', filename='profile/user_' + session['user_id']|string|string ~ '.jpg') }}"
+              onerror="this.src='/static/profile/default_dp.jpg'">
+    </div>
+
+    <!-- Blue + Button -->
+    <div class="add-story-btn">+</div>
+
+    <div class="story-label">Your Story</div>
+</div>
+
+    <!-- OTHER USERS -->
+    {% for s in storybar %}
+    <div class="story-item" onclick="openStory('{{ s.user_id }}')">
+        <div class="story-ring {% if s.seen %}seen{% endif %}">
+            <img src="{{ s.last_img }}">
+        </div>
+        <div class="story-label">{{ s.user_id }}</div>
     </div>
     {% endfor %}
+
+</div>
+
+<style>
+.story-bar {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 10px;
+    display: flex;
+    gap: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.story-item {
+    display: inline-block;
+    text-align: center;
+    cursor: pointer;
+    width: 70px;
+}
+
+.story-ring {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    padding: 3px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.story-ring img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* Instagram Gradient Ring */
+.story-ring:not(.seen) {
+    background: linear-gradient(45deg, #f99, #f63, #f36, #c3f, #63f);
+}
+
+/* Seen story */
+.story-ring.seen {
+    background: #ccc;
+}
+
+/* Your story blue ring */
+.my-story {
+    background: #0095f6 !important;
+}
+
+.story-label {
+    font-size: 12px;
+    margin-top: 5px;
+    width: 70px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+</style>
+
+<script>
+function openStory(user_id) {
+    window.location.href = "/stories/view/" + user_id;
+}
+</script>
+
+<!-- STORIES -->
+<div class="bg-white border-b p-3 overflow-x-auto flex space-x-4 no-scrollbar">
+  {% for s in stories_bar %}
+  <div class="flex flex-col items-center text-xs">
+     <a href="{{ url_for('stories.view_stories', username=s.user_id) }}">
+      <div style="padding:3px; border-radius:9999px; background: linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);">
+        <img src="{{ s.last_img }}" class="w-14 h-14 rounded-full" style="object-fit:cover; border:3px solid {% if s.seen %}transparent{% else %}#ff3d77{% endif %};"/>
+      </div>
+    </a>
+    <span class="mt-1 text-gray-600">{{ s.user_id }}</span>
   </div>
+  {% endfor %}
+</div>
+
 
   <!-- FEED -->
   <div class="max-w-xl mx-auto mt-4 space-y-6 pb-24">
@@ -62,13 +292,13 @@
         <div class="flex items-center space-x-3">
           <div class="story-ring w-10 h-10 rounded-full flex items-center justify-center">
             <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-r from-pink-500 to-yellow-500">
-              {{ post.user[0]|upper }}
+              {{ post.user_id[0]|upper }}
             </div>
           </div>
-          <div class="font-semibold">{{ post.user }}</div>
+          <div class="font-semibold">{{ post.user_id }}</div>
         </div>
 
-        {% if post.user == current_user %}
+        {% if post.user_id != current_user_id_id %}
         <form method="POST" action="/posts/delete/{{ post.id }}">
           <button class="text-red-500 text-sm">Delete</button>
         </form>
@@ -120,7 +350,7 @@
   </div>
 
   <div class="text-sm">
-    <span class="font-semibold">{{ post.user }}</span> {{ post.caption }}
+    <span class="font-semibold">{{ post.user_id }}</span> {{ post.caption }}
   </div>
 </div>    
 
@@ -144,48 +374,129 @@
     {% endfor %}
   </div>
 
-  <!-- BOTTOM NAV -->
-  <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-inner flex justify-around py-2 text-2xl">
-    <a href="/posts/feed">🏠</a>
-    <a href="#">🔍</a>
-    <a href="/posts/upload">➕</a>
-    <a href="#">🎬</a>
-    <a href="/profile/{{ current_user }}">👤</a>
-  </div>
+<!-- BOTTOM NAV -->
+<div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-inner flex justify-around py-2 text-2xl">
+  <a href="/posts/feed">🏠</a>
+  <a href="/explore">🔍</a>
+  <a href="/create">➕</a>
+  <a href="/reels">🎬</a>
+  <a href="/profile/{{ current_user_id_id }}">👤</a>
+</div>
+
+<div class="insta-create-btn" onclick="openCreateHub()">+</div>
+
+
+<script>
+function openCreateHub(){
+    document.getElementById("createHub").classList.toggle("show")
+}
+</script>
+
+
 
 <script>
 
   /* ============= LIKE (AJAX + ANIMATION) ============= */
 
-async function toggleLike(postId, btnEl) {
-  const res = await fetch(`/social/posts/like/${postId}`, {
-    method: "POST",
-    headers: { "X-Requested-With": "XMLHttpRequest" }
-  });
+  async function toggleLike(postId, btnEl) {
+    const res = await fetch(`/social/posts/like/${postId}`, {
+      method: "POST",
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    });
 
-  const j = await res.json();
-  if (!j.ok) return alert("Login required");
+    const j = await res.json();
+    if (!j.ok) return alert("Login required");
 
-  const heart = document.getElementById(`heart-${postId}`);
-  const countEl = document.getElementById(`like-count-${postId}`);
+    const heart = document.getElementById(`heart-${postId}`);
+    const countEl = document.getElementById(`like-count-${postId}`);
 
-  if (j.action === "liked") {
-    btnEl.classList.add("text-red-600");
+    if (j.action === "liked") {
+      btnEl.classList.add("text-red-600");
 
-    // ❤️ animation
-    heart.classList.add("show");
-    setTimeout(() => heart.classList.remove("show"), 800);
-  } else {
-    btnEl.classList.remove("text-red-600");
+      // ❤️ animation
+      heart.classList.add("show");
+      setTimeout(() => heart.classList.remove("show"), 800);
+    } else {
+      btnEl.classList.remove("text-red-600");
+    }
+
+    // Like count update
+    if (j.count !== undefined) {
+      countEl.innerText = `${j.count} likes`;
+    }
   }
 
-  // Like count update
-  if (j.count !== undefined) {
-    countEl.innerText = `${j.count} likes`;
+
+  /* ============= FOLLOW SUGGESTIONS ============= */
+
+  async function loadSuggestions() {
+    const res = await fetch("/social/suggestions");
+    const j = await res.json();
+    if (!j.ok) return;
+
+    let html = `
+      <div class="bg-white p-4 rounded-xl shadow mb-4">
+        <div class="font-semibold text-lg mb-3">Suggested for you</div>
+    `;
+
+    j.users.forEach(u => {
+      html += `
+        <div class="flex justify-between items-center mb-3">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-xl font-bold">
+              ${u.username[0].toUpperCase()}
+            </div>
+            <span class="font-semibold">${u.username}</span>
+          </div>
+
+          <button onclick="followUser(${u.id}, this)"
+            class="text-blue-500 font-bold">Follow</button>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    document.getElementById("suggestions").innerHTML = html;
   }
+
+  loadSuggestions();
+
+
+  /* ============= FOLLOW BUTTON ============= */
+
+  async function followUser(uid, btn) {
+    const res = await fetch(`/social/follow/${uid}`, {
+      method: "POST"
+    });
+    const j = await res.json();
+
+    if (j.ok) {
+      btn.innerText = "Following";
+      btn.classList.remove("text-blue-500");
+      btn.classList.add("text-gray-400");
+    }
+  }
+
+async function loadNotifCount() {
+    const res = await fetch("/social/notifications/count");
+    const j = await res.json();
+
+    if (!j.ok) return;
+
+    const badge = document.getElementById("notif-badge");
+
+    if (j.count > 0) {
+        badge.innerText = j.count;
+        badge.classList.remove("hidden");
+    } else {
+        badge.classList.add("hidden");
+    }
 }
 
-</script>
+// 5 sec me auto refresh like Instagram
+setInterval(loadNotifCount, 5000);
+loadNotifCount();
 
+</script>
 </body>
 </html>

@@ -46,7 +46,7 @@ def like_post(post_id):
 
     else:
         c.execute("INSERT INTO likes (post_id, user_id, username) VALUES (?, ?, ?)",
-                  (post_id, user_id, session.get("user")))
+                  (post_id, user_id, session.get("user_id")))
 
         # owner notification
         c.execute("SELECT user_id FROM posts WHERE id=?", (post_id,))
@@ -84,7 +84,7 @@ def comment_post(post_id):
 
     c.execute(
         "INSERT INTO comments (post_id, user_id, username, comment) VALUES (?, ?, ?, ?)",
-        (post_id, session["user_id"], session["user"], text)
+        (post_id, session["user_id"], session["user_id"], text)
     )
     comment_id = c.lastrowid
 
@@ -203,7 +203,7 @@ def upload_story():
 
     if request.method == "POST":
         if "story" not in request.files:
-            flash("No file selected", "error")
+            flash("No media_path selected", "error")
             return redirect(url_for("social.upload_story"))
 
         f = request.files["story"]
@@ -248,7 +248,7 @@ def stories_feed():
 
     stories = [{
         "id": r[0],
-        "user": r[1],
+        "user_id": r[1],
         "media": r[2],
         "created_at": r[3]
     } for r in rows]
@@ -269,25 +269,26 @@ def notifications():
     c = conn.cursor()
 
     c.execute("""
-        SELECT id, actor_id, type, meta, is_read, created_at
-        FROM notifications
-        WHERE user_id=?
-        ORDER BY created_at DESC
+        SELECT n.id, n.actor_id, u.username, n.type, n.meta, n.is_read, n.created_at
+        FROM notifications n
+        JOIN users u ON n.actor_id = u.id
+        WHERE n.user_id=?
+        ORDER BY n.created_at DESC
     """, (session["user_id"],))
 
     nots = [{
         "id": r[0],
         "actor_id": r[1],
-        "type": r[2],
-        "meta": r[3],
-        "is_read": r[4],
-        "created_at": r[5]
+        "actor_username": r[2],
+        "type": r[3],
+        "meta": r[4],
+        "is_read": r[5],
+        "created_at": r[6]
     } for r in c.fetchall()]
 
     conn.close()
 
     return render_template("notifications.html", notifications=nots)
-
 
 @social_bp.route("/notifications/mark_read/<int:not_id>", methods=["POST"])
 def mark_read(not_id):
@@ -326,9 +327,63 @@ def explore():
 
     posts = [{
         "id": r[0],
-        "user": r[1],
+        "user_id": r[1],
         "caption": r[2],
         "likes": r[3]
     } for r in rows]
 
     return render_template("explore.html", posts=posts)
+
+
+#follow keliye 
+
+@social_bp.route("/suggestions")
+def suggestions():
+    if "user_id" not in session:
+        return jsonify({"ok": False}), 401
+
+    me = session["user_id"]
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    # Already following list
+    c.execute("SELECT following_id FROM follows WHERE follower_id=?", (me,))
+    following_ids = [row[0] for row in c.fetchall()]
+
+    # Suggest users NOT followed + NOT me
+    c.execute("""
+        SELECT id, username FROM users
+        WHERE id != ?
+        AND id NOT IN (
+            SELECT following_id FROM follows WHERE follower_id=?
+        )
+        ORDER BY RANDOM()
+        LIMIT 10
+    """, (me, me))
+
+    rows = c.fetchall()
+    conn.close()
+
+    suggestions = [{"id": r[0], "username": r[1]} for r in rows]
+
+    return jsonify({"ok": True, "users": suggestions})
+
+
+# notification ikon pe 123 dikhe ush kelye
+
+@social_bp.route("/notifications/count")
+def notifications_count():
+    if "user_id" not in session:
+        return jsonify({"ok": False, "count": 0})
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0",
+              (session["user_id"],))
+
+    count = c.fetchone()[0]
+    conn.close()
+
+    return jsonify({"ok": True, "count": count})

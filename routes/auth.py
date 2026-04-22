@@ -24,7 +24,7 @@ def register():
             flash("Username already exists!", "error")
             return redirect(url_for("auth.register"))
 
-        # insert new user
+        # insert new user_id
         c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
         conn.commit()
         conn.close()
@@ -36,29 +36,41 @@ def register():
 
 
 # ---------------- Login ----------------
+
+# ---------------- Login ----------------
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
 
-        print(f"🟢 Login attempt: {username} / {password}")
-
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
-        c.execute("SELECT id, username FROM users WHERE username=? AND password=?", (username, password))
-        user = c.fetchone()
+
+        # Sabse pehle ID + password fetch karo
+        c.execute("SELECT id, password FROM users WHERE username=?", (username,))
+        row = c.fetchone()
         conn.close()
 
-        print("🟢 Query result:", user)
+        if not row:
+            flash("Invalid username or password!", "error")
+            return render_template("login.html")
 
-        if user:
-            session["user_id"] = user[0]
-            session["user"] = user[1]
+        user_id = row[0]
+        stored_pass = row[1]
+
+        # Plain text compare
+        if stored_pass == password:
+            session["user_id"] = user_id       # ⭐ IMPORTANT
+            session["user_id"] = username  # username
+            session["user_id"] = row[0] # id         # username
             flash("Login successful!", "success")
             return redirect(url_for("posts.feed"))
+
         else:
             flash("Invalid username or password!", "error")
             return render_template("login.html")
 
     return render_template("login.html")
+
+

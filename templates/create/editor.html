@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Editor • InsChat</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body{margin:0;background:#0b0b0b;color:#fff;font-family:Inter,system-ui,Arial}
+.container{max-width:900px;margin:12px auto;padding:12px}
+.preview{background:#070707;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;height:520px}
+.btn{padding:12px 16px;border-radius:12px;background:#111;border:1px solid rgba(255,255,255,0.12);cursor:pointer;font-weight:700}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <div class="flex justify-between items-center">
+    <a href="/create" class="text-sm text-gray-300 font-bold">⬅ Back</a>
+    <div class="text-sm text-gray-400">Mode: {{ mode }}</div>
+  </div>
+
+  <h2 class="text-2xl font-bold mt-3">Editor</h2>
+
+  <div class="preview mt-4" id="previewArea">
+    {% if media_path %}
+      {% set ext = media_path.rsplit('.',1)[-1].lower() %}
+      {% if ext in ['mp4','webm','mov','mkv'] %}
+        <video id="mediaEl" controls style="max-width:100%;max-height:100%" src="/create/editor_temp/{{ media_path }}"></video>
+      {% else %}
+        <img id="mediaEl" src="/create/editor_temp/{{ media_path }}" style="max-width:100%;max-height:100%">
+      {% endif %}
+    {% else %}
+      <div class="text-gray-500">No media loaded. Upload from Create screen.</div>
+    {% endif %}
+  </div>
+
+  <div class="mt-5 flex gap-3">
+    <button class="btn w-full" id="exportBtn">Continue → Publish</button>
+  </div>
+
+</div>
+
+<script>
+(async function(){
+  const exportBtn = document.getElementById('exportBtn');
+  const mediaEl = document.getElementById('mediaEl');
+
+  async function fetchAsBlob(url){
+    const res = await fetch(url);
+    return await res.blob();
+  }
+
+  exportBtn.addEventListener('click', async ()=>{
+    if(!mediaEl) return alert('No media to export');
+
+    let blob=null, filename='export.webm';
+
+    if(mediaEl.tagName.toLowerCase()==='video'){
+      const src = mediaEl.currentSrc || mediaEl.src;
+      blob = await fetchAsBlob(src);
+      filename = 'reel.webm';
+    } else {
+      const src = mediaEl.src;
+      blob = await fetchAsBlob(src);
+      filename = 'photo.jpg';
+    }
+
+    const fd = new FormData();
+    fd.append('export', new File([blob], filename, {type: blob.type}));
+
+    const resp = await fetch('/create/editor', { method:'POST', body: fd });
+
+    if(resp.redirected){
+      window.location = resp.url;
+    }else{
+      window.location = '/create/publish';
+    }
+  });
+
+})();
+</script>
+</body>
+</html>

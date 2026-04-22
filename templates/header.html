@@ -1,0 +1,14 @@
+<button onclick="toggleCreateMenu()" class="create-btn">＋</button>
+
+<div id="createMenu" class="create-menu hidden">
+    <a href="/create/post">Post</a>
+    <a href="/create/reel">Reel</a>
+    <a href="/create/story">Story</a>
+    <a href="/camera">Open Camera</a>
+</div>
+
+<script>
+function toggleCreateMenu(){
+    document.getElementById("createMenu").classList.toggle("hidden");
+}
+</script>

@@ -10,7 +10,7 @@ def splash():
 @basic_bp.route("/home")
 def home():
     token = request.cookies.get("token")
-    user, code = auth_backend.verify(token)
+    user_id, code = auth_backend.verify(token)
     if code != 200:
         return redirect("/auth/login")
     # Login ke baad sidha feed

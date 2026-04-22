@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+<title>Select Media</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center h-screen">
+  <form method="POST" enctype="multipart/form-data" class="bg-white p-5 rounded shadow w-80 space-y-3">
+    <h2 class="text-xl font-bold text-center">Upload Media</h2>
+    <input type="media_path" accept="image/*,video/*" name="media" required class="w-full border p-2 rounded">
+    <button class="bg-blue-600 text-white w-full py-2 rounded">Continue → Editor</button>
+  </form>
+</body>
+</html>
+
+async function saveImage(){
+  const imgEl = document.getElementById("imgCanvas");
+  
+  // Canvas create
+  let canvas = document.createElement("canvas");
+  canvas.width = imgEl.naturalWidth;
+  canvas.height = imgEl.naturalHeight;
+  let ctx = canvas.getContext("2d");
+
+  // Style apply
+  ctx.filter = getComputedStyle(imgEl).filter;
+  ctx.translate(canvas.width/2, canvas.height/2);
+  ctx.rotate(rotation * Math.PI/180);
+  ctx.scale(scale, scale);
+  ctx.drawImage(imgEl, -canvas.width/2, -canvas.height/2);
+
+  // Convert to Base64
+  let dataURL = canvas.toDataURL("image/jpeg", 0.9);
+
+  // Send to Flask
+  let req = await fetch("/create/editor/save",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ image:dataURL })
+  });
+
+  let res = await req.json();
+
+  if(res.ok){
+      alert("✔ Saved! Now posting...");
+      location.href="/posts/upload?media_path="+res.filename;
+  } else {
+      alert("❌ Error while saving");
+  }
+}

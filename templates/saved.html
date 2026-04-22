@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Saved • InsChat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- TOP BAR -->
+  <div class="flex items-center justify-between p-4 bg-white shadow">
+    <a href="/profile/settings" class="text-xl font-bold">⬅ Back</a>
+    <h2 class="font-bold text-lg">Saved</h2>
+    <div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="max-w-3xl mx-auto mt-4 bg-white rounded-xl shadow">
+    <div class="flex justify-around border-b">
+      <button onclick="showTab('posts')" class="py-3 w-full font-semibold">Posts</button>
+      <button onclick="showTab('reels')" class="py-3 w-full font-semibold">Reels</button>
+      <button onclick="showTab('audio')" class="py-3 w-full font-semibold">Audio</button>
+    </div>
+
+    <!-- POSTS TAB -->
+    <div id="posts" class="p-4">
+      {% if saved_posts and saved_posts|length > 0 %}
+        <div class="grid grid-cols-3 gap-1">
+          {% for p in saved_posts %}
+            <a href="/posts/{{ p.id }}" class="block bg-black overflow-hidden">
+              {% if p.image %}
+                <img src="{{ p.image }}" class="w-full h-32 object-cover">
+              {% else %}
+                <div class="w-full h-32 flex items-center justify-center text-gray-400 bg-gray-200">
+                  No Image
+                </div>
+              {% endif %}
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-gray-500 text-sm text-center py-10">
+          No saved posts yet
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- REELS TAB -->
+    <div id="reels" class="p-5 hidden">
+      <div class="text-gray-500 text-sm text-center py-10">
+        Saved Reels will show here...
+      </div>
+    </div>
+
+    <!-- AUDIO TAB -->
+    <div id="audio" class="p-5 hidden">
+      <div class="text-gray-500 text-sm text-center py-10">
+        Saved Audio will show here...
+      </div>
+    </div>
+
+  </div>
+
+<script>
+  function showTab(tab){
+    document.getElementById("posts").classList.add("hidden");
+    document.getElementById("reels").classList.add("hidden");
+    document.getElementById("audio").classList.add("hidden");
+
+    document.getElementById(tab).classList.remove("hidden");
+  }
+</script>
+
+</body>
+</html>

@@ -103,11 +103,11 @@ def _verify_signed(token: str) -> Tuple[bool, str]:
     except Exception:
         return False, ""
 
-def _new_session(user: str) -> Dict[str, Any]:
+def _new_session(user_id: str) -> Dict[str, Any]:
     sid = _b64(os.urandom(32))
     csrf = _b64(os.urandom(24))
     now = _now()
-    sess = {"user": user, "sid": sid, "csrf": csrf, "csrf_exp": now + CSRF_TTL, "exp": now + SESSION_TTL}
+    sess = {"user_id": user_id, "sid": sid, "csrf": csrf, "csrf_exp": now + CSRF_TTL, "exp": now + SESSION_TTL}
     SESSIONS[sid] = sess
     _save()
     token = _sign(f"{sid}|{sess['exp']}")
@@ -178,5 +178,5 @@ def whoami(cookie_header: str) -> Tuple[Dict[str, Any], int, Dict[str, str]]:
     """
     sess = _get_session_from_cookie(cookie_header)
     if not sess:
-        return {"ok": False, "user": None}, 401, {}
-    return {"ok": True, "user": sess["user"]}, 200, {}
+        return {"ok": False, "user_id": None}, 401, {}
+    return {"ok": True, "user_id": sess["user_id"]}, 200, {}

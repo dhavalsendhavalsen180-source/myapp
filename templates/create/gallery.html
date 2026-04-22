@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Gallery • InsChat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-white p-6">
+
+  <a href="/create" class="text-sm text-gray-300">← Back</a>
+  <h2 class="text-2xl font-bold mt-3">Select Media</h2>
+
+  <!-- ✅ FIXED INPUT -->
+  <input type="file" id="picker" accept="image/*,video/*" multiple
+         class="mt-4 block w-full text-sm text-gray-300"/>
+
+  <div id="preview" class="mt-6 grid grid-cols-3 gap-3"></div>
+
+<script>
+document.getElementById("picker").onchange = e=>{
+    document.getElementById("preview").innerHTML = "";
+
+    [...e.target.files].forEach(file=>{
+        let url = URL.createObjectURL(file);
+        let tag = file.type.startsWith("video") ? "video" : "img";
+
+        document.getElementById("preview").innerHTML += `
+            <div class="rounded overflow-hidden border border-gray-700">
+              <${tag} src="${url}" ${tag==="video" ? "controls" : ""} 
+                style="width:100%;height:140px;object-fit:cover"
+              ></${tag}>
+            </div>`;
+    });
+}
+</script>
+
+</body>
+</html>

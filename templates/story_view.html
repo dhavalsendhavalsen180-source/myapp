@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Stories</title>
+<style>
+    body {
+        margin: 0;
+        background: black;
+        overflow: hidden;
+        font-family: Arial;
+    }
+
+    .story-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .story-media {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 10px;
+    }
+
+    .top-bar {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        display: flex;
+        gap: 5px;
+    }
+
+    .progress {
+        flex: 1;
+        height: 3px;
+        background: rgba(255,255,255,0.3);
+        overflow: hidden;
+        border-radius: 5px;
+    }
+
+    .progress-fill {
+        width: 0%;
+        height: 100%;
+        background: white;
+        transition: width linear;
+    }
+
+    .userinfo {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: white;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .actions {
+        position: absolute;
+        bottom: 20px;
+        width: 100%;
+        text-align: center;
+        color: white;
+    }
+
+    .reaction {
+        font-size: 25px;
+        margin: 10px;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+
+<div class="story-container" id="screen">
+    <div class="top-bar">
+        {% for s in stories %}
+        <div class="progress"><div class="progress-fill" id="pg{{ loop.index0 }}"></div></div>
+        {% endfor %}
+    </div>
+
+    <div class="userinfo">
+        <strong>{{ owner }}</strong>
+    </div>
+
+    <img id="storyImage" class="story-media" style="display:none">
+    <video id="storyVideo" class="story-media" style="display:none" autoplay muted playsinline></video>
+
+    <div class="actions">
+        <div>
+            <span class="reaction" onclick="sendReaction('❤️')">❤️</span>
+            <span class="reaction" onclick="sendReaction('🔥')">🔥</span>
+            <span class="reaction" onclick="sendReaction('😂')">😂</span>
+            <span class="reaction" onclick="sendReaction('😮')">😮</span>
+        </div>
+
+        <input id="replyBox" style="width:70%; padding:8px; border-radius:10px; border:none;" 
+               placeholder="Reply...">
+        <button onclick="sendReply()">Send</button>
+    </div>
+</div>
+
+<script>
+let stories = {{ stories|tojson }};
+let index = 0;
+let duration = 5000; // 5 second per story
+
+function loadStory(i) {
+    if (!stories[i]) return;
+    
+    const s = stories[i];
+    let img = document.getElementById("storyImage");
+    let vid = document.getElementById("storyVideo");
+
+    img.style.display = "none";
+    vid.style.display = "none";
+
+    if (s.media_path.endsWith(".mp4") || s.media_path.endsWith(".webm")) {
+        vid.src = "/static/stories/" + s.media_path;
+        vid.style.display = "block";
+        duration = vid.duration ? vid.duration * 1000 : 5000;
+    } else {
+        img.src = "/static/stories/" + s.media_path;
+        img.style.display = "block";
+        duration = 5000;
+    }
+
+    fillProgress(i);
+    setTimeout(nextStory, duration);
+}
+
+function fillProgress(i) {
+    document.getElementById("pg" + i).style.width = "100%";
+}
+
+function nextStory() {
+    if (index < stories.length - 1) {
+        index++;
+        loadStory(index);
+    } else {
+        window.history.back();
+    }
+}
+
+function prevStory() {
+    if (index > 0) {
+        index--;
+        loadStory(index);
+    }
+}
+
+document.getElementById("screen").addEventListener("click", (e) => {
+    if (e.clientX > window.innerWidth / 2) nextStory();
+    else prevStory();
+});
+
+function sendReaction(emoji) {
+    fetch("/stories/react", {
+        method: "POST",
+        body: new URLSearchParams({ emoji: emoji, user_id: stories[index].user_id })
+    });
+}
+
+function sendReply() {
+    let msg = document.getElementById("replyBox").value;
+    fetch("/stories/reply", {
+        method: "POST",
+        body: new URLSearchParams({ msg: msg, to: stories[index].user_id })
+    });
+    document.getElementById("replyBox").value = "";
+}
+
+loadStory(0);
+</script>
+
+</body>
+</html>

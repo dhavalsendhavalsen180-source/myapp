@@ -1,0 +1,10 @@
+#viewer{
+  width:100vw;height:100vh;display:flex;
+  justify-content:center;align-items:center;
+  background:black;
+}
+#story-img{max-height:100%;max-width:100%;object-fit:contain}
+.stories-bar{display:flex;overflow-x:scroll;padding:10px;}
+.story-box{margin:5px;text-align:center}
+.story-box img{width:60px;height:60px;border-radius:50%;border:3px solid gray}
+.unseen img{border-color:#ff004c}

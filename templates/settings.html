@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Settings • InsChat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- TOP BAR -->
+  <div class="flex items-center justify-between p-4 bg-white shadow">
+    <a href="javascript:history.back()" class="text-xl font-bold">⬅ Back</a>
+    <h2 class="font-bold text-lg">Settings</h2>
+    <div></div>
+  </div>
+
+  <div class="max-w-xl mx-auto mt-6 bg-white rounded-xl shadow overflow-hidden">
+
+    <a href="/profile/account_center" class="block px-5 py-4 border-b hover:bg-gray-50">
+      <div class="font-semibold text-gray-900">Account Center</div>
+      <div class="text-sm text-gray-500">Password, personal details, security</div>
+    </a>
+
+    <a href="/profile/saved" class="block px-5 py-4 border-b hover:bg-gray-50">
+      <div class="font-semibold text-gray-900">Saved</div>
+      <div class="text-sm text-gray-500">Posts, Reels, Audio saved list</div>
+    </a>
+
+    <a href="/auth/logout" class="block px-5 py-4 hover:bg-red-50">
+      <div class="font-semibold text-red-600">Logout</div>
+    </a>
+
+  </div>
+
+</body>
+</html>

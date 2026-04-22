@@ -1,0 +1,9 @@
+/* small helpers */
+.btn-action{
+  background:#111;padding:8px 12px;border-radius:8px;color:#fff;border:1px solid #222;
+}
+.card{
+  background:#fff;padding:18px;border-radius:10px;display:flex;align-items:center;justify-content:center;text-decoration:none;color:#111;font-weight:600;
+}
+.btn-small{background:#111;color:#fff;padding:6px 8px;border-radius:6px;border:1px solid #222;}
+.editor-wrap{background:#111;border-radius:8px;overflow:hidden;}

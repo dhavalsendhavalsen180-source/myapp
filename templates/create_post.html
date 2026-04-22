@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Create Post</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+  <div class="max-w-xl mx-auto p-4">
+    <a href="/posts/feed" class="text-blue-500">← Back</a>
+    <h2 class="text-xl font-bold mt-3">Create Post</h2>
+
+    <form method="POST" enctype="multipart/form-data" class="mt-4 space-y-3">
+      <label class="text-sm font-medium">Images / Photos (multiple)</label>
+      <input type="media_path" name="images" accept="image/*" multiple required class="w-full border rounded p-2">
+
+      <label class="text-sm font-medium">Caption</label>
+      <textarea name="caption" rows="3" class="w-full border rounded p-2" placeholder="Write a caption..."></textarea>
+
+      <div class="flex gap-2">
+        <button class="bg-blue-600 text-white px-4 py-2 rounded">Share</button>
+        <a href="/posts/feed" class="px-4 py-2 border rounded">Cancel</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

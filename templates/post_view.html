@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Post • InsChat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    .icon-btn { font-size: 26px; line-height: 1; }
+    .icon-btn:hover { opacity: 0.7; }
+
+    .carousel-btn {
+      background: rgba(0,0,0,0.45);
+      color: white;
+      border-radius: 9999px;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+    }
+    .carousel-btn:hover { background: rgba(0,0,0,0.65); }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.5);
+    }
+    .dot.active {
+      background: white;
+      width: 10px;
+      height: 10px;
+    }
+
+    /* ❤️ Heart Animation */
+    #bigHeart {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.5);
+      font-size: 90px;
+      opacity: 0;
+      transition: all 0.25s ease;
+      z-index: 20;
+      pointer-events: none;
+      text-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    #bigHeart.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.2);
+    }
+
+    #bigHeart.hide {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.5);
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- NAV -->
+  <div class="flex items-center justify-between p-4 bg-white shadow">
+    <a href="javascript:history.back()" class="text-xl font-bold">⬅ Back</a>
+    <h2 class="font-bold text-lg">Post</h2>
+    <div></div>
+  </div>
+
+  <!-- POST CARD -->
+  <div class="max-w-2xl mx-auto mt-6 bg-white rounded-2xl shadow overflow-hidden">
+
+    <!-- HEADER -->
+    <div class="flex items-center justify-between px-4 py-3 border-b">
+      <div class="flex items-center gap-3">
+        <img src="/static/default_dp.jpg" class="w-10 h-10 rounded-full object-cover border">
+        <a href="/profile/{{ post.username }}" class="font-semibold text-gray-800">
+          @{{ post.username }}
+        </a>
+      </div>
+      <div class="text-gray-500 text-2xl">⋮</div>
+    </div>
+
+    <!-- IMAGE CAROUSEL -->
+    {% if images %}
+      <div class="relative bg-black select-none overflow-hidden" id="carousel">
+
+        <!-- ❤️ BIG HEART -->
+        <div id="bigHeart">❤️</div>
+
+        <!-- LEFT BUTTON -->
+        {% if images|length > 1 %}
+        <button onclick="prevImage()" class="carousel-btn left-3">❮</button>
+        {% endif %}
+
+        <!-- RIGHT BUTTON -->
+        {% if images|length > 1 %}
+        <button onclick="nextImage()" class="carousel-btn right-3">❯</button>
+        {% endif %}
+
+        <!-- IMAGES -->
+        <div class="w-full max-h-[550px] flex transition-transform duration-300 ease-in-out"
+             id="carouselTrack"
+             style="transform: translateX(0%);">
+
+          {% for img in images %}
+            <div class="min-w-full flex justify-center bg-black">
+              <img src="{{ img }}"
+                   class="w-full max-h-[550px] object-contain bg-black">
+            </div>
+          {% endfor %}
+
+        </div>
+
+        <!-- DOTS -->
+        {% if images|length > 1 %}
+        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2" id="dots">
+          {% for img in images %}
+            <div class="dot {% if loop.index0 == 0 %}active{% endif %}"></div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="p-10 text-center text-gray-500">No Image</div>
+    {% endif %}
+
+    <!-- ACTIONS -->
+    <div class="px-4 py-3 flex items-center justify-between">
+
+      <div class="flex items-center gap-5">
+
+        <!-- LIKE FORM -->
+        <form method="POST" action="/posts/like_toggle/{{ post.id }}" id="likeForm">
+          <button type="submit" class="icon-btn" id="likeBtn">
+            {% if liked_by_me %}
+              ❤️
+            {% else %}
+              🤍
+            {% endif %}
+          </button>
+        </form>
+
+        <!-- COMMENT BUTTON -->
+        <button onclick="openCommentBox()" class="icon-btn">💬</button>
+
+        <!-- SHARE BUTTON -->
+        <button onclick="openShare()" class="icon-btn">📤</button>
+      </div>
+
+      <button onclick="toggleSave()" class="icon-btn" id="saveBtn">
+  {% if saved_by_me %}
+    🔖
+  {% else %}
+    📑
+  {% endif %}
+</button>
+ </div>
+
+    <!-- LIKES -->
+    <div class="px-4 text-sm font-semibold text-gray-800" id="likesCount">
+      {{ likes }} likes
+    </div>
+
+    <!-- CAPTION -->
+    <div class="px-4 mt-2 text-sm text-gray-800">
+      <span class="font-semibold">@{{ post.username }}</span>
+      <span class="text-gray-700">{{ post.caption or "" }}</span>
+    </div>
+
+    <!-- COMMENTS -->
+    <div class="px-4 mt-4 pb-2">
+      <div class="font-semibold text-gray-800 mb-2">Comments</div>
+
+      <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
+        {% for c in comments %}
+          <div class="text-sm text-gray-800">
+            <span class="font-semibold">@{{ c.username }}</span>
+            <span class="text-gray-700">{{ c.comment }}</span>
+          </div>
+        {% else %}
+          <div class="text-gray-500 text-sm">No comments yet</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ADD COMMENT -->
+    <div class="border-t px-4 py-3">
+      <form method="POST" action="/posts/comment_view/{{ post.id }}" class="flex gap-2 items-center">
+        <input id="commentInput" name="comment" placeholder="Add a comment..."
+          class="flex-1 border rounded-full px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400">
+
+        <button type="submit"
+          class="text-blue-600 font-semibold text-sm hover:text-blue-800">
+          Post
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+
+  <!-- SHARE MODAL -->
+  <div id="shareModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl w-full max-w-md p-5">
+
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold">Share Post</h3>
+        <button onclick="closeShare()" class="text-gray-600 text-xl">✕</button>
+      </div>
+
+      <!-- External Share -->
+      <div class="space-y-3">
+        <button onclick="shareWhatsApp()" class="w-full py-3 rounded-xl bg-green-600 text-white font-semibold">
+          Share on WhatsApp
+        </button>
+
+        <button onclick="shareTelegram()" class="w-full py-3 rounded-xl bg-blue-500 text-white font-semibold">
+          Share on Telegram
+        </button>
+
+        <button onclick="copyPostLink()" class="w-full py-3 rounded-xl bg-gray-900 text-white font-semibold">
+          Copy Link
+        </button>
+      </div>
+
+      <hr class="my-5">
+
+      <!-- In-App Share -->
+      <h4 class="font-semibold mb-2">Send to Followers</h4>
+
+      <div id="followersList" class="max-h-64 overflow-y-auto space-y-2 border rounded-xl p-3">
+        <div class="text-gray-500 text-sm">Loading...</div>
+      </div>
+
+    </div>
+  </div>
+
+
+<script>
+  let currentIndex = 0;
+  const total = {{ images|length if images else 0 }};
+  let likedByMe = {{ "true" if liked_by_me else "false" }};
+  let likesCount = {{ likes }};
+
+  function updateCarousel(){
+    const track = document.getElementById("carouselTrack");
+    if(!track) return;
+
+    track.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+    const dots = document.querySelectorAll("#dots .dot");
+    dots.forEach((d, i) => {
+      d.classList.toggle("active", i === currentIndex);
+    });
+  }
+
+  function nextImage(){
+    if(total <= 1) return;
+    currentIndex = (currentIndex + 1) % total;
+    updateCarousel();
+  }
+
+  function prevImage(){
+    if(total <= 1) return;
+    currentIndex = (currentIndex - 1 + total) % total;
+    updateCarousel();
+  }
+
+  // Swipe Support (Mobile)
+  let startX = 0;
+  let endX = 0;
+
+  const carousel = document.getElementById("carousel");
+
+  if(carousel){
+    carousel.addEventListener("touchstart", (e) => {
+      startX = e.touches[0].clientX;
+    });
+
+    carousel.addEventListener("touchend", (e) => {
+      endX = e.changedTouches[0].clientX;
+
+      if(startX - endX > 50){
+        nextImage();
+      }
+      if(endX - startX > 50){
+        prevImage();
+      }
+    });
+  }
+
+  // ❤️ BIG HEART animation
+  function showHeart(){
+    const heart = document.getElementById("bigHeart");
+    if(!heart) return;
+
+    heart.classList.remove("hide");
+    heart.classList.add("show");
+
+    setTimeout(() => {
+      heart.classList.remove("show");
+      heart.classList.add("hide");
+    }, 500);
+  }
+
+  // ❤️ Update Like UI without reload
+  function updateLikeUI(){
+    const likeBtn = document.getElementById("likeBtn");
+    const likesCountDiv = document.getElementById("likesCount");
+
+    if(likedByMe){
+      likeBtn.innerText = "❤️";
+    } else {
+      likeBtn.innerText = "🤍";
+    }
+
+    likesCountDiv.innerText = likesCount + " likes";
+  }
+
+  // ❤️ Like toggle function (AJAX)
+  async function toggleLikeAjax(){
+    try{
+      const res = await fetch("/posts/like_toggle/{{ post.id }}", { method: "POST" });
+      if(res.ok){
+        if(likedByMe){
+          likedByMe = false;
+          likesCount -= 1;
+        } else {
+          likedByMe = true;
+          likesCount += 1;
+        }
+        updateLikeUI();
+      }
+    }catch(e){
+      console.log("Like error", e);
+    }
+  }
+
+  // Like button click AJAX
+  const likeForm = document.getElementById("likeForm");
+  if(likeForm){
+    likeForm.addEventListener("submit", function(e){
+      e.preventDefault();
+      toggleLikeAjax();
+    });
+  }
+
+  // DOUBLE TAP LIKE ❤️
+  let lastTap = 0;
+
+  if(carousel){
+    carousel.addEventListener("click", async function(){
+      const now = new Date().getTime();
+      const diff = now - lastTap;
+
+      if(diff < 300 && diff > 0){
+        showHeart();
+
+        if(!likedByMe){
+          await toggleLikeAjax();
+        }
+      }
+
+      lastTap = now;
+    });
+  }
+
+  // 💬 COMMENT BUTTON
+  function openCommentBox(){
+    const inp = document.getElementById("commentInput");
+    if(inp){
+      inp.scrollIntoView({ behavior: "smooth", block: "center" });
+      inp.focus();
+    }
+  }
+
+  // SHARE MODAL
+  function openShare(){
+    document.getElementById("shareModal").classList.remove("hidden");
+    document.getElementById("shareModal").classList.add("flex");
+    loadFollowers();
+  }
+
+  function closeShare(){
+    document.getElementById("shareModal").classList.add("hidden");
+    document.getElementById("shareModal").classList.remove("flex");
+  }
+
+  function copyPostLink(){
+    const link = window.location.href;
+    navigator.clipboard.writeText(link).then(() => {
+      alert("Link copied!");
+    });
+  }
+
+  function shareWhatsApp(){
+    const link = encodeURIComponent(window.location.href);
+    window.open(`https://wa.me/?text=${link}`, "_blank");
+  }
+
+  function shareTelegram(){
+    const link = encodeURIComponent(window.location.href);
+    window.open(`https://t.me/share/url?url=${link}`, "_blank");
+  }
+
+  async function loadFollowers(){
+    const box = document.getElementById("followersList");
+    box.innerHTML = `<div class="text-gray-500 text-sm">Loading...</div>`;
+
+    try{
+      const res = await fetch("/posts/get_followers");
+      const data = await res.json();
+
+      if(!data.ok){
+        box.innerHTML = `<div class="text-red-500 text-sm">Login required</div>`;
+        return;
+      }
+
+      if(data.followers.length === 0){
+        box.innerHTML = `<div class="text-gray-500 text-sm">No followers found</div>`;
+        return;
+      }
+
+      box.innerHTML = "";
+
+      data.followers.forEach(f => {
+        box.innerHTML += `
+          <div class="flex items-center justify-between border-b pb-2">
+            <div class="font-semibold text-gray-800">@${f.username}</div>
+            <button onclick="sendPostToUser(${f.id})"
+              class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-semibold">
+              Send
+            </button>
+          </div>
+        `;
+      });
+
+    }catch(e){
+      box.innerHTML = `<div class="text-red-500 text-sm">Error loading followers</div>`;
+    }
+  }
+
+  async function sendPostToUser(userId){
+    try{
+      const res = await fetch("/posts/share_to_user", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          to_user_id: userId,
+          post_id: {{ post.id }}
+        })
+      });
+
+      const data = await res.json();
+
+      if(data.ok){
+        alert("Sent!");
+      } else {
+        alert(data.error || "Failed");
+      }
+
+    }catch(e){
+      alert("Network error");
+    }
+  }
+
+let savedByMe = {{ "true" if saved_by_me else "false" }};
+
+async function toggleSave(){
+  try{
+    const res = await fetch("/posts/save_toggle/{{ post.id }}", { method: "POST" });
+    const data = await res.json();
+
+    if(data.ok){
+      savedByMe = !savedByMe;
+
+      const btn = document.getElementById("saveBtn");
+      btn.innerText = savedByMe ? "🔖" : "📑";
+    } else {
+      alert("Login required");
+    }
+
+  }catch(e){
+    alert("Network error");
+  }
+}
+
+</script>
+
+</body>
+</html>

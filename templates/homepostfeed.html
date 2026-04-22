@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.feed-wrapper{max-width:600px;margin:auto;color:#fff;background:#000;}
+.topbar{padding:12px;font-size:22px;font-weight:700;border-bottom:1px solid #222;}
+.story-list{display:flex;overflow-x:auto;gap:12px;padding:12px;}
+.story{width:72px;text-align:center;font-size:12px;color:#ddd;}
+.story img{width:70px;height:70px;border-radius:50%;border:3px solid #f6048a;object-fit:cover;}
+
+.post{margin-top:18px;background:#000;}
+.post-header{display:flex;align-items:center;gap:10px;padding:10px;}
+.post-header img{width:42px;height:42px;border-radius:50%;object-fit:cover;}
+.post-img{width:100%;border-radius:6px;margin-top:8px;}
+.actions{display:flex;gap:20px;font-size:24px;padding:10px;}
+.actions div{cursor:pointer;}
+.like{color:#ff2b5e;}
+.caption{padding:5px 14px;color:#ccc;font-size:14px;}
+</style>
+
+<div class="feed-wrapper">
+
+<div class="topbar">Instagram</div>
+
+<div class="story-list">
+{% for s in stories %}
+<div class="story">
+    <img src="{{ s.img }}" />
+    <p>{{ s.user_id }}</p>
+</div>
+{% endfor %}
+</div>
+
+{% for p in posts %}
+<div class="post">
+    <div class="post-header"><img src="{{ p.user_img }}"/> <b>{{ p.user_id }}</b></div>
+    <img class="post-img" src="{{ p.image }}"/>
+    <div class="actions">
+        <div class="like">❤️</div>
+        <div>💬</div>
+        <div>📤</div>
+        <div style="margin-left:auto">🔖</div>
+    </div>
+    <div class="caption"><b>{{ p.user_id }}</b> {{ p.caption }}</div>
+</div>
+{% endfor %}
+
+</div>
+
+{% include "header.html" %}
+{% endblock %}

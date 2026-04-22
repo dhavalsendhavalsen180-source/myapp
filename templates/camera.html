@@ -1,0 +1,25 @@
+<video id="camera" autoplay style="width:100%;"></video>
+<button onclick="capture()">Capture</button>
+<canvas id="canvas" class="hidden"></canvas>
+
+<script>
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => {
+    document.getElementById("camera").srcObject = stream;
+  });
+
+function capture() {
+  let video = document.getElementById("camera");
+  let canvas = document.getElementById("canvas");
+  let ctx = canvas.getContext("2d");
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  ctx.drawImage(video, 0, 0);
+}
+</script>
+
+div class="camera-panel">
+    <video id="cameraVideo" autoplay playsinline></video>
+</div>

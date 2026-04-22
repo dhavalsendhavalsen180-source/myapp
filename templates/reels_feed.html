@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reels</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body {
+    background: black;
+    margin: 0;
+    overflow-y: scroll;
+  }
+  .reel-container {
+    height: 100vh;
+    position: relative;
+  }
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* right side icons */
+  .side-buttons {
+    position: absolute;
+    right: 10px;
+    bottom: 120px;
+    color: white;
+    font-size: 25px;
+    text-align: center;
+  }
+
+  .side-buttons div {
+    margin-bottom: 22px;
+  }
+</style>
+</head>
+
+<body>
+
+{% for reel in reels %}
+<div class="reel-container">
+  
+  <!-- VIDEO -->
+  <video src="{{ url_for('static', filename='reels/' ~ reel.filename) }}"
+         class="reel-video"
+         loop></video>
+
+  <!-- RIGHT SIDE BUTTONS -->
+  <div class="side-buttons">
+    <div onclick="likeReel({{ reel.id }})">❤️<br>{{ reel.likes }}</div>
+    <div onclick="shareReel({{ reel.id }})">📤</div>
+    <div onclick="saveReel({{ reel.id }})">🔖</div>
+    <div>🎵<br><span style="font-size:12px">{{ reel.audio }}</span></div>
+  </div>
+
+  <!-- CAPTION -->
+  <div class="absolute bottom-5 left-5 text-white">
+    <div class="font-bold">@{{ reel.user_id }}</div>
+    <div class="text-sm">{{ reel.caption }}</div>
+  </div>
+
+</div>
+{% endfor %}
+
+<script>
+/* AUTO PLAY NEXT REEL LIKE INSTAGRAM */
+const videos = document.querySelectorAll(".reel-video");
+
+let current = 0;
+
+function playVideo(index) {
+    videos.forEach(v => v.pause());
+    videos[index].play();
+}
+
+playVideo(0);
+
+document.addEventListener("scroll", () => {
+    videos.forEach((v, i) => {
+        const rect = v.getBoundingClientRect();
+        if (rect.top >= 0 && rect.bottom <= window.innerHeight + 150) {
+            current = i;
+            playVideo(i);
+        }
+    });
+});
+
+function likeReel(id){
+    fetch(`/reels/like/${id}`, { method: "POST" });
+}
+
+function shareReel(id){
+    alert("Share feature coming soon!");
+}
+
+function saveReel(id){
+    alert("Saved!");
+}
+</script>
+
+</body>
+</html>

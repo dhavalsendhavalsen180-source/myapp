@@ -47,7 +47,7 @@ def login(username, password):
     if not bcrypt.checkpw(password.encode(), stored_password):
         return {"error": "Invalid credentials"}, 401
 
-    payload = {"user": username, "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)}
+    payload = {"user_id": username, "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)}
     token = jwt.encode(payload, SECRET, algorithm="HS256")
     return {"token": token}, 200
 
@@ -56,7 +56,7 @@ def verify(token):
         return None, 401
     try:
         data = jwt.decode(token, SECRET, algorithms=["HS256"])
-        return data["user"], 200
+        return data["user_id"], 200
     except jwt.ExpiredSignatureError:
         return None, 401
     except jwt.InvalidTokenError:
@@ -72,7 +72,7 @@ def init_posts_db():
     c.execute('''
         CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user TEXT,
+            user_id TEXT,
             caption TEXT,
             image_path TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -94,7 +94,7 @@ def init_posts_extras():
         CREATE TABLE IF NOT EXISTS likes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             post_id INTEGER,
-            user TEXT
+            user_id TEXT
         )
     """)
     # Comments table
@@ -102,8 +102,28 @@ def init_posts_extras():
         CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             post_id INTEGER,
-            user TEXT,
+            user_id TEXT,
             text TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+
+# dhaval 
+
+def init_notifications_db():
+    conn = sqlite3.connect("inschat.db")
+    c = conn.cursor()
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            actor_id INTEGER,
+            type TEXT,
+            meta TEXT,
+            is_read INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
     conn.commit()

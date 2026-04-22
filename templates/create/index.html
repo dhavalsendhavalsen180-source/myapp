@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Create • InsChat</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body{margin:0;background:#000;color:#fff;font-family:Inter}
+.create-shell{height:100vh;display:flex;flex-direction:column}
+.camera-area{flex:1;position:relative;background:#000;overflow:hidden}
+
+video#cam{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;transform:scaleX(-1);
+}
+
+.topbar{
+  position:absolute;top:12px;left:12px;right:12px;
+  display:flex;justify-content:space-between;align-items:center;
+  z-index:20;
+}
+.icon-btn{
+  width:42px;height:42px;border-radius:999px;
+  background:rgba(255,255,255,0.08);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;cursor:pointer;
+}
+
+.filters{
+  height:110px;background:#05090d;
+  display:flex;overflow-x:auto;gap:12px;padding:10px 12px;
+  white-space:nowrap
+}
+.filter{
+  width:85px;text-align:center;color:#ddd;font-size:12px;cursor:pointer
+}
+.filter img{
+  width:75px;height:75px;object-fit:cover;border-radius:15px
+}
+.filter.active img{border:2px solid #fff;}
+
+.bottom-controls{
+  height:110px;
+  display:flex;
+  justify-content:center;
+  gap:45px;
+  align-items:center;
+  background:linear-gradient(to top,rgba(0,0,0,0.9),transparent);
+}
+.capture-btn{
+  width:85px;height:85px;border:5px solid #fff;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.capture-inner{
+  width:58px;height:58px;background:#fff;border-radius:50%
+}
+
+.gallery-btn,.switch-btn{
+  width:50px;height:50px;border-radius:14px;
+  background:#222;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;cursor:pointer;
+}
+
+.mode-tabs{
+  height:60px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:22px;
+  background:#05090d;
+  font-weight:bold;
+}
+
+.mode{
+  padding:10px 18px;
+  border-radius:16px;
+  cursor:pointer;
+  color:rgba(255,255,255,0.6);
+}
+.mode.active{
+  color:white;
+  background:rgba(255,255,255,0.1);
+}
+</style>
+</head>
+
+<body>
+
+<div class="create-shell">
+
+  <div class="camera-area">
+      <video id="cam" autoplay playsinline muted></video>
+
+      <div class="topbar">
+        <a href="/posts/feed" class="icon-btn">⬅</a>
+        <div class="flex gap-3">
+          <div class="icon-btn" id="flipCam">🔁</div>
+        </div>
+      </div>
+  </div>
+
+  <div class="mode-tabs">
+    <div class="mode active" data-mode="post">POST</div>
+    <div class="mode" data-mode="story">STORY</div>
+    <div class="mode" data-mode="reel">REEL</div>
+  </div>
+
+  <div id="filterList" class="filters"></div>
+
+  <div class="bottom-controls">
+      <div class="gallery-btn" id="openGallery">🖼</div>
+
+      <div class="capture-btn" id="capture">
+        <div class="capture-inner"></div>
+      </div>
+
+      <div class="switch-btn" id="recordStatus">⏺</div>
+  </div>
+
+</div>
+
+<input type="file" hidden id="galleryInput" accept="image/*,video/*"/>
+
+<script>
+let video = document.getElementById("cam");
+let stream = null;
+let front = true;
+
+let mode = "post";
+
+let mediaRecorder = null;
+let recording = false;
+let chunks = [];
+
+async function startCamera(){
+  try{
+    stream?.getTracks().forEach(t=>t.stop());
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode: front ? "user" : "environment" },
+      audio: mode === "reel"
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+  }catch(e){
+    alert("Camera access denied or not supported!");
+    console.log(e);
+  }
+}
+
+startCamera();
+
+/* FILTERS */
+function face(num){ return `https://i.pravatar.cc/200?img=${num}` }
+
+const filters=[
+ { id:"none",label:"Normal", img:face(10), css:"none" },
+ { id:"warm",label:"Warm", img:face(15), css:"sepia(.2) contrast(1.05) saturate(1.1)" },
+ { id:"cool",label:"Cool", img:face(20), css:"hue-rotate(190deg) saturate(1.2)" },
+ { id:"vivid",label:"Vivid", img:face(25), css:"contrast(1.2) saturate(1.4)" },
+ { id:"mono",label:"Mono", img:face(30), css:"grayscale(1)" },
+ { id:"soft",label:"Soft", img:face(35), css:"brightness(1.05) contrast(.95)" },
+ { id:"gold",label:"Golden", img:face(40), css:"sepia(.25) saturate(1.3)" },
+ { id:"dream",label:"Dream", img:face(45), css:"brightness(1.06) blur(.5px)" }
+];
+
+const fl=document.getElementById("filterList");
+let currentFilter = "none";
+
+filters.forEach((f,i)=>{
+  let box=document.createElement("div");
+  box.className="filter"+(i===0?" active":"");
+  box.innerHTML=`<img src="${f.img}"/><p>${f.label}</p>`;
+  box.onclick=()=>{
+    currentFilter = f.css;
+    video.style.filter = currentFilter;
+    document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));
+    box.classList.add("active");
+  };
+  fl.appendChild(box);
+});
+
+/* MODE SWITCH */
+document.querySelectorAll(".mode").forEach(m=>{
+  m.onclick = ()=>{
+    document.querySelectorAll(".mode").forEach(x=>x.classList.remove("active"));
+    m.classList.add("active");
+    mode = m.dataset.mode;
+
+    if(recording){
+      recording = false;
+      mediaRecorder?.stop();
+    }
+
+    startCamera();
+  };
+});
+
+/* FLIP CAMERA */
+document.getElementById("flipCam").onclick = ()=>{
+  front = !front;
+  startCamera();
+};
+
+/* CAPTURE BUTTON */
+document.getElementById("capture").onclick = ()=>{
+  if(mode === "reel"){
+    if(!recording){
+      startRecording();
+    }else{
+      stopRecording();
+    }
+  }else{
+    capturePhoto();
+  }
+};
+
+/* PHOTO */
+function capturePhoto(){
+  const c=document.createElement("canvas");
+  c.width=video.videoWidth;
+  c.height=video.videoHeight;
+
+  const ctx=c.getContext("2d");
+  ctx.translate(c.width,0);
+  ctx.scale(-1,1);
+  ctx.filter = currentFilter;
+  ctx.drawImage(video,0,0,c.width,c.height);
+
+  c.toBlob(b=>{
+    const fd=new FormData();
+    fd.append("media", b, "photo.jpg");
+
+    fetch("/create/editor",{method:"POST",body:fd})
+      .then(r=>location.href=r.url);
+
+  },"image/jpeg",0.92);
+}
+
+/* RECORD REEL */
+function startRecording(){
+  if(!stream) return alert("Camera not ready!");
+
+  chunks = [];
+
+  try{
+    mediaRecorder = new MediaRecorder(stream, {mimeType:"video/webm"});
+  }catch(e){
+    alert("Recording not supported in this browser!");
+    console.log(e);
+    return;
+  }
+
+  mediaRecorder.ondataavailable = (e)=>{
+    if(e.data && e.data.size > 0) chunks.push(e.data);
+  };
+
+  mediaRecorder.onstop = ()=>{
+    const blob = new Blob(chunks, {type:"video/webm"});
+    const fd = new FormData();
+    fd.append("media", blob, "reel.webm");
+
+    fetch("/create/editor",{method:"POST",body:fd})
+      .then(r=>location.href=r.url);
+  };
+
+  mediaRecorder.start();
+  recording = true;
+
+  document.getElementById("recordStatus").innerText = "⏹";
+}
+
+function stopRecording(){
+  if(mediaRecorder){
+    mediaRecorder.stop();
+  }
+  recording = false;
+  document.getElementById("recordStatus").innerText = "⏺";
+}
+
+/* GALLERY PICK */
+const galleryInput = document.getElementById("galleryInput");
+
+document.getElementById("openGallery").onclick=()=>galleryInput.click();
+
+galleryInput.onchange=e=>{
+  let f=e.target.files[0];
+  if(!f) return;
+
+  const fd=new FormData();
+  fd.append("media",f);
+
+  fetch("/create/editor",{method:"POST",body:fd})
+    .then(r=>location.href=r.url);
+};
+</script>
+
+</body>
+</html>

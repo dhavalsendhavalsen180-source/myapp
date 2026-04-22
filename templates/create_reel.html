@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Create Reel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .preview { width:100%; max-height:420px; object-fit:cover; background:#000; }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="max-w-xl mx-auto p-4">
+    <a href="/posts/feed" class="text-blue-500">← Back</a>
+    <h2 class="text-xl font-bold mt-3">Create Reel</h2>
+
+    <form method="POST" enctype="multipart/form-data" class="mt-4 space-y-3" id="reelForm">
+      <label class="text-sm font-medium">Video media_path</label>
+      <input id="videoInput" type="media_path" name="video" accept="video/*" required class="w-full">
+
+      <video id="previewVideo" class="preview mt-2 hidden" controls></video>
+
+      <label class="text-sm font-medium">Caption</label>
+      <textarea name="caption" rows="2" class="w-full border rounded p-2" placeholder="Describe your reel..."></textarea>
+
+      <div class="flex gap-2 items-center">
+        <button class="bg-blue-600 text-white px-4 py-2 rounded">Upload Reel</button>
+        <a href="/reels" class="px-4 py-2 border rounded">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+<script>
+document.getElementById('videoInput').addEventListener('change', function(e){
+  const media_path = this.files[0];
+  if(!media_path) return;
+  const url = URL.createObjectURL(media_path);
+  const vid = document.getElementById('previewVideo');
+  vid.src = url;
+  vid.classList.remove('hidden');
+});
+</script>
+</body>
+</html>

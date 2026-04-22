@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notifications — InsChat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+<!-- NAVBAR -->
+<div class="flex items-center justify-between p-4 bg-white shadow">
+  <h1 class="text-xl font-bold">Notifications</h1>
+  <a href="/posts/feed" class="text-2xl">🏠</a>
+</div>
+
+<div class="max-w-xl mx-auto mt-4 space-y-3">
+
+  {% if notifications|length == 0 %}
+    <div class="text-center text-gray-500 mt-10 text-lg">No notifications yet</div>
+  {% endif %}
+
+  {% for n in notifications %}
+    <div class="bg-white p-4 rounded-xl shadow flex items-center space-x-3 
+                {% if not n.is_read %} border-l-4 border-blue-500 {% endif %}">
+      
+      <!-- USER ICON -->
+      <div class="w-12 h-12 bg-gradient-to-r from-pink-500 to-yellow-500 text-white
+                  rounded-full flex items-center justify-center text-xl font-bold">
+        {{ n.actor_id }}
+      </div>
+
+      <!-- TEXT -->
+      <div class="flex-grow text-sm">
+
+        {% if n.type == "like" %}
+          <span class="font-semibold">Someone</span> liked your post ❤️
+        {% elif n.type == "comment" %}
+          <span class="font-semibold">Someone</span> commented on your post 💬
+        {% elif n.type == "follow" %}
+          <span class="font-semibold">Someone</span> started following you 👤
+        {% endif %}
+
+        <div class="text-gray-500 text-xs mt-1">{{ n.created_at }}</div>
+      </div>
+
+      <!-- READ BUTTON -->
+      {% if not n.is_read %}
+      <button onclick="markRead({{ n.id }})"
+              class="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs">
+        Mark read
+      </button>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+</div>
+
+<script>
+async function markRead(id) {
+  await fetch(`/social/notifications/mark_read/${id}`, {
+    method: "POST"
+  });
+  location.reload();
+}
+</script>
+
+</body>
+</html>

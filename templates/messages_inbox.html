@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="/static/css/messages.css">
+
+<div class="dm-container">
+
+    <!-- Top Bar -->
+    <div class="dm-top">
+        <span class="dm-title">Direct</span>
+        <div class="dm-top-icons">
+            <a href="/messages/requests" class="icon">📥</a>
+            <a href="/messages/new" class="icon">✚</a>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="dm-search-box">
+        <input type="text" placeholder="Search">
+    </div>
+
+    <!-- Stories -->
+    <div class="dm-stories">
+
+        <div class="story">
+            <div class="story-ring">
+                <img src="{{ url_for('static', filename='profile/user_' ~ session['user_id'] ~ '.jpg') }}">
+            </div>
+            <span class="story-name">Your story</span>
+        </div>
+
+        {% for c in chats %}
+        <div class="story">
+            <div class="story-ring">
+                <img src="{{ c.photo }}">
+            </div>
+            <span class="story-name">{{ c.username }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Chat List -->
+    <div class="dm-chat-list">
+        {% for c in chats %}
+        <a href="/messages/chat/{{ c.other_id }}" class="dm-chat-item">
+            <img src="{{ c.photo }}" class="dm-chat-dp">
+
+            <div class="dm-chat-info">
+                <span class="name">{{ c.username }}</span>
+                <span class="last">{{ c.last_msg }}</span>
+            </div>
+
+            {% if c.unread > 0 %}
+            <span class="dm-unread">{{ c.unread }}</span>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+        <a href="/posts/feed">🏠</a>
+        <a href="/explore">🔍</a>
+        <a href="/reels">🎬</a>
+        <a href="/messages" class="active">📨</a>
+        <a href="/profile">👤</a>
+    </div>
+</div>
+
+{% endblock %}
