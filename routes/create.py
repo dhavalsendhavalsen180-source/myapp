@@ -7,9 +7,9 @@ create_bp = Blueprint("create", __name__, url_prefix="/create")
 
 DB_NAME = "database.db"
 
-UPLOAD_REELS_DIR = os.path.join("static", "uploads", "reels")
-UPLOAD_POSTS_DIR = os.path.join("static", "uploads", "posts")
-UPLOAD_STORY_DIR = os.path.join("static", "uploads", "stories")
+UPLOAD_REELS_DIR = os.path.join("static", "reels")                 # ✅ reels folder
+UPLOAD_POSTS_DIR = os.path.join("static", "uploads", "posts")      # ✅ posts folder
+UPLOAD_STORY_DIR = os.path.join("static", "uploads", "stories")    # ✅ story folder
 
 EDITOR_TEMP_DIR = os.path.join("static", "editor_temp")
 
@@ -19,10 +19,24 @@ os.makedirs(UPLOAD_STORY_DIR, exist_ok=True)
 os.makedirs(EDITOR_TEMP_DIR, exist_ok=True)
 
 
+# ===============================
+# ✅ DB CONNECTION
+# ===============================
 def get_conn():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+# ===============================
+# ✅ GET USER ID (FIXED)
+# ===============================
+def get_user_id():
+    uid = session.get("user_id", 0)
+    if isinstance(uid, dict):
+        return uid.get("id", 0)
+    return uid
+
 
 
 # ===============================
@@ -57,7 +71,7 @@ def editor():
         save_path = os.path.join(EDITOR_TEMP_DIR, newname)
         f.save(save_path)
 
-        return redirect(url_for("create.editor", media_path=newname))
+        return redirect(url_for("create.editor", media_path=newname, mode=request.args.get("mode","post")))
 
     # Exported final media_path from editor
     if request.method == "POST" and request.files.get("export"):
@@ -68,7 +82,7 @@ def editor():
         save_path = os.path.join(EDITOR_TEMP_DIR, newname)
         f.save(save_path)
 
-        return redirect(url_for("create.publish", media_path=newname))
+        return redirect(url_for("create.publish", media_path=newname, mode=request.args.get("mode","post")))
 
     media_path = request.args.get("media_path", "")
     mode = request.args.get("mode", "post")
@@ -91,7 +105,7 @@ def publish():
         location = request.form.get("location", "").strip()
         mode = request.form.get("mode", "post").strip()
 
-        user_id = session.get("user_id")
+        user_id = get_user_id()   # ✅ FIXED
 
         if not media_path:
             flash("No media selected", "error")
@@ -113,6 +127,7 @@ def publish():
         dest_name = f"{uuid.uuid4().hex}_{media_path}"
         dest = os.path.join(dest_folder, dest_name)
 
+        # Move file
         try:
             os.replace(src, dest)
         except:
@@ -141,16 +156,17 @@ def publish():
             )
         """)
 
-        # REELS TABLE
+        # REELS TABLE (MATCH WITH reels.py)
         c.execute("""
             CREATE TABLE IF NOT EXISTS reels (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER,
                 caption TEXT,
-                hashtags TEXT,
-                location TEXT,
                 video_path TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                likes INTEGER DEFAULT 0,
+                comments INTEGER DEFAULT 0,
+                shares INTEGER DEFAULT 0,
+                saves INTEGER DEFAULT 0
             )
         """)
 
@@ -167,11 +183,13 @@ def publish():
 
         # SAVE ACCORDING TO MODE
         if mode == "reel":
-            db_path = "/static/uploads/reels/" + dest_name
+            # reels folder me save hoga
+            db_path = dest_name
+
             c.execute("""
-                INSERT INTO reels (user_id, caption, hashtags, location, video_path)
-                VALUES (?, ?, ?, ?, ?)
-            """, (user_id, caption, hashtags, location, db_path))
+                INSERT INTO reels (user_id, caption, video_path)
+                VALUES (?, ?, ?)
+            """, (user_id, caption, db_path))
 
             conn.commit()
             conn.close()
@@ -181,6 +199,7 @@ def publish():
 
         elif mode == "story":
             db_path = "/static/uploads/stories/" + dest_name
+
             c.execute("""
                 INSERT INTO stories (user_id, media_path, expires_at)
                 VALUES (?, ?, datetime('now','+24 hours'))

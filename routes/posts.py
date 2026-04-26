@@ -9,7 +9,7 @@ posts_bp = Blueprint("posts", __name__, url_prefix="/posts")
 UPLOAD_FOLDER = "static/uploads"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 
-# STORY IMPORTS (NEW)
+# STORY IMPORTS
 from routes.stories import (
     load_stories_for_feed,
     get_storybar_for_user,
@@ -42,8 +42,9 @@ def feed():
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
 
+    # ✅ FIXED QUERY (NOW FETCHES OWNER ID ALSO)
     c.execute("""
-        SELECT posts.id, users.username, posts.caption
+        SELECT posts.id, posts.user_id, users.username, posts.caption
         FROM posts
         JOIN users ON posts.user_id = users.id
         ORDER BY posts.id DESC
@@ -52,7 +53,7 @@ def feed():
 
     posts = []
     for row in rows:
-        post_id, username, caption = row
+        post_id, owner_id, username, caption = row
 
         c.execute("SELECT image_path FROM post_images WHERE post_id=?", (post_id,))
         images = [r[0] for r in c.fetchall()]
@@ -71,7 +72,8 @@ def feed():
 
         posts.append({
             "id": post_id,
-            "user_id": username,
+            "owner_id": owner_id,      # ✅ FIXED
+            "username": username,      # ✅ FIXED
             "caption": caption,
             "images": images,
             "likes": likes,
@@ -79,9 +81,6 @@ def feed():
         })
 
     conn.close()
-
-    my_profile = "/static/default.png"
-    my_story_pic = my_profile
 
     return render_template(
         "feed.html",
@@ -94,13 +93,13 @@ def feed():
 # ===============================
 # 📌 UPLOAD POST
 # ===============================
-@posts_bp.route("/upload", methods=["GET","POST"])
+@posts_bp.route("/upload", methods=["GET", "POST"])
 def upload():
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
 
     if request.method == "POST":
-        caption = request.form["caption"]
+        caption = request.form.get("caption", "")
 
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
@@ -119,7 +118,7 @@ def upload():
 
                     db_path = "/static/uploads/" + filename
 
-                    c.execute("INSERT INTO post_images (post_id,image_path) VALUES (?,?)",
+                    c.execute("INSERT INTO post_images (post_id, image_path) VALUES (?, ?)",
                               (post_id, db_path))
 
         conn.commit()
@@ -130,30 +129,39 @@ def upload():
 
     return render_template("upload.html")
 
+
 # ===============================
-# 🗑 DELETE POST
+# 🗑 DELETE POST (FIXED)
 # ===============================
 @posts_bp.route("/delete/<int:post_id>", methods=["POST"])
 def delete(post_id):
+
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
+
+    uid = session["user_id"]
 
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
 
-    c.execute("SELECT users.username FROM posts JOIN users ON posts.user_id=users.id WHERE posts.id=?",
-              (post_id,))
+    # ✅ FIXED: OWNER CHECK BY user_id NOT username
+    c.execute("SELECT user_id FROM posts WHERE id=?", (post_id,))
     row = c.fetchone()
 
-    if not row or row[0] != session["user_id"]:
+    if not row or row[0] != uid:
         conn.close()
         flash("You cannot delete others' posts!", "error")
         return redirect(url_for("posts.feed"))
 
+    # delete images from disk
     c.execute("SELECT image_path FROM post_images WHERE post_id=?", (post_id,))
     for img in c.fetchall():
         try:
-            os.remove(img[0])
+            # db stores /static/uploads/file.jpg
+            # convert to real file path static/uploads/file.jpg
+            file_path = img[0].replace("/static/", "static/")
+            if os.path.exists(file_path):
+                os.remove(file_path)
         except:
             pass
 
@@ -170,7 +178,7 @@ def delete(post_id):
 
 
 # ===============================
-# 💬 COMMENT SYSTEM
+# 💬 COMMENT SYSTEM (FEED)
 # ===============================
 @posts_bp.route("/comment/<int:post_id>", methods=["POST"])
 def comment(post_id):
@@ -183,7 +191,8 @@ def comment(post_id):
 
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
-    c.execute("INSERT INTO comments (post_id,user_id,comment) VALUES (?,?,?)",
+
+    c.execute("INSERT INTO comments (post_id, user_id, comment) VALUES (?, ?, ?)",
               (post_id, session["user_id"], comment_text))
 
     conn.commit()
@@ -192,7 +201,7 @@ def comment(post_id):
 
 
 # ===============================
-# ❤️ LIKE / UNLIKE
+# ❤️ LIKE / UNLIKE (FEED)
 # ===============================
 @posts_bp.route("/like/<int:post_id>", methods=["POST"])
 def like(post_id):
@@ -209,7 +218,7 @@ def like(post_id):
     if liked:
         c.execute("DELETE FROM likes WHERE id=?", (liked[0],))
     else:
-        c.execute("INSERT INTO likes (post_id,username) VALUES (?,?)",
+        c.execute("INSERT INTO likes (post_id, username) VALUES (?, ?)",
                   (post_id, session["user_id"]))
 
     conn.commit()
@@ -218,7 +227,7 @@ def like(post_id):
 
 
 # ===============================
-# 👁 VIEW SINGLE POST (NEW)
+# 👁 VIEW SINGLE POST
 # ===============================
 @posts_bp.route("/<int:post_id>")
 def view_post(post_id):
@@ -229,7 +238,7 @@ def view_post(post_id):
 
     # POST DATA
     c.execute("""
-        SELECT posts.id, posts.caption, users.username
+        SELECT posts.id, posts.caption, posts.user_id, users.username
         FROM posts
         JOIN users ON posts.user_id = users.id
         WHERE posts.id=?
@@ -262,15 +271,20 @@ def view_post(post_id):
                   (post_id, session["user_id"]))
         saved_by_me = c.fetchone() is not None
 
-    # COMMENTS
+    # COMMENTS (FIXED WITH COMMENT ID + USER ID)
     c.execute("""
-        SELECT users.username, comments.comment
+        SELECT comments.id, comments.user_id, users.username, comments.comment
         FROM comments
         JOIN users ON comments.user_id = users.id
         WHERE comments.post_id=?
         ORDER BY comments.id DESC
     """, (post_id,))
-    comments = [{"username": r["username"], "comment": r["comment"]} for r in c.fetchall()]
+    comments = [{
+        "id": r["id"],
+        "user_id": r["user_id"],
+        "username": r["username"],
+        "comment": r["comment"]
+    } for r in c.fetchall()]
 
     conn.close()
 
@@ -281,13 +295,13 @@ def view_post(post_id):
         likes=likes,
         comments=comments,
         liked_by_me=liked_by_me,
-        saved_by_me=saved_by_me
+        saved_by_me=saved_by_me,
+        current_user=session.get("user_id")
     )
 
 
-#################%%":;";:"";:
 # ===============================
-# ❤️ LIKE / UNLIKE FROM POST VIEW (NEW)
+# ❤️ LIKE / UNLIKE FROM POST VIEW
 # ===============================
 @posts_bp.route("/like_toggle/<int:post_id>", methods=["POST"])
 def like_toggle(post_id):
@@ -299,21 +313,24 @@ def like_toggle(post_id):
     c = conn.cursor()
 
     # Check if already liked
-    c.execute("SELECT id FROM likes WHERE post_id=? AND username=?", (post_id, session["user_id"]))
+    c.execute("SELECT id FROM likes WHERE post_id=? AND username=?",
+              (post_id, session["user_id"]))
     liked = c.fetchone()
 
     if liked:
         c.execute("DELETE FROM likes WHERE id=?", (liked[0],))
     else:
-        c.execute("INSERT INTO likes (post_id, username) VALUES (?, ?)", (post_id, session["user_id"]))
+        c.execute("INSERT INTO likes (post_id, username) VALUES (?, ?)",
+                  (post_id, session["user_id"]))
 
     conn.commit()
     conn.close()
 
     return redirect(f"/posts/{post_id}")
-########################################
+
+
 # ===============================
-# 💬 COMMENT FROM POST VIEW (NEW)
+# 💬 COMMENT FROM POST VIEW
 # ===============================
 @posts_bp.route("/comment_view/<int:post_id>", methods=["POST"])
 def comment_view(post_id):
@@ -334,6 +351,36 @@ def comment_view(post_id):
     conn.commit()
     conn.close()
 
+    return redirect(f"/posts/{post_id}")
+
+
+# ===============================
+# 🗑 DELETE COMMENT (NEW)
+# ===============================
+@posts_bp.route("/comment_delete/<int:comment_id>/<int:post_id>", methods=["POST"])
+def comment_delete(comment_id, post_id):
+
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    uid = session["user_id"]
+
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+
+    c.execute("SELECT user_id FROM comments WHERE id=?", (comment_id,))
+    row = c.fetchone()
+
+    if not row or row[0] != uid:
+        conn.close()
+        flash("You cannot delete others comment!", "error")
+        return redirect(f"/posts/{post_id}")
+
+    c.execute("DELETE FROM comments WHERE id=?", (comment_id,))
+    conn.commit()
+    conn.close()
+
+    flash("Comment deleted!", "success")
     return redirect(f"/posts/{post_id}")
 
 
@@ -391,7 +438,7 @@ def share_to_user():
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
 
-    # INSERT into messages table (your DM system)
+    # INSERT into messages table
     c.execute("""
         INSERT INTO messages (sender_id, receiver_id, message, timestamp, seen)
         VALUES (?, ?, ?, datetime('now'), 0)
@@ -424,7 +471,7 @@ def save_toggle(post_id):
         c.execute("DELETE FROM post_saves WHERE id=?", (row[0],))
         action = "unsaved"
     else:
-        c.execute("INSERT INTO post_saves (post_id,user_id) VALUES (?,?)", (post_id, uid))
+        c.execute("INSERT INTO post_saves (post_id, user_id) VALUES (?, ?)", (post_id, uid))
         action = "saved"
 
     conn.commit()

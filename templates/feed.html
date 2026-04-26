@@ -8,258 +8,211 @@
 
   <style>
     .carousel { position: relative; overflow: hidden; }
-    .carousel-track { display:flex; transition: transform 0.3s ease-in-out; scroll-snap-type: x mandatory; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .carousel-track img { flex:0 0 100%; scroll-snap-align:center; object-fit:cover; max-height: 650px; width:100%; }
-    .carousel-btn { position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.45); color:white; padding:8px 12px; border-radius:9999px; font-size:22px; }
-    .carousel-btn.left { left:10px; } .carousel-btn.right { right:10px; }
+    .carousel-track {
+      display:flex;
+      transition: transform 0.3s ease-in-out;
+      scroll-snap-type: x mandatory;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .carousel-track img {
+      flex:0 0 100%;
+      scroll-snap-align:center;
+      object-fit:cover;
+      max-height: 650px;
+      width:100%;
+    }
+    .carousel-btn {
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      background:rgba(0,0,0,0.45);
+      color:white;
+      padding:8px 12px;
+      border-radius:9999px;
+      font-size:22px;
+      z-index:10;
+    }
+    .carousel-btn.left { left:10px; }
+    .carousel-btn.right { right:10px; }
 
     .like-heart {
-      position:absolute; top:50%; left:50%;
+      position:absolute;
+      top:50%;
+      left:50%;
       transform:translate(-50%,-50%) scale(0);
-      font-size:4.5rem; color:white;
-      opacity:0; pointer-events:none;
+      font-size:4.5rem;
+      color:white;
+      opacity:0;
+      pointer-events:none;
       transition: transform .25s ease, opacity .25s ease;
+      z-index:20;
+      text-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
-    .like-heart.show { transform:translate(-50%,-50%) scale(1); opacity:1; }
+    .like-heart.show {
+      transform:translate(-50%,-50%) scale(1);
+      opacity:1;
+    }
 
     .no-scrollbar::-webkit-scrollbar { display:none; }
 
-    .story-ring { padding:3px; background: linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5); border-radius:9999px; }
+    .story-ring {
+      padding:3px;
+      background: linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);
+      border-radius:9999px;
+    }
+
+    .story-bar {
+      width: 100%;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding: 10px;
+      display: flex;
+      gap: 15px;
+      border-bottom: 1px solid #ddd;
+      background:white;
+    }
+
+    .story-item {
+      display: inline-block;
+      text-align: center;
+      cursor: pointer;
+      width: 70px;
+      flex-shrink: 0;
+    }
+
+    .story-ring2 {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      padding: 3px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .story-ring2 img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .story-ring2:not(.seen) {
+      background: linear-gradient(45deg, #f99, #f63, #f36, #c3f, #63f);
+    }
+
+    .story-ring2.seen {
+      background: #ccc;
+    }
+
+    .my-story {
+      background: #0095f6 !important;
+    }
+
+    .story-label {
+      font-size: 12px;
+      margin-top: 5px;
+      width: 70px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+      color:#555;
+    }
+
+    .add-story-btn {
+      position: absolute;
+      bottom: 0px;
+      right: 0px;
+      background: #0095f6;
+      color: white;
+      font-size: 16px;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 2px solid white;
+    }
+
+    .my-story-wrapper {
+      position: relative;
+      display: inline-block;
+    }
   </style>
+
 <script>
 async function uploadStoryInstant(event) {
     let file = event.target.files[0];
     if (!file) return;
+
     let form = new FormData();
     form.append("story", file);
+
     let res = await fetch("/stories/add/insta", { method: "POST", body: form });
     let out = await res.json();
-    if (out.ok) { window.location.reload(); } else { alert("Story upload failed"); }
+
+    if (out.ok) {
+      window.location.reload();
+    } else {
+      alert("Story upload failed");
+    }
 }
 </script>
+
 </head>
 
 <body class="bg-gray-100">
+
 <input type="file" id="storyPicker" accept="image/*,video/*" style="display:none" onchange="uploadStoryInstant(event)">
 
   <!-- NAVBAR -->
+  <div class="flex items-center justify-between p-4 bg-white shadow">
+    <h1 class="text-xl font-bold">𝒾𝓃𝓈𝒸𝒽𝒶𝓉</h1>
 
-<div class="flex items-center justify-between p-4 bg-white shadow">
-  <h1 class="text-xl font-bold">InsChat</h1>
+    <div class="flex space-x-4 text-xl">
+      <a href="/social/notifications" class="relative">
+        🔔
+        <span id="notif-badge"></span>
+      </a>
 
-  <div class="flex space-x-4 text-xl">
+      <a href="/posts/upload">➕</a>
 
-    <a href="/social/notifications" class="relative">
-      🔔
-      <span id="notif-badge"></span>
-    </a>
+      <a href="/auth/logout">🚪</a>
 
-    <a href="/posts/upload">➕</a>
-
-    <a href="/auth/logout">🚪</a>
-
-    <!-- DM Link (Correct Place) -->
-    <a href="/messages" class="text-xl">💬</a>
-
+      <!-- DM Link -->
+      <a href="/messages" class="text-xl">💬</a>
+    </div>
   </div>
-</div>
 
-<!-- STORIES bubble -->
 
-<!-- ADD STORY BUTTON (Your Story bubble par + icon) -->
-<style>
-.add-story-btn {
-    position: absolute;
-    bottom: 0px;
-    right: 0px;
-    background: #0095f6;
-    color: white;
-    font-size: 16px;
-    border-radius: 50%;
-    width: 22px;
-    height: 22px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border: 2px solid white;
-}
-.my-story-wrapper {
-    position: relative;
-    display: inline-block;
-}
-</style>
+  <!-- STORY BAR -->
+  <div class="story-bar">
 
-<script>
-    document.getElementById("storyPopup").style.display = "flex";
-}
-function closeStoryPopup() {
-    document.getElementById("storyPopup").style.display = "none";
-}
-function previewStoryFile(event) {
-    const media_path = event.target.files[0];
-    if (!media_path) return;
-
-    document.getElementById("preview").src = URL.createObjectURL(media_path);
-}
-</script>
-
-<!-- Popup -->
-<div id="storyPopup" class="popup">
-    <div class="popup-content">
-
-        <h3>New Story</h3>
-
-        <form action="/stories/add" method="POST" enctype="multipart/form-data">
-
-            <label>Select Image / Video</label>
-            <input type="media_path" name="story" accept="image/*,video/*" onchange="previewStoryFile(event)" required>
-
-            <img id="preview" style="width:100%; margin-top:10px; border-radius:10px; display:block;">
-
-            <label>Story Text</label>
-            <input type="text" name="text" placeholder="Write something...">
-
-            <label>Background Color</label>
-            <input type="color" name="bg" value="#000000">
-
-            <label>Music URL (optional)</label>
-            <input type="text" name="music" placeholder="Paste music URL">
-
-            <button type="submit" class="upload-btn">Upload Story</button>
-        </form>
-
-        <button onclick="closeStoryPopup()" class="close-btn">Close</button>
-    </div>
-</div>
-
-<style>
-.popup {
-    display:none;
-    position:fixed;
-    top:0;left:0;
-    width:100%;height:100%;
-    background:rgba(0,0,0,0.6);
-    justify-content:center;
-    align-items:center;
-    z-index:10000;
-}
-.popup-content {
-    background:white;
-    padding:20px;
-    width:90%;
-    max-width:400px;
-    border-radius:15px;
-}
-.upload-btn {
-    width:100%;
-    background:#0095f6;
-    border:none;
-    padding:10px;
-    color:white;
-    border-radius:8px;
-    margin-top:10px;
-    font-size:16px;
-}
-.close-btn {
-    margin-top:10px;
-    width:100%;
-    padding:10px;
-    border:none;
-    background:#ff4444;
-    color:white;
-    border-radius:8px;
-}
-</style>
-
-<!-- STORY BAR CONTAINER -->
-<div class="story-bar">
-    
     <!-- YOUR STORY -->
+    <div class="story-item my-story-wrapper" onclick="document.getElementById('storyPicker').click()">
+      <div class="story-ring2 my-story">
+        <img src="/static/profile/user_{{ session['user_id'] }}.jpg"
+             onerror="this.src='/static/default_dp.jpg'">
+      </div>
 
-<div class="story-item my-story-wrapper" onclick="document.getElementById('storyPicker').click()">
-    <div class="story-ring my-story">
-         <img src="{{ url_for('static', filename='profile/user_' + session['user_id']|string|string ~ '.jpg') }}"
-              onerror="this.src='/static/profile/default_dp.jpg'">
+      <div class="add-story-btn">+</div>
+      <div class="story-label">Your Story</div>
     </div>
-
-    <!-- Blue + Button -->
-    <div class="add-story-btn">+</div>
-
-    <div class="story-label">Your Story</div>
-</div>
 
     <!-- OTHER USERS -->
-    {% for s in storybar %}
+    {% for s in stories_bar %}
     <div class="story-item" onclick="openStory('{{ s.user_id }}')">
-        <div class="story-ring {% if s.seen %}seen{% endif %}">
-            <img src="{{ s.last_img }}">
-        </div>
-        <div class="story-label">{{ s.user_id }}</div>
+      <div class="story-ring2 {% if s.seen %}seen{% endif %}">
+        <img src="{{ s.last_img }}" onerror="this.src='/static/default_dp.jpg'">
+      </div>
+      <div class="story-label">{{ s.user_id }}</div>
     </div>
     {% endfor %}
 
-</div>
-
-<style>
-.story-bar {
-    width: 100%;
-    overflow-x: auto;
-    white-space: nowrap;
-    padding: 10px;
-    display: flex;
-    gap: 15px;
-    border-bottom: 1px solid #ddd;
-}
-
-.story-item {
-    display: inline-block;
-    text-align: center;
-    cursor: pointer;
-    width: 70px;
-}
-
-.story-ring {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    padding: 3px;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.story-ring img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-}
-
-/* Instagram Gradient Ring */
-.story-ring:not(.seen) {
-    background: linear-gradient(45deg, #f99, #f63, #f36, #c3f, #63f);
-}
-
-/* Seen story */
-.story-ring.seen {
-    background: #ccc;
-}
-
-/* Your story blue ring */
-.my-story {
-    background: #0095f6 !important;
-}
-
-.story-label {
-    font-size: 12px;
-    margin-top: 5px;
-    width: 70px;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-}
-</style>
+  </div>
 
 <script>
 function openStory(user_id) {
@@ -267,102 +220,110 @@ function openStory(user_id) {
 }
 </script>
 
-<!-- STORIES -->
-<div class="bg-white border-b p-3 overflow-x-auto flex space-x-4 no-scrollbar">
-  {% for s in stories_bar %}
-  <div class="flex flex-col items-center text-xs">
-     <a href="{{ url_for('stories.view_stories', username=s.user_id) }}">
-      <div style="padding:3px; border-radius:9999px; background: linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);">
-        <img src="{{ s.last_img }}" class="w-14 h-14 rounded-full" style="object-fit:cover; border:3px solid {% if s.seen %}transparent{% else %}#ff3d77{% endif %};"/>
-      </div>
-    </a>
-    <span class="mt-1 text-gray-600">{{ s.user_id }}</span>
-  </div>
-  {% endfor %}
-</div>
-
 
   <!-- FEED -->
   <div class="max-w-xl mx-auto mt-4 space-y-6 pb-24">
+
     {% for post in posts %}
     <div class="bg-white rounded-xl shadow overflow-hidden">
 
       <!-- HEADER -->
       <div class="flex items-center justify-between px-4 py-3">
+
         <div class="flex items-center space-x-3">
           <div class="story-ring w-10 h-10 rounded-full flex items-center justify-center">
             <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-r from-pink-500 to-yellow-500">
-              {{ post.user_id[0]|upper }}
+              {{ post.username[0]|upper }}
             </div>
           </div>
-          <div class="font-semibold">{{ post.user_id }}</div>
+
+          <div class="font-semibold">@{{ post.username }}</div>
         </div>
 
-        {% if post.user_id != current_user_id_id %}
+        <!-- DELETE ONLY OWN POST -->
+        {% if post.user_id == current_user %}
         <form method="POST" action="/posts/delete/{{ post.id }}">
-          <button class="text-red-500 text-sm">Delete</button>
+          <button class="text-red-500 text-sm font-semibold">Delete</button>
         </form>
         {% endif %}
       </div>
 
-      <!-- IMAGES (CAROUSEL + DOUBLE TAP) -->
-      <div class="relative">
 
-        <!-- MULTIPLE IMAGES -->
+      <!-- IMAGES (CAROUSEL + DOUBLE TAP) -->
+      <div class="relative bg-black">
+
         {% if post.images and post.images|length > 1 %}
         <div class="carousel">
           <div id="track-{{ post.id }}" class="carousel-track no-scrollbar">
+
             {% for img in post.images %}
-            <img src="{{ url_for('static', filename='uploads/' ~ img) }}"
+            <img src="{{ img }}"
                  ondblclick="toggleLike({{ post.id }}, document.querySelector('#like-btn-{{ post.id }}'))"
                  ontouchend="onImageTap({{ post.id }})">
             {% endfor %}
+
           </div>
 
           <button class="carousel-btn left" onclick="scrollByTrack('{{ post.id }}', -1)">‹</button>
           <button class="carousel-btn right" onclick="scrollByTrack('{{ post.id }}', +1)">›</button>
         </div>
 
-        <!-- SINGLE IMAGE -->
         {% elif post.images and post.images|length == 1 %}
-        <img src="{{ url_for('static', filename='uploads/' ~ post.images[0]) }}"
+        <img src="{{ post.images[0] }}"
              class="w-full max-h-[650px] object-cover"
              ondblclick="toggleLike({{ post.id }}, document.querySelector('#like-btn-{{ post.id }}'))"
              ontouchend="onImageTap({{ post.id }})">
+        {% else %}
+        <div class="p-12 text-center text-gray-400">No Image</div>
         {% endif %}
 
         <!-- HEART ANIMATION -->
         <div id="heart-{{ post.id }}" class="like-heart">❤️</div>
       </div>
 
+
       <!-- ACTION BUTTONS -->
       <div class="flex items-center px-4 py-2 space-x-4 text-2xl">
-        <button id="like-btn-{{ post.id }}"
-                onclick="toggleLike({{ post.id }}, this)">❤️</button>
 
-        <a href="#comment-{{ post.id }}">💬</a>
+        <button id="like-btn-{{ post.id }}"
+                onclick="toggleLike({{ post.id }}, this)"
+                class="transition">
+          ❤️
+        </button>
+
+        <a href="/posts/{{ post.id }}">💬</a>
+
+        <a href="/posts/{{ post.id }}" class="text-xl">📤</a>
+
       </div>
 
-      <!-- LIKES + CAPTION -->
-<div class="px-4 pb-2">
-  <div id="like-count-{{ post.id }}" class="text-sm font-semibold">
-      {{ post.likes }} likes
-  </div>
 
-  <div class="text-sm">
-    <span class="font-semibold">{{ post.user_id }}</span> {{ post.caption }}
-  </div>
-</div>    
+      <!-- LIKES + CAPTION -->
+      <div class="px-4 pb-2">
+        <div id="like-count-{{ post.id }}" class="text-sm font-semibold">
+          {{ post.likes }} likes
+        </div>
+
+        <div class="text-sm">
+          <span class="font-semibold">@{{ post.username }}</span>
+          <span class="text-gray-700">{{ post.caption }}</span>
+        </div>
+      </div>
+
 
       <!-- COMMENTS -->
       <div class="px-4 pb-3 text-sm text-gray-700 space-y-1">
         {% for c in post.comments %}
-        <p><span class="font-semibold">{{ c.username }}</span> {{ c.comment }}</p>
+        <p>
+          <span class="font-semibold">@{{ c.username }}</span>
+          <span>{{ c.comment }}</span>
+        </p>
         {% endfor %}
       </div>
 
+
       <!-- ADD COMMENT -->
-      <form id="comment-{{ post.id }}" method="POST"
+      <form method="POST"
             action="/posts/comment/{{ post.id }}"
             class="px-4 pb-4 flex items-center space-x-2">
         <input name="comment" placeholder="Add a comment..." required
@@ -372,7 +333,9 @@ function openStory(user_id) {
 
     </div>
     {% endfor %}
+
   </div>
+
 
 <!-- BOTTOM NAV -->
 <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-inner flex justify-around py-2 text-2xl">
@@ -380,123 +343,91 @@ function openStory(user_id) {
   <a href="/explore">🔍</a>
   <a href="/create">➕</a>
   <a href="/reels">🎬</a>
-  <a href="/profile/{{ current_user_id_id }}">👤</a>
+  <a href="/profile/{{ current_user }}">👤</a>
 </div>
 
-<div class="insta-create-btn" onclick="openCreateHub()">+</div>
-
 
 <script>
-function openCreateHub(){
-    document.getElementById("createHub").classList.toggle("show")
-}
-</script>
 
+  /* ============= CAROUSEL SCROLL ============= */
+  function scrollByTrack(postId, dir){
+    const track = document.getElementById("track-" + postId);
+    if(!track) return;
+    track.scrollBy({ left: dir * track.clientWidth, behavior: "smooth" });
+  }
 
-
-<script>
 
   /* ============= LIKE (AJAX + ANIMATION) ============= */
-
   async function toggleLike(postId, btnEl) {
-    const res = await fetch(`/social/posts/like/${postId}`, {
-      method: "POST",
-      headers: { "X-Requested-With": "XMLHttpRequest" }
-    });
+    try{
+      const res = await fetch(`/social/posts/like/${postId}`, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      });
 
-    const j = await res.json();
-    if (!j.ok) return alert("Login required");
+      const j = await res.json();
+      if (!j.ok) return alert("Login required");
 
-    const heart = document.getElementById(`heart-${postId}`);
-    const countEl = document.getElementById(`like-count-${postId}`);
+      const heart = document.getElementById(`heart-${postId}`);
+      const countEl = document.getElementById(`like-count-${postId}`);
 
-    if (j.action === "liked") {
-      btnEl.classList.add("text-red-600");
+      if (j.action === "liked") {
+        btnEl.classList.add("text-red-600");
 
-      // ❤️ animation
-      heart.classList.add("show");
-      setTimeout(() => heart.classList.remove("show"), 800);
-    } else {
-      btnEl.classList.remove("text-red-600");
-    }
+        heart.classList.add("show");
+        setTimeout(() => heart.classList.remove("show"), 800);
+      } else {
+        btnEl.classList.remove("text-red-600");
+      }
 
-    // Like count update
-    if (j.count !== undefined) {
-      countEl.innerText = `${j.count} likes`;
-    }
-  }
+      if (j.count !== undefined) {
+        countEl.innerText = `${j.count} likes`;
+      }
 
-
-  /* ============= FOLLOW SUGGESTIONS ============= */
-
-  async function loadSuggestions() {
-    const res = await fetch("/social/suggestions");
-    const j = await res.json();
-    if (!j.ok) return;
-
-    let html = `
-      <div class="bg-white p-4 rounded-xl shadow mb-4">
-        <div class="font-semibold text-lg mb-3">Suggested for you</div>
-    `;
-
-    j.users.forEach(u => {
-      html += `
-        <div class="flex justify-between items-center mb-3">
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-xl font-bold">
-              ${u.username[0].toUpperCase()}
-            </div>
-            <span class="font-semibold">${u.username}</span>
-          </div>
-
-          <button onclick="followUser(${u.id}, this)"
-            class="text-blue-500 font-bold">Follow</button>
-        </div>
-      `;
-    });
-
-    html += `</div>`;
-    document.getElementById("suggestions").innerHTML = html;
-  }
-
-  loadSuggestions();
-
-
-  /* ============= FOLLOW BUTTON ============= */
-
-  async function followUser(uid, btn) {
-    const res = await fetch(`/social/follow/${uid}`, {
-      method: "POST"
-    });
-    const j = await res.json();
-
-    if (j.ok) {
-      btn.innerText = "Following";
-      btn.classList.remove("text-blue-500");
-      btn.classList.add("text-gray-400");
+    }catch(e){
+      console.log("Like error", e);
     }
   }
 
-async function loadNotifCount() {
-    const res = await fetch("/social/notifications/count");
-    const j = await res.json();
 
-    if (!j.ok) return;
+  /* ============= DOUBLE TAP SUPPORT ============= */
+  let lastTapTime = {};
+  function onImageTap(postId){
+    const now = new Date().getTime();
+    const last = lastTapTime[postId] || 0;
 
-    const badge = document.getElementById("notif-badge");
+    if(now - last < 300){
+      toggleLike(postId, document.querySelector(`#like-btn-${postId}`));
+    }
+    lastTapTime[postId] = now;
+  }
 
-    if (j.count > 0) {
+
+  /* ============= NOTIFICATION COUNT ============= */
+  async function loadNotifCount() {
+    try{
+      const res = await fetch("/social/notifications/count");
+      const j = await res.json();
+      if (!j.ok) return;
+
+      const badge = document.getElementById("notif-badge");
+
+      if (j.count > 0) {
         badge.innerText = j.count;
         badge.classList.remove("hidden");
-    } else {
+        badge.className = "absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full";
+      } else {
         badge.classList.add("hidden");
+      }
+    }catch(e){
+      console.log("notif error", e);
     }
-}
+  }
 
-// 5 sec me auto refresh like Instagram
-setInterval(loadNotifCount, 5000);
-loadNotifCount();
+  setInterval(loadNotifCount, 5000);
+  loadNotifCount();
 
 </script>
+
 </body>
 </html>

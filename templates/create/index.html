@@ -238,7 +238,7 @@ function capturePhoto(){
     const fd=new FormData();
     fd.append("media", b, "photo.jpg");
 
-    fetch("/create/editor",{method:"POST",body:fd})
+    fetch("/create/editor", {method:"POST", body:fd},{method:"POST",body:fd})
       .then(r=>location.href=r.url);
 
   },"image/jpeg",0.92);
@@ -267,7 +267,7 @@ function startRecording(){
     const fd = new FormData();
     fd.append("media", blob, "reel.webm");
 
-    fetch("/create/editor",{method:"POST",body:fd})
+    fetch("/create/editor", {method:"POST", body:fd},{method:"POST",body:fd})
       .then(r=>location.href=r.url);
   };
 
@@ -297,7 +297,7 @@ galleryInput.onchange=e=>{
   const fd=new FormData();
   fd.append("media",f);
 
-  fetch("/create/editor",{method:"POST",body:fd})
+  fetch("/create/editor", {method:"POST", body:fd},{method:"POST",body:fd})
     .then(r=>location.href=r.url);
 };
 </script>

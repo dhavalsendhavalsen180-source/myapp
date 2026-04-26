@@ -81,11 +81,21 @@
     <div class="flex items-center justify-between px-4 py-3 border-b">
       <div class="flex items-center gap-3">
         <img src="/static/default_dp.jpg" class="w-10 h-10 rounded-full object-cover border">
-        <a href="/profile/{{ post.username }}" class="font-semibold text-gray-800">
+        
+        <!-- ✅ FIXED PROFILE LINK -->
+        <a href="/profile/{{ post.user_id }}" class="font-semibold text-gray-800">
           @{{ post.username }}
         </a>
       </div>
+
+      <!-- POST DELETE ONLY FOR OWNER -->
+      {% if current_user == post.user_id %}
+      <form method="POST" action="/posts/delete/{{ post.id }}" onsubmit="return confirm('Delete this post?')">
+        <button class="text-red-600 font-semibold text-sm">Delete</button>
+      </form>
+      {% else %}
       <div class="text-gray-500 text-2xl">⋮</div>
+      {% endif %}
     </div>
 
     <!-- IMAGE CAROUSEL -->
@@ -155,14 +165,16 @@
         <button onclick="openShare()" class="icon-btn">📤</button>
       </div>
 
+      <!-- SAVE BUTTON -->
       <button onclick="toggleSave()" class="icon-btn" id="saveBtn">
-  {% if saved_by_me %}
-    🔖
-  {% else %}
-    📑
-  {% endif %}
-</button>
- </div>
+        {% if saved_by_me %}
+          🔖
+        {% else %}
+          📑
+        {% endif %}
+      </button>
+
+    </div>
 
     <!-- LIKES -->
     <div class="px-4 text-sm font-semibold text-gray-800" id="likesCount">
@@ -181,9 +193,21 @@
 
       <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
         {% for c in comments %}
-          <div class="text-sm text-gray-800">
-            <span class="font-semibold">@{{ c.username }}</span>
-            <span class="text-gray-700">{{ c.comment }}</span>
+          <div class="text-sm text-gray-800 flex items-center justify-between">
+
+            <div>
+              <span class="font-semibold">@{{ c.username }}</span>
+              <span class="text-gray-700">{{ c.comment }}</span>
+            </div>
+
+            <!-- ✅ DELETE COMMENT ONLY IF OWNER -->
+            {% if current_user == c.user_id %}
+              <form method="POST" action="/posts/comment_delete/{{ c.id }}/{{ post.id }}"
+                    onsubmit="return confirm('Delete this comment?')">
+                <button class="text-red-500 text-xs font-semibold">Delete</button>
+              </form>
+            {% endif %}
+
           </div>
         {% else %}
           <div class="text-gray-500 text-sm">No comments yet</div>
@@ -472,27 +496,26 @@
     }
   }
 
-let savedByMe = {{ "true" if saved_by_me else "false" }};
+  let savedByMe = {{ "true" if saved_by_me else "false" }};
 
-async function toggleSave(){
-  try{
-    const res = await fetch("/posts/save_toggle/{{ post.id }}", { method: "POST" });
-    const data = await res.json();
+  async function toggleSave(){
+    try{
+      const res = await fetch("/posts/save_toggle/{{ post.id }}", { method: "POST" });
+      const data = await res.json();
 
-    if(data.ok){
-      savedByMe = !savedByMe;
+      if(data.ok){
+        savedByMe = !savedByMe;
 
-      const btn = document.getElementById("saveBtn");
-      btn.innerText = savedByMe ? "🔖" : "📑";
-    } else {
-      alert("Login required");
+        const btn = document.getElementById("saveBtn");
+        btn.innerText = savedByMe ? "🔖" : "📑";
+      } else {
+        alert("Login required");
+      }
+
+    }catch(e){
+      alert("Network error");
     }
-
-  }catch(e){
-    alert("Network error");
   }
-}
-
 </script>
 
 </body>

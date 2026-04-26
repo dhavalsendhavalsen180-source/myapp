@@ -3,100 +3,352 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Reels</title>
+<title>Reels • InsChat</title>
 <script src="https://cdn.tailwindcss.com"></script>
+
 <style>
   body {
     background: black;
     margin: 0;
     overflow-y: scroll;
   }
+
   .reel-container {
     height: 100vh;
     position: relative;
+    scroll-snap-align: start;
   }
+
+  .reels-wrapper {
+    scroll-snap-type: y mandatory;
+    overflow-y: scroll;
+    height: 100vh;
+  }
+
   video {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
 
-  /* right side icons */
   .side-buttons {
     position: absolute;
-    right: 10px;
+    right: 12px;
     bottom: 120px;
     color: white;
-    font-size: 25px;
+    font-size: 26px;
     text-align: center;
+    z-index: 20;
   }
 
   .side-buttons div {
     margin-bottom: 22px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .side-buttons span {
+    font-size: 13px;
+    display: block;
+    margin-top: 4px;
+    opacity: 0.9;
+  }
+
+  /* ❤️ Big heart animation */
+  .big-heart {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 90px;
+    opacity: 0;
+    transition: all 0.25s ease;
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  .big-heart.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+
+  /* Comment modal */
+  #commentModal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    display: none;
+    justify-content: center;
+    align-items: flex-end;
+    z-index: 999;
+  }
+
+  .comment-box {
+    width: 100%;
+    max-width: 520px;
+    background: white;
+    border-radius: 20px 20px 0 0;
+    padding: 15px;
+    max-height: 70vh;
+    overflow-y: auto;
   }
 </style>
 </head>
 
 <body>
 
-{% for reel in reels %}
-<div class="reel-container">
-  
-  <!-- VIDEO -->
-  <video src="{{ url_for('static', filename='reels/' ~ reel.filename) }}"
-         class="reel-video"
-         loop></video>
+<div class="reels-wrapper" id="reelsWrapper">
 
-  <!-- RIGHT SIDE BUTTONS -->
-  <div class="side-buttons">
-    <div onclick="likeReel({{ reel.id }})">❤️<br>{{ reel.likes }}</div>
-    <div onclick="shareReel({{ reel.id }})">📤</div>
-    <div onclick="saveReel({{ reel.id }})">🔖</div>
-    <div>🎵<br><span style="font-size:12px">{{ reel.audio }}</span></div>
-  </div>
+  {% for reel in reels %}
+  <div class="reel-container">
 
-  <!-- CAPTION -->
-  <div class="absolute bottom-5 left-5 text-white">
-    <div class="font-bold">@{{ reel.user_id }}</div>
-    <div class="text-sm">{{ reel.caption }}</div>
+    <!-- VIDEO -->
+    <video class="reel-video"
+           src="/static/reels/{{ reel.video_path }}"
+           loop playsinline></video>
+
+    <!-- ❤️ HEART -->
+    <div class="big-heart" id="heart-{{ reel.id }}">❤️</div>
+
+    <!-- TOP USERNAME -->
+    <div class="absolute top-5 left-5 text-white z-20">
+      <div class="font-bold text-lg">@{{ reel.username }}</div>
+    </div>
+
+    <!-- CAPTION -->
+    <div class="absolute bottom-5 left-5 text-white z-20 max-w-[70%]">
+      <div class="text-sm opacity-90">{{ reel.caption }}</div>
+      <div class="text-xs opacity-60 mt-1">{{ reel.created_at }}</div>
+    </div>
+
+    <!-- RIGHT SIDE BUTTONS -->
+    <div class="side-buttons">
+
+      <!-- LIKE -->
+      <div onclick="toggleLike({{ reel.id }}, this)">
+        ❤️
+        <span id="likeCount-{{ reel.id }}">{{ reel.likes }}</span>
+      </div>
+
+      <!-- COMMENT -->
+      <div onclick="openComments({{ reel.id }})">
+        💬
+        <span id="commentCount-{{ reel.id }}">{{ reel.comments_count }}</span>
+      </div>
+
+      <!-- SHARE -->
+      <div onclick="shareReel({{ reel.id }})">
+        📤
+        <span id="shareCount-{{ reel.id }}">{{ reel.shares }}</span>
+      </div>
+
+      <!-- SAVE -->
+      <div onclick="toggleSave({{ reel.id }}, this)">
+        🔖
+        <span id="saveCount-{{ reel.id }}">{{ reel.saves }}</span>
+      </div>
+
+    </div>
+
+    <!-- DELETE BUTTON -->
+    {% if reel.user_id == current_user %}
+    <form method="POST" action="/reels/delete/{{ reel.id }}" class="absolute top-5 right-5 z-30">
+      <button class="bg-red-600 text-white px-3 py-1 rounded-lg text-sm">Delete</button>
+    </form>
+    {% endif %}
+
   </div>
+  {% endfor %}
 
 </div>
-{% endfor %}
+
+<!-- COMMENTS MODAL -->
+<div id="commentModal">
+  <div class="comment-box">
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="font-bold text-lg">Comments</h3>
+      <button onclick="closeComments()" class="text-xl">✕</button>
+    </div>
+
+    <div id="commentsList" class="space-y-2 text-sm"></div>
+
+    <div class="mt-4 flex gap-2">
+      <input id="commentInput" placeholder="Write comment..."
+        class="flex-1 border rounded-xl px-3 py-2 outline-none">
+      <button onclick="sendComment()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold">
+        Send
+      </button>
+    </div>
+  </div>
+</div>
 
 <script>
-/* AUTO PLAY NEXT REEL LIKE INSTAGRAM */
+let currentReelId = null;
+
+/* ===========================
+   AUTO PLAY REELS
+=========================== */
+const wrapper = document.getElementById("reelsWrapper");
 const videos = document.querySelectorAll(".reel-video");
 
-let current = 0;
+function playVisibleVideo(){
+  videos.forEach(v => v.pause());
 
-function playVideo(index) {
-    videos.forEach(v => v.pause());
-    videos[index].play();
+  videos.forEach((v) => {
+    const rect = v.getBoundingClientRect();
+    if(rect.top >= -200 && rect.bottom <= window.innerHeight + 200){
+      v.play();
+    }
+  });
 }
 
-playVideo(0);
+wrapper.addEventListener("scroll", playVisibleVideo);
+window.onload = playVisibleVideo;
 
-document.addEventListener("scroll", () => {
-    videos.forEach((v, i) => {
-        const rect = v.getBoundingClientRect();
-        if (rect.top >= 0 && rect.bottom <= window.innerHeight + 150) {
-            current = i;
-            playVideo(i);
-        }
+
+/* ===========================
+   LIKE SYSTEM (AJAX)
+=========================== */
+async function toggleLike(reelId, el){
+  try{
+    const res = await fetch(`/reels/like_toggle/${reelId}`, { method: "POST" });
+    const data = await res.json();
+
+    if(!data.ok) return alert("Login required");
+
+    document.getElementById(`likeCount-${reelId}`).innerText = data.count;
+
+    // big heart animation
+    const heart = document.getElementById(`heart-${reelId}`);
+    heart.classList.add("show");
+    setTimeout(()=> heart.classList.remove("show"), 600);
+
+  }catch(e){
+    alert("Network error");
+  }
+}
+
+
+/* ===========================
+   SAVE SYSTEM (AJAX)
+=========================== */
+async function toggleSave(reelId, el){
+  try{
+    const res = await fetch(`/reels/save_toggle/${reelId}`, { method: "POST" });
+    const data = await res.json();
+
+    if(!data.ok) return alert("Login required");
+
+    document.getElementById(`saveCount-${reelId}`).innerText = data.saves;
+
+  }catch(e){
+    alert("Network error");
+  }
+}
+
+
+/* ===========================
+   SHARE SYSTEM (COPY LINK)
+=========================== */
+async function shareReel(reelId){
+  try{
+    const link = window.location.origin + "/reels#reel-" + reelId;
+    await navigator.clipboard.writeText(link);
+
+    const res = await fetch(`/reels/share/${reelId}`, { method: "POST" });
+    const data = await res.json();
+
+    if(data.ok){
+      document.getElementById(`shareCount-${reelId}`).innerText = data.shares;
+    }
+
+    alert("Reel link copied!");
+
+  }catch(e){
+    alert("Copy failed");
+  }
+}
+
+
+/* ===========================
+   COMMENTS MODAL
+=========================== */
+function openComments(reelId){
+  currentReelId = reelId;
+  document.getElementById("commentModal").style.display = "flex";
+  loadComments();
+}
+
+function closeComments(){
+  document.getElementById("commentModal").style.display = "none";
+  currentReelId = null;
+}
+
+async function loadComments(){
+  if(!currentReelId) return;
+
+  const box = document.getElementById("commentsList");
+  box.innerHTML = `<div class="text-gray-500">Loading...</div>`;
+
+  try{
+    const res = await fetch(`/reels/comments/${currentReelId}`);
+    const data = await res.json();
+
+    if(!data.ok){
+      box.innerHTML = `<div class="text-red-500">Error loading comments</div>`;
+      return;
+    }
+
+    if(data.comments.length === 0){
+      box.innerHTML = `<div class="text-gray-500">No comments yet</div>`;
+      return;
+    }
+
+    box.innerHTML = "";
+    data.comments.forEach(c=>{
+      box.innerHTML += `
+        <div class="border-b pb-2">
+          <div class="font-bold">@${c.username}</div>
+          <div>${c.comment}</div>
+          <div class="text-xs text-gray-500">${c.created_at}</div>
+        </div>
+      `;
     });
-});
 
-function likeReel(id){
-    fetch(`/reels/like/${id}`, { method: "POST" });
+  }catch(e){
+    box.innerHTML = `<div class="text-red-500">Network error</div>`;
+  }
 }
 
-function shareReel(id){
-    alert("Share feature coming soon!");
-}
+async function sendComment(){
+  const inp = document.getElementById("commentInput");
+  const text = inp.value.trim();
+  if(!text) return;
 
-function saveReel(id){
-    alert("Saved!");
+  const fd = new FormData();
+  fd.append("comment", text);
+
+  try{
+    const res = await fetch(`/reels/comment/${currentReelId}`, {
+      method: "POST",
+      body: fd
+    });
+
+    const data = await res.json();
+    if(data.ok){
+      inp.value = "";
+      loadComments();
+
+      // comment count +1
+      const cc = document.getElementById(`commentCount-${currentReelId}`);
+      cc.innerText = parseInt(cc.innerText) + 1;
+    } else {
+      alert(data.error || "Error");
+    }
+
+  }catch(e){
+    alert("Network error");
+  }
 }
 </script>
 

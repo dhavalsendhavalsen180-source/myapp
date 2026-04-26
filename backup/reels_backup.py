@@ -1,8 +1,8 @@
 import os
 import uuid
 import sqlite3
-from datetime import datetime
-from flask import Blueprint, render_template, request, session, redirect, jsonify
+from flask import Blueprint, render_template, request, session, redirect, url_for, jsonify
+from werkzeug.utils import secure_filename
 
 reels_bp = Blueprint("reels", __name__, url_prefix="/reels")
 
@@ -13,19 +13,11 @@ ALLOWED_VIDEO_EXT = {"mp4", "webm", "mov", "mkv"}
 
 
 # ===============================
-# ✅ DB CONNECTION
-# ===============================
-def get_conn():
-    conn = sqlite3.connect("database.db")
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-# ===============================
-# ✅ DB INIT + AUTO UPGRADE
+# ✅ INIT REELS DATABASE
 # ===============================
 def init_reels_db():
-    conn = get_conn()
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
     # reels table
@@ -36,25 +28,21 @@ def init_reels_db():
             caption TEXT,
             video_path TEXT,
             likes INTEGER DEFAULT 0,
-            saves INTEGER DEFAULT 0,
-            shares INTEGER DEFAULT 0,
-            comments_count INTEGER DEFAULT 0,
-            created_at TEXT
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
-    # likes table
+    # reel likes table
     c.execute("""
         CREATE TABLE IF NOT EXISTS reel_likes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             reel_id INTEGER,
             user_id INTEGER,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(reel_id, user_id)
         )
     """)
 
-    # comments table
+    # reel comments table
     c.execute("""
         CREATE TABLE IF NOT EXISTS reel_comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,34 +52,6 @@ def init_reels_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
-
-    # saves table
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS reel_saves (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            reel_id INTEGER,
-            user_id INTEGER,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(reel_id, user_id)
-        )
-    """)
-
-    conn.commit()
-
-    # ===============================
-    # AUTO ADD MISSING COLUMNS (SAFE)
-    # ===============================
-    c.execute("PRAGMA table_info(reels)")
-    cols = [r["name"] for r in c.fetchall()]
-
-    if "created_at" not in cols:
-        c.execute("ALTER TABLE reels ADD COLUMN created_at TEXT")
-    if "saves" not in cols:
-        c.execute("ALTER TABLE reels ADD COLUMN saves INTEGER DEFAULT 0")
-    if "shares" not in cols:
-        c.execute("ALTER TABLE reels ADD COLUMN shares INTEGER DEFAULT 0")
-    if "comments_count" not in cols:
-        c.execute("ALTER TABLE reels ADD COLUMN comments_count INTEGER DEFAULT 0")
 
     conn.commit()
     conn.close()
@@ -112,19 +72,19 @@ def get_user_id():
 
 
 # ===============================
-# 🎬 REELS FEED PAGE (INSTAGRAM STYLE)
+# 🎬 REELS FEED PAGE
 # ===============================
 @reels_bp.route("/")
 def reels_page():
     init_reels_db()
 
-    conn = get_conn()
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
     c.execute("""
-        SELECT reels.id, reels.user_id, reels.caption, reels.video_path,
-               reels.likes, reels.saves, reels.shares, reels.comments_count,
-               reels.created_at,
+        SELECT reels.id, reels.user_id, reels.caption, reels.video_path, reels.likes,
                users.username
         FROM reels
         JOIN users ON reels.user_id = users.id
@@ -133,19 +93,13 @@ def reels_page():
 
     reels = []
     for r in c.fetchall():
-        created_at = r["created_at"] or ""
-
         reels.append({
             "id": r["id"],
             "user_id": r["user_id"],
             "username": r["username"],
-            "caption": r["caption"] or "",
-            "video_path": r["video_path"],
-            "likes": r["likes"],
-            "saves": r["saves"],
-            "shares": r["shares"],
-            "comments_count": r["comments_count"],
-            "created_at": created_at
+            "caption": r["caption"],
+            "video_path": "/static/reels/" + r["video_path"],
+            "likes": r["likes"]
         })
 
     conn.close()
@@ -156,15 +110,12 @@ def reels_page():
 # ===============================
 # ⬆️ UPLOAD REEL
 # ===============================
-@reels_bp.route("/upload", methods=["GET", "POST"])
+@reels_bp.route("/upload", methods=["POST"])
 def upload_reel():
     init_reels_db()
 
     if "user_id" not in session:
         return redirect("/auth/login")
-
-    if request.method == "GET":
-        return render_template("reels_upload.html")
 
     caption = request.form.get("caption", "").strip()
     file = request.files.get("video")
@@ -183,14 +134,11 @@ def upload_reel():
 
     uid = get_user_id()
 
-    conn = get_conn()
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
-
-    c.execute("""
-        INSERT INTO reels (user_id, caption, video_path, created_at)
-        VALUES (?,?,?,?)
-    """, (uid, caption, new_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-
+    c.execute("INSERT INTO reels (user_id, caption, video_path) VALUES (?,?,?)",
+              (uid, caption, new_name))
     conn.commit()
     conn.close()
 
@@ -209,87 +157,33 @@ def like_toggle(reel_id):
 
     uid = get_user_id()
 
-    conn = get_conn()
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
+    # check already liked
     c.execute("SELECT id FROM reel_likes WHERE reel_id=? AND user_id=?", (reel_id, uid))
     row = c.fetchone()
 
     if row:
+        # unlike
         c.execute("DELETE FROM reel_likes WHERE reel_id=? AND user_id=?", (reel_id, uid))
         c.execute("UPDATE reels SET likes = likes - 1 WHERE id=? AND likes > 0", (reel_id,))
         action = "unliked"
     else:
+        # like
         c.execute("INSERT INTO reel_likes (reel_id, user_id) VALUES (?,?)", (reel_id, uid))
         c.execute("UPDATE reels SET likes = likes + 1 WHERE id=?", (reel_id,))
         action = "liked"
 
-    conn.commit()
-
+    # new count
     c.execute("SELECT likes FROM reels WHERE id=?", (reel_id,))
-    count = c.fetchone()["likes"]
+    count = c.fetchone()[0]
 
+    conn.commit()
     conn.close()
 
     return jsonify({"ok": True, "action": action, "count": count})
-
-
-# ===============================
-# 🔖 SAVE / UNSAVE REEL (AJAX)
-# ===============================
-@reels_bp.route("/save_toggle/<int:reel_id>", methods=["POST"])
-def save_toggle(reel_id):
-    init_reels_db()
-
-    if "user_id" not in session:
-        return jsonify({"ok": False, "error": "login required"})
-
-    uid = get_user_id()
-
-    conn = get_conn()
-    c = conn.cursor()
-
-    c.execute("SELECT id FROM reel_saves WHERE reel_id=? AND user_id=?", (reel_id, uid))
-    row = c.fetchone()
-
-    if row:
-        c.execute("DELETE FROM reel_saves WHERE reel_id=? AND user_id=?", (reel_id, uid))
-        c.execute("UPDATE reels SET saves = saves - 1 WHERE id=? AND saves > 0", (reel_id,))
-        action = "unsaved"
-    else:
-        c.execute("INSERT INTO reel_saves (reel_id, user_id) VALUES (?,?)", (reel_id, uid))
-        c.execute("UPDATE reels SET saves = saves + 1 WHERE id=?", (reel_id,))
-        action = "saved"
-
-    conn.commit()
-
-    c.execute("SELECT saves FROM reels WHERE id=?", (reel_id,))
-    saves = c.fetchone()["saves"]
-
-    conn.close()
-
-    return jsonify({"ok": True, "action": action, "saves": saves})
-
-
-# ===============================
-# 📤 SHARE REEL (COUNT)
-# ===============================
-@reels_bp.route("/share/<int:reel_id>", methods=["POST"])
-def share_reel(reel_id):
-    init_reels_db()
-
-    conn = get_conn()
-    c = conn.cursor()
-
-    c.execute("UPDATE reels SET shares = shares + 1 WHERE id=?", (reel_id,))
-    conn.commit()
-
-    c.execute("SELECT shares FROM reels WHERE id=?", (reel_id,))
-    shares = c.fetchone()["shares"]
-
-    conn.close()
-
-    return jsonify({"ok": True, "shares": shares})
 
 
 # ===============================
@@ -308,15 +202,12 @@ def add_comment(reel_id):
     if not comment:
         return jsonify({"ok": False, "error": "empty comment"})
 
-    conn = get_conn()
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    c.execute("""
-        INSERT INTO reel_comments (reel_id, user_id, comment)
-        VALUES (?,?,?)
-    """, (reel_id, uid, comment))
-
-    c.execute("UPDATE reels SET comments_count = comments_count + 1 WHERE id=?", (reel_id,))
+    c.execute("INSERT INTO reel_comments (reel_id, user_id, comment) VALUES (?,?,?)",
+              (reel_id, uid, comment))
 
     conn.commit()
     conn.close()
@@ -331,12 +222,14 @@ def add_comment(reel_id):
 def get_comments(reel_id):
     init_reels_db()
 
-    conn = get_conn()
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
     c.execute("""
-        SELECT reel_comments.id, reel_comments.comment, reel_comments.created_at,
-               users.username, reel_comments.user_id
+        SELECT reel_comments.comment, reel_comments.created_at,
+               users.username
         FROM reel_comments
         JOIN users ON reel_comments.user_id = users.id
         WHERE reel_comments.reel_id=?
@@ -347,53 +240,13 @@ def get_comments(reel_id):
     comments = []
     for r in c.fetchall():
         comments.append({
-            "id": r["id"],
             "username": r["username"],
-            "user_id": r["user_id"],
             "comment": r["comment"],
             "created_at": r["created_at"]
         })
 
     conn.close()
     return jsonify({"ok": True, "comments": comments})
-
-
-# ===============================
-# 🗑 DELETE COMMENT (OWNER ONLY)
-# ===============================
-@reels_bp.route("/comment_delete/<int:comment_id>", methods=["POST"])
-def delete_comment(comment_id):
-    init_reels_db()
-
-    if "user_id" not in session:
-        return jsonify({"ok": False, "error": "login required"})
-
-    uid = get_user_id()
-
-    conn = get_conn()
-    c = conn.cursor()
-
-    c.execute("SELECT reel_id, user_id FROM reel_comments WHERE id=?", (comment_id,))
-    row = c.fetchone()
-
-    if not row:
-        conn.close()
-        return jsonify({"ok": False, "error": "not found"})
-
-    reel_id = row["reel_id"]
-    owner_id = row["user_id"]
-
-    if owner_id != uid:
-        conn.close()
-        return jsonify({"ok": False, "error": "not allowed"})
-
-    c.execute("DELETE FROM reel_comments WHERE id=?", (comment_id,))
-    c.execute("UPDATE reels SET comments_count = comments_count - 1 WHERE id=? AND comments_count > 0", (reel_id,))
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"ok": True})
 
 
 # ===============================
@@ -408,7 +261,8 @@ def delete_reel(reel_id):
 
     uid = get_user_id()
 
-    conn = get_conn()
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
     c.execute("SELECT video_path, user_id FROM reels WHERE id=?", (reel_id,))
@@ -418,21 +272,21 @@ def delete_reel(reel_id):
         conn.close()
         return redirect("/reels")
 
-    video_path = row["video_path"]
-    owner_id = row["user_id"]
+    video_path, owner_id = row
 
     if owner_id != uid:
         conn.close()
         return redirect("/reels")
 
+    # delete file
     try:
         os.remove(os.path.join(UPLOAD_FOLDER, video_path))
     except:
         pass
 
+    # delete db data
     c.execute("DELETE FROM reel_likes WHERE reel_id=?", (reel_id,))
     c.execute("DELETE FROM reel_comments WHERE reel_id=?", (reel_id,))
-    c.execute("DELETE FROM reel_saves WHERE reel_id=?", (reel_id,))
     c.execute("DELETE FROM reels WHERE id=?", (reel_id,))
 
     conn.commit()

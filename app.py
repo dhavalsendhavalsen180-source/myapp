@@ -1,6 +1,8 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
+from flask import send_from_directory
+from flask import Flask, send_from_directory, render_template
 
 from routes.basic import basic_bp
 from routes.auth import auth_bp
@@ -44,6 +46,15 @@ app.register_blueprint(editor_bp)
 app.register_blueprint(stories_bp, url_prefix="/stories")
 app.register_blueprint(messages_bp)
 app.register_blueprint(call_bp)
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/manifest.json")
+def manifest():
+    return send_from_directory("static", "manifest.json", mimetype="application/manifest+json")
+
 
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)
