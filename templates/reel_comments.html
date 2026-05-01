@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comments</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body{
+  background:#000;
+  color:white;
+  font-family:system-ui;
+}
+
+/* HEADER */
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px;
+  border-bottom:1px solid #222;
+}
+
+/* COMMENT */
+.comment{
+  display:flex;
+  gap:10px;
+  padding:12px;
+  border-bottom:1px solid #111;
+}
+
+.avatar{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  background:#333;
+}
+
+.content{
+  flex:1;
+}
+
+.username{
+  font-weight:600;
+  font-size:13px;
+}
+
+.text{
+  font-size:14px;
+}
+
+.meta{
+  font-size:11px;
+  color:#aaa;
+  margin-top:4px;
+}
+
+.reply{
+  cursor:pointer;
+}
+
+.followBtn{
+  font-size:11px;
+  background:#0095f6;
+  padding:3px 8px;
+  border-radius:6px;
+}
+
+/* INPUT */
+.inputBox{
+  position:fixed;
+  bottom:0;
+  width:100%;
+  background:#111;
+  padding:10px;
+  display:flex;
+  gap:10px;
+}
+
+input{
+  flex:1;
+  padding:8px;
+  border-radius:20px;
+  border:none;
+  outline:none;
+  background:#222;
+  color:white;
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <button onclick="history.back()">⬅</button>
+  <b>Comments</b>
+  <div></div>
+</div>
+
+<!-- COMMENTS LIST -->
+<div id="commentList"></div>
+
+<!-- INPUT -->
+<div class="inputBox">
+  <input id="commentInput" placeholder="Add a comment...">
+  <button onclick="sendComment()">Post</button>
+</div>
+
+<script>
+
+let reelId = "{{ reel_id }}";
+let replyTo = null;
+
+/* LOAD COMMENTS */
+async function loadComments(){
+  const res = await fetch(`/reels/comments/${reelId}`);
+  const d = await res.json();
+
+  let box = document.getElementById("commentList");
+  box.innerHTML = "";
+
+  d.comments.forEach(c=>{
+    box.innerHTML += `
+      <div class="comment">
+        <div class="avatar"></div>
+
+        <div class="content">
+          <div class="username">@${c.username}</div>
+          <div class="text">${c.text}</div>
+
+          <div class="meta">
+            ❤️ ${c.likes || 0} · 
+            <span class="reply" onclick="setReply('${c.id}','${c.username}')">Reply</span>
+          </div>
+
+          ${c.replies ? c.replies.map(r=>`
+            <div style="margin-left:20px;margin-top:8px">
+              <div class="username">@${r.username}</div>
+              <div class="text">${r.text}</div>
+            </div>
+          `).join("") : ""}
+        </div>
+
+        <button class="followBtn">Follow</button>
+      </div>
+    `;
+  });
+}
+
+/* SET REPLY */
+function setReply(id, user){
+  replyTo = id;
+  document.getElementById("commentInput").placeholder = "Reply to @" + user;
+}
+
+/* SEND COMMENT / REPLY */
+async function sendComment(){
+  let text = document.getElementById("commentInput").value;
+  if(!text) return;
+
+  let fd = new FormData();
+  fd.append("comment", text);
+
+  if(replyTo){
+    fd.append("reply_to", replyTo);
+  }
+
+  await fetch(`/reels/comment/${reelId}`,{
+    method:"POST",
+    body:fd
+  });
+
+  document.getElementById("commentInput").value="";
+  replyTo = null;
+
+  loadComments();
+}
+
+loadComments();
+
+</script>
+
+</body>
+</html>

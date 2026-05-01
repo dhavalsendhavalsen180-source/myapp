@@ -450,3 +450,8 @@ def reels_by_audio():
     conn.close()
 
     return render_template("reels_feed.html", reels=reels, current_user=get_user_id())
+
+#######comment###№#############
+@reels_bp.route("/comments_page/<int:id>")
+def comments_page(id):
+    return render_template("reel_comments.html", reel_id=id)

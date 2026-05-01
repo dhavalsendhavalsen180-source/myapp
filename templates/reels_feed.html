@@ -4,6 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Reels • Pro Instagram</title>
+function openCommentsPage(id){
+  window.location.href = "/reels/comments_page/" + id;
+}
+
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
@@ -155,7 +159,7 @@ video{
 
   <video id="video-{{ reel.id }}"
     src="{{ reel.video_path if reel.video_path.startswith('/static') else '/static/reels/' + reel.video_path }}"
-    autoplay muted loop playsinline></video>
+    autoplay playsinline loop></video>
 
   <div class="topbar">@{{ reel.username }}</div>
 
@@ -171,7 +175,7 @@ video{
   <!-- ACTIONS -->
   <div class="actions">
     <div onclick="like({{ reel.id }})">❤️<span id="likeCount-{{ reel.id }}">{{ reel.likes }}</span></div>
-    <div onclick="openComments({{ reel.id }})">💬<span>{{ reel.comments_count }}</span></div>
+    <div onclick="openCommentsPage({{ reel.id }})">💬<span>{{ reel.comments_count }}</span></div>
     <div onclick="share({{ reel.id }})">📤<span>{{ reel.shares }}</span></div>
     <div onclick="save({{ reel.id }})">🔖<span id="saveCount-{{ reel.id }}">{{ reel.saves }}</span></div>
   </div>
@@ -205,7 +209,50 @@ video{
 
 <script>
 
+/* 🎯 FINAL REELS CONTROL (Instagram style) */
+
+const wrapper = document.getElementById("wrapper");
+const videos = document.querySelectorAll("video");
+
+function controlVideos(){
+  let middle = window.innerHeight / 2;
+
+  videos.forEach(v => {
+    let rect = v.getBoundingClientRect();
+
+    if(rect.top < middle && rect.bottom > middle){
+      // ACTIVE REEL
+      v.play();
+      v.muted = globalMuted;
+    } else {
+      // OTHER REELS
+      v.pause();
+      v.currentTime = 0;
+    }
+  });
+}
+
+/* SCROLL + LOAD */
+wrapper.addEventListener("scroll", controlVideos);
+window.addEventListener("load", controlVideos);
+
+/* FIRST VIDEO FIX (VERY IMPORTANT) */
+setTimeout(controlVideos, 300);
+
+
 let current=null;
+let globalMuted=true;
+
+/* GLOBAL SOUND FIX */
+document.querySelectorAll("video").forEach(v=>{
+  v.muted = globalMuted;
+
+  v.addEventListener("click", ()=>{
+    globalMuted = !globalMuted;
+    document.querySelectorAll("video").forEach(x=>x.muted = globalMuted);
+  });
+});
+
 
 /* LIKE */
 function like(id){
@@ -298,6 +345,10 @@ async function sendComment(){
 
   document.getElementById("commentInput").value="";
   loadComments(current);
+}
+
+function openCommentsPage(id){
+  window.location.href = "/reels/comments_page/" + id;
 }
 
 </script>
