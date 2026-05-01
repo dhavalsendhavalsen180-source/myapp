@@ -124,7 +124,7 @@ def reels_page():
     c.execute("""
         SELECT reels.id, reels.user_id, reels.caption, reels.video_path,
                reels.likes, reels.saves, reels.shares, reels.comments_count,
-               reels.created_at,
+               reels.created_at, reels.audio_name,
                users.username
         FROM reels
         JOIN users ON reels.user_id = users.id
@@ -145,7 +145,7 @@ def reels_page():
             "saves": r["saves"],
             "shares": r["shares"],
             "comments_count": r["comments_count"],
-            "created_at": created_at
+            "created_at": created_at, "audio_name": r["audio_name"]
         })
 
     conn.close()
@@ -187,9 +187,9 @@ def upload_reel():
     c = conn.cursor()
 
     c.execute("""
-        INSERT INTO reels (user_id, caption, video_path, created_at)
-        VALUES (?,?,?,?)
-    """, (uid, caption, new_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        INSERT INTO reels (user_id, caption, video_path, audio_name, created_at)
+        VALUES (?,?,?,?,?)
+    """, (uid, caption, new_name, "Original Audio", datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
 
     conn.commit()
     conn.close()
@@ -239,37 +239,27 @@ def like_toggle(reel_id):
 # ===============================
 @reels_bp.route("/save_toggle/<int:reel_id>", methods=["POST"])
 def save_toggle(reel_id):
-    init_reels_db()
+    uid = session.get("user_id")
+    if not uid:
+        return {"ok": False}
 
-    if "user_id" not in session:
-        return jsonify({"ok": False, "error": "login required"})
-
-    uid = get_user_id()
-
-    conn = get_conn()
+    conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
 
-    c.execute("SELECT id FROM reel_saves WHERE reel_id=? AND user_id=?", (reel_id, uid))
-    row = c.fetchone()
+    c.execute("SELECT id FROM reel_saves WHERE user_id=? AND reel_id=?", (uid, reel_id))
+    exists = c.fetchone()
 
-    if row:
-        c.execute("DELETE FROM reel_saves WHERE reel_id=? AND user_id=?", (reel_id, uid))
-        c.execute("UPDATE reels SET saves = saves - 1 WHERE id=? AND saves > 0", (reel_id,))
-        action = "unsaved"
+    if exists:
+        c.execute("DELETE FROM reel_saves WHERE user_id=? AND reel_id=?", (uid, reel_id))
+        state = "removed"
     else:
-        c.execute("INSERT INTO reel_saves (reel_id, user_id) VALUES (?,?)", (reel_id, uid))
-        c.execute("UPDATE reels SET saves = saves + 1 WHERE id=?", (reel_id,))
-        action = "saved"
+        c.execute("INSERT INTO reel_saves (user_id, reel_id) VALUES (?,?)", (uid, reel_id))
+        state = "saved"
 
     conn.commit()
-
-    c.execute("SELECT saves FROM reels WHERE id=?", (reel_id,))
-    saves = c.fetchone()["saves"]
-
     conn.close()
 
-    return jsonify({"ok": True, "action": action, "saves": saves})
-
+    return {"ok": True, "state": state}
 
 # ===============================
 # 📤 SHARE REEL (COUNT)
@@ -439,3 +429,24 @@ def delete_reel(reel_id):
     conn.close()
 
     return redirect("/reels")
+
+################################
+@reels_bp.route("/audio")
+def reels_by_audio():
+    name = request.args.get("name","")
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT reels.*, users.username
+        FROM reels
+        JOIN users ON reels.user_id = users.id
+        WHERE audio_name=?
+        ORDER BY reels.id DESC
+    """, (name,))
+
+    reels = c.fetchall()
+    conn.close()
+
+    return render_template("reels_feed.html", reels=reels, current_user=get_user_id())

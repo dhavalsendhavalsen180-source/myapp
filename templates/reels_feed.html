@@ -2,354 +2,304 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Reels • InsChat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Reels • Pro Instagram</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-  body {
-    background: black;
-    margin: 0;
-    overflow-y: scroll;
-  }
+body {
+  margin:0;
+  background:black;
+  overflow:hidden;
+  font-family:system-ui;
+}
 
-  .reel-container {
-    height: 100vh;
-    position: relative;
-    scroll-snap-align: start;
-  }
+.reels-wrapper{
+  height:100vh;
+  overflow-y:scroll;
+  scroll-snap-type:y mandatory;
+}
 
-  .reels-wrapper {
-    scroll-snap-type: y mandatory;
-    overflow-y: scroll;
-    height: 100vh;
-  }
+.reel{
+  height:100vh;
+  position:relative;
+  scroll-snap-align:start;
+}
 
-  video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
 
-  .side-buttons {
-    position: absolute;
-    right: 12px;
-    bottom: 120px;
-    color: white;
-    font-size: 26px;
-    text-align: center;
-    z-index: 20;
-  }
+/* TOP */
+.topbar{
+  position:absolute;
+  top:20px;
+  left:15px;
+  color:white;
+  font-weight:700;
+}
 
-  .side-buttons div {
-    margin-bottom: 22px;
-    cursor: pointer;
-    user-select: none;
-  }
+/* CAPTION */
+.caption{
+  position:absolute;
+  bottom:90px;
+  left:15px;
+  color:white;
+  max-width:70%;
+  font-size:14px;
+}
 
-  .side-buttons span {
-    font-size: 13px;
-    display: block;
-    margin-top: 4px;
-    opacity: 0.9;
-  }
+/* AUDIO */
+.audio{
+  position:absolute;
+  bottom:140px;
+  left:15px;
+  width:70%;
+  color:white;
+  font-size:12px;
+  cursor:pointer;
+}
 
-  /* ❤️ Big heart animation */
-  .big-heart {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    font-size: 90px;
-    opacity: 0;
-    transition: all 0.25s ease;
-    z-index: 50;
-    pointer-events: none;
-  }
+.marquee{
+  display:inline-block;
+  white-space:nowrap;
+  animation:move 8s linear infinite;
+}
 
-  .big-heart.show {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.2);
-  }
+@keyframes move{
+  0%{transform:translateX(0)}
+  100%{transform:translateX(-50%)}
+}
 
-  /* Comment modal */
-  #commentModal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.65);
-    display: none;
-    justify-content: center;
-    align-items: flex-end;
-    z-index: 999;
-  }
+/* ACTIONS */
+.actions{
+  position:absolute;
+  right:15px;
+  bottom:120px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  color:white;
+  text-align:center;
+  font-size:22px;
+}
 
-  .comment-box {
-    width: 100%;
-    max-width: 520px;
-    background: white;
-    border-radius: 20px 20px 0 0;
-    padding: 15px;
-    max-height: 70vh;
-    overflow-y: auto;
-  }
+.actions div{cursor:pointer}
+.actions span{font-size:12px;display:block}
+
+/* HEART */
+.heart{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(0);
+  font-size:80px;
+  opacity:0;
+  transition:.2s;
+}
+.heart.show{
+  transform:translate(-50%,-50%) scale(1.2);
+  opacity:1;
+}
+
+/* COMMENT SHEET */
+#commentModal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.75);
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+}
+
+.commentBox{
+  width:100%;
+  max-width:520px;
+  background:white;
+  border-radius:18px 18px 0 0;
+  padding:12px;
+  max-height:70vh;
+  overflow-y:auto;
+}
+
+.commentItem{
+  padding:8px;
+  border-bottom:1px solid #eee;
+}
+
+.userRow{
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  margin-bottom:3px;
+}
+
+.followBtn{
+  background:#0095f6;
+  color:white;
+  padding:3px 8px;
+  border-radius:6px;
+  font-size:11px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="reels-wrapper" id="reelsWrapper">
+<div class="reels-wrapper" id="wrapper">
 
-  {% for reel in reels %}
-  <div class="reel-container">
+{% for reel in reels %}
+<div class="reel" ondblclick="like({{ reel.id }})">
 
-    <!-- VIDEO -->
-    <video class="reel-video"
-           src="/static/reels/{{ reel.video_path }}"
-           loop playsinline></video>
+  <video id="video-{{ reel.id }}"
+    src="{{ reel.video_path if reel.video_path.startswith('/static') else '/static/reels/' + reel.video_path }}"
+    autoplay muted loop playsinline></video>
 
-    <!-- ❤️ HEART -->
-    <div class="big-heart" id="heart-{{ reel.id }}">❤️</div>
+  <div class="topbar">@{{ reel.username }}</div>
 
-    <!-- TOP USERNAME -->
-    <div class="absolute top-5 left-5 text-white z-20">
-      <div class="font-bold text-lg">@{{ reel.username }}</div>
+  <div class="caption">{{ reel.caption }}</div>
+
+  <!-- AUDIO -->
+  <div class="audio" onclick="openAudio('{{ reel.audio_name|default('Original Audio') }}')">
+    <div class="marquee">
+      🎵 {{ reel.audio_name|default('Original Audio') }} • @{{ reel.username }}
     </div>
-
-    <!-- CAPTION -->
-    <div class="absolute bottom-5 left-5 text-white z-20 max-w-[70%]">
-      <div class="text-sm opacity-90">{{ reel.caption }}</div>
-      <div class="text-xs opacity-60 mt-1">{{ reel.created_at }}</div>
-    </div>
-
-    <!-- RIGHT SIDE BUTTONS -->
-    <div class="side-buttons">
-
-      <!-- LIKE -->
-      <div onclick="toggleLike({{ reel.id }}, this)">
-        ❤️
-        <span id="likeCount-{{ reel.id }}">{{ reel.likes }}</span>
-      </div>
-
-      <!-- COMMENT -->
-      <div onclick="openComments({{ reel.id }})">
-        💬
-        <span id="commentCount-{{ reel.id }}">{{ reel.comments_count }}</span>
-      </div>
-
-      <!-- SHARE -->
-      <div onclick="shareReel({{ reel.id }})">
-        📤
-        <span id="shareCount-{{ reel.id }}">{{ reel.shares }}</span>
-      </div>
-
-      <!-- SAVE -->
-      <div onclick="toggleSave({{ reel.id }}, this)">
-        🔖
-        <span id="saveCount-{{ reel.id }}">{{ reel.saves }}</span>
-      </div>
-
-    </div>
-
-    <!-- DELETE BUTTON -->
-    {% if reel.user_id == current_user %}
-    <form method="POST" action="/reels/delete/{{ reel.id }}" class="absolute top-5 right-5 z-30">
-      <button class="bg-red-600 text-white px-3 py-1 rounded-lg text-sm">Delete</button>
-    </form>
-    {% endif %}
-
   </div>
-  {% endfor %}
+
+  <!-- ACTIONS -->
+  <div class="actions">
+    <div onclick="like({{ reel.id }})">❤️<span id="likeCount-{{ reel.id }}">{{ reel.likes }}</span></div>
+    <div onclick="openComments({{ reel.id }})">💬<span>{{ reel.comments_count }}</span></div>
+    <div onclick="share({{ reel.id }})">📤<span>{{ reel.shares }}</span></div>
+    <div onclick="save({{ reel.id }})">🔖<span id="saveCount-{{ reel.id }}">{{ reel.saves }}</span></div>
+  </div>
+
+  <div class="heart" id="heart-{{ reel.id }}">❤️</div>
+
+</div>
+{% endfor %}
 
 </div>
 
-<!-- COMMENTS MODAL -->
+<!-- COMMENT PANEL -->
 <div id="commentModal">
-  <div class="comment-box">
-    <div class="flex justify-between items-center mb-3">
-      <h3 class="font-bold text-lg">Comments</h3>
-      <button onclick="closeComments()" class="text-xl">✕</button>
+  <div class="commentBox">
+
+    <div class="flex justify-between mb-2">
+      <b>Comments</b>
+      <button onclick="closeComments()">✕</button>
     </div>
 
-    <div id="commentsList" class="space-y-2 text-sm"></div>
+    <div id="commentList"></div>
 
-    <div class="mt-4 flex gap-2">
-      <input id="commentInput" placeholder="Write comment..."
-        class="flex-1 border rounded-xl px-3 py-2 outline-none">
-      <button onclick="sendComment()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold">
-        Send
-      </button>
-    </div>
+    <input id="commentInput" class="w-full border p-2 mt-2" placeholder="Write comment...">
+
+    <button onclick="sendComment()" class="bg-blue-600 text-white w-full mt-2 p-2">
+      Send
+    </button>
+
   </div>
 </div>
 
 <script>
-let currentReelId = null;
 
-/* ===========================
-   AUTO PLAY REELS
-=========================== */
-const wrapper = document.getElementById("reelsWrapper");
-const videos = document.querySelectorAll(".reel-video");
+let current=null;
 
-function playVisibleVideo(){
-  videos.forEach(v => v.pause());
-
-  videos.forEach((v) => {
-    const rect = v.getBoundingClientRect();
-    if(rect.top >= -200 && rect.bottom <= window.innerHeight + 200){
-      v.play();
+/* LIKE */
+function like(id){
+  fetch(`/reels/like_toggle/${id}`,{method:"POST"})
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.ok){
+      document.getElementById(`likeCount-${id}`).innerText=d.count;
+      let h=document.getElementById(`heart-${id}`);
+      h.classList.add("show");
+      setTimeout(()=>h.classList.remove("show"),500);
     }
   });
 }
 
-wrapper.addEventListener("scroll", playVisibleVideo);
-window.onload = playVisibleVideo;
-
-
-/* ===========================
-   LIKE SYSTEM (AJAX)
-=========================== */
-async function toggleLike(reelId, el){
-  try{
-    const res = await fetch(`/reels/like_toggle/${reelId}`, { method: "POST" });
-    const data = await res.json();
-
-    if(!data.ok) return alert("Login required");
-
-    document.getElementById(`likeCount-${reelId}`).innerText = data.count;
-
-    // big heart animation
-    const heart = document.getElementById(`heart-${reelId}`);
-    heart.classList.add("show");
-    setTimeout(()=> heart.classList.remove("show"), 600);
-
-  }catch(e){
-    alert("Network error");
+/* SAVE FIX */
+async function save(id){
+  const res = await fetch(`/reels/save_toggle/${id}`,{method:"POST"});
+  const d = await res.json();
+  if(d.ok){
+    const el=document.getElementById(`saveCount-${id}`);
+    if(el) el.innerText=d.saves;
   }
 }
 
-
-/* ===========================
-   SAVE SYSTEM (AJAX)
-=========================== */
-async function toggleSave(reelId, el){
-  try{
-    const res = await fetch(`/reels/save_toggle/${reelId}`, { method: "POST" });
-    const data = await res.json();
-
-    if(!data.ok) return alert("Login required");
-
-    document.getElementById(`saveCount-${reelId}`).innerText = data.saves;
-
-  }catch(e){
-    alert("Network error");
-  }
+/* SHARE */
+function share(id){
+  navigator.clipboard.writeText(location.href);
+  fetch(`/reels/share/${id}`,{method:"POST"});
 }
 
-
-/* ===========================
-   SHARE SYSTEM (COPY LINK)
-=========================== */
-async function shareReel(reelId){
-  try{
-    const link = window.location.origin + "/reels#reel-" + reelId;
-    await navigator.clipboard.writeText(link);
-
-    const res = await fetch(`/reels/share/${reelId}`, { method: "POST" });
-    const data = await res.json();
-
-    if(data.ok){
-      document.getElementById(`shareCount-${reelId}`).innerText = data.shares;
-    }
-
-    alert("Reel link copied!");
-
-  }catch(e){
-    alert("Copy failed");
-  }
+/* AUDIO */
+function openAudio(n){
+  location.href="/reels/audio?name="+encodeURIComponent(n);
 }
 
-
-/* ===========================
-   COMMENTS MODAL
-=========================== */
-function openComments(reelId){
-  currentReelId = reelId;
-  document.getElementById("commentModal").style.display = "flex";
-  loadComments();
+/* COMMENTS OPEN */
+function openComments(id){
+  current=id;
+  document.getElementById("commentModal").style.display="flex";
+  loadComments(id);
 }
 
+/* CLOSE */
 function closeComments(){
-  document.getElementById("commentModal").style.display = "none";
-  currentReelId = null;
+  document.getElementById("commentModal").style.display="none";
 }
 
-async function loadComments(){
-  if(!currentReelId) return;
+/* LOAD COMMENTS UI (Instagram style) */
+async function loadComments(id){
+  const box=document.getElementById("commentList");
+  box.innerHTML="Loading...";
 
-  const box = document.getElementById("commentsList");
-  box.innerHTML = `<div class="text-gray-500">Loading...</div>`;
+  const res=await fetch(`/reels/comments/${id}`);
+  const d=await res.json();
 
-  try{
-    const res = await fetch(`/reels/comments/${currentReelId}`);
-    const data = await res.json();
+  box.innerHTML="";
 
-    if(!data.ok){
-      box.innerHTML = `<div class="text-red-500">Error loading comments</div>`;
-      return;
-    }
-
-    if(data.comments.length === 0){
-      box.innerHTML = `<div class="text-gray-500">No comments yet</div>`;
-      return;
-    }
-
-    box.innerHTML = "";
-    data.comments.forEach(c=>{
-      box.innerHTML += `
-        <div class="border-b pb-2">
-          <div class="font-bold">@${c.username}</div>
-          <div>${c.comment}</div>
-          <div class="text-xs text-gray-500">${c.created_at}</div>
+  d.comments.forEach(c=>{
+    box.innerHTML+=`
+      <div class="commentItem">
+        <div class="userRow">
+          <div>
+            <b>@${c.username}</b>
+            <div>${c.text}</div>
+          </div>
+          <button class="followBtn">Follow</button>
         </div>
-      `;
-    });
 
-  }catch(e){
-    box.innerHTML = `<div class="text-red-500">Network error</div>`;
-  }
+        <div style="font-size:11px;color:gray">
+          ❤️ ${c.likes || 0} • Reply
+        </div>
+      </div>
+    `;
+  });
 }
 
+/* SEND COMMENT */
 async function sendComment(){
-  const inp = document.getElementById("commentInput");
-  const text = inp.value.trim();
+  let text=document.getElementById("commentInput").value;
   if(!text) return;
 
-  const fd = new FormData();
-  fd.append("comment", text);
+  let fd=new FormData();
+  fd.append("comment",text);
 
-  try{
-    const res = await fetch(`/reels/comment/${currentReelId}`, {
-      method: "POST",
-      body: fd
-    });
+  await fetch(`/reels/comment/${current}`,{
+    method:"POST",
+    body:fd
+  });
 
-    const data = await res.json();
-    if(data.ok){
-      inp.value = "";
-      loadComments();
-
-      // comment count +1
-      const cc = document.getElementById(`commentCount-${currentReelId}`);
-      cc.innerText = parseInt(cc.innerText) + 1;
-    } else {
-      alert(data.error || "Error");
-    }
-
-  }catch(e){
-    alert("Network error");
-  }
+  document.getElementById("commentInput").value="";
+  loadComments(current);
 }
+
 </script>
 
 </body>

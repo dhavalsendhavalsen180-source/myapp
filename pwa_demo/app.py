@@ -1,6 +1,6 @@
-from flask import Flask, send_from_directory, render_template
+from flask import Flask, render_template, send_from_directory
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static", template_folder="templates")
 
 @app.route("/")
 def home():
@@ -8,7 +8,11 @@ def home():
 
 @app.route("/manifest.json")
 def manifest():
-    return send_from_directory("static", "manifest.json", mimetype="application/manifest+json")
+    return send_from_directory("static", "manifest.json")
+
+@app.route("/sw.js")
+def sw():
+    return send_from_directory("static", "sw.js")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

@@ -1,7 +1,7 @@
-from flask import Flask
+from flask import Flask, send_from_directory, render_template
 from flask_cors import CORS
 from flask_socketio import SocketIO
-from flask import send_from_directory
+
 from flask import Flask, send_from_directory, render_template
 
 from routes.basic import basic_bp
@@ -31,7 +31,7 @@ auth_backend.init_notifications_db()
 init_reels_db()
 
 # SOCKET.IO INIT (Option A)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # BLUEPRINTS
 app.register_blueprint(basic_bp)

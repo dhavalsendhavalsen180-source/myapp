@@ -71,7 +71,7 @@ body{margin:0;background:#0b0b0b;color:#fff;font-family:Inter,system-ui,Arial}
     const fd = new FormData();
     fd.append('export', new File([blob], filename, {type: blob.type}));
 
-    const resp = await fetch('/create/editor', { method:'POST', body: fd });
+    const resp = await fetch("/create/editor?mode={{ mode }}", { method:"POST", body: fd });
 
     if(resp.redirected){
       window.location = resp.url;

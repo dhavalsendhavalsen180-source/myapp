@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <link rel="manifest" href="/manifest.json?v=1">
+  <meta name="theme-color" content="#ff0066">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>📸 InsChat — Feed</title>
+  <title> InsChat </title>
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
@@ -170,7 +172,7 @@ async function uploadStoryInstant(event) {
 
   <!-- NAVBAR -->
   <div class="flex items-center justify-between p-4 bg-white shadow">
-    <h1 class="text-xl font-bold">𝒾𝓃𝓈𝒸𝒽𝒶𝓉</h1>
+    <h1 class="text-xl font-bold">InsChat</h1>
 
     <div class="flex space-x-4 text-xl">
       <a href="/social/notifications" class="relative">
@@ -427,6 +429,12 @@ function openStory(user_id) {
   setInterval(loadNotifCount, 5000);
   loadNotifCount();
 
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js?v=1");
+}
 </script>
 
 </body>

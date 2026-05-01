@@ -59,6 +59,24 @@ def profile(user_id):
             "image": img["image_path"] if img else None
         })
 
+    # REELS
+    c.execute("""
+        SELECT id, video_path, caption
+        FROM reels
+        WHERE user_id=?
+        ORDER BY id DESC
+    """, (user_id,))
+
+    reels_rows = c.fetchall()
+
+    reels = []
+    for r in reels_rows:
+        reels.append({
+            "id": r["id"],
+            "video": r["video_path"],
+            "caption": r["caption"] or ""
+        })
+
     # FOLLOWERS / FOLLOWING
     c.execute("SELECT COUNT(*) as total FROM follows WHERE following_id=?", (user_id,))
     followers = c.fetchone()["total"]
@@ -80,6 +98,7 @@ def profile(user_id):
         "profile.html",
         profile=profile_data,
         posts=posts,
+        reels=reels,
         followers=followers,
         following=following,
         is_following=is_following,
@@ -150,11 +169,16 @@ def followers_list(user_id):
 
     conn.close()
 
-    return render_template("followers.html", user=user, followers=followers)
-
-
-# ------------------ FOLLOWING LIST ------------------ #
-@profile_bp.route("/<int:user_id>/following")
+    return render_template(
+        "profile.html",
+        profile=profile_data,
+        posts=posts,
+        reels=reels,
+        followers=followers,
+        following=following,
+        is_following=is_following,
+        current_user=current
+    )
 def following_list(user_id):
 
     conn = sqlite3.connect("database.db")
@@ -178,22 +202,30 @@ def following_list(user_id):
 
     conn.close()
 
-    return render_template("following.html", user=user, following=following)
-
-
-# ===============================
-# ⚙️ SETTINGS PAGE
-# ===============================
-@profile_bp.route("/settings")
+    return render_template(
+        "profile.html",
+        profile=profile_data,
+        posts=posts,
+        reels=reels,
+        followers=followers,
+        following=following,
+        is_following=is_following,
+        current_user=current
+    )
 def settings_page():
     if "user_id" not in session:
         return redirect("/auth/login")
 
-    return render_template("settings.html")
-# ===============================
-# 🔖 SAVED PAGE
-# ===============================
-@profile_bp.route("/saved")
+    return render_template(
+        "profile.html",
+        profile=profile_data,
+        posts=posts,
+        reels=reels,
+        followers=followers,
+        following=following,
+        is_following=is_following,
+        current_user=current
+    )
 def saved_page():
     if "user_id" not in session:
         return redirect("/auth/login")
@@ -230,5 +262,24 @@ def saved_page():
         })
 
     conn.close()
+################₹############
 
-    return render_template("saved.html", saved_posts=saved_posts)
+@profile_bp.route("/saved/reels")
+def saved_reels():
+    uid = session["user_id"]
+
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT r.*
+        FROM reel_saves s
+        JOIN reels r ON r.id = s.reel_id
+        WHERE s.user_id=?
+    """, (uid,))
+
+    reels = c.fetchall()
+    conn.close()
+
+    return render_template("saved_reels.html", reels=reels)
