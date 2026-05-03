@@ -325,23 +325,30 @@ def get_comments(reel_id):
     c = conn.cursor()
 
     c.execute("""
-        SELECT reel_comments.id, reel_comments.comment, reel_comments.created_at,
-               users.username, reel_comments.user_id
-        FROM reel_comments
-        JOIN users ON reel_comments.user_id = users.id
-        WHERE reel_comments.reel_id=?
-        ORDER BY reel_comments.id DESC
+        SELECT rc.id, rc.comment, rc.created_at,
+               u.username, u.id as user_id, u.photo
+        FROM reel_comments rc
+        JOIN users u ON rc.user_id = u.id
+        WHERE rc.reel_id=?
+        ORDER BY rc.id DESC
         LIMIT 50
     """, (reel_id,))
 
     comments = []
+
     for r in c.fetchall():
+
+        # 👇 replies (optional future support)
+        replies = []
+
         comments.append({
             "id": r["id"],
             "username": r["username"],
             "user_id": r["user_id"],
-            "comment": r["comment"],
-            "created_at": r["created_at"]
+            "text": r["comment"],   # ⚠️ IMPORTANT (text not comment)
+            "profile": r["photo"], # 👈 PROFILE PIC
+            "likes": 0,
+            "replies": replies
         })
 
     conn.close()
@@ -451,7 +458,25 @@ def reels_by_audio():
 
     return render_template("reels_feed.html", reels=reels, current_user=get_user_id())
 
-#######comment###№#############
+
+#==============================================
+#             coment                      /
+#================================/============
 @reels_bp.route("/comments_page/<int:id>")
 def comments_page(id):
-    return render_template("reel_comments.html", reel_id=id)
+    return render_template(
+        "reel_comments.html",
+        reel_id=id,
+        current_user=get_user_id()   # 👈 ADD THIS
+    )
+
+# ===============================
+# ❤️ LIKE COMMENT
+# ===============================
+@reels_bp.route("/comment_like/<int:id>", methods=["POST"])
+def comment_like(id):
+    if "user_id" not in session:
+        return jsonify({"ok": False})
+
+    # abhi simple dummy (baad me DB bana denge)
+    return jsonify({"ok": True, "likes": 1})

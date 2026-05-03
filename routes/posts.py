@@ -32,6 +32,21 @@ def feed():
 
     current_user = session.get("user_id")
 
+    # ✅ USER DP LOAD (NEW FIX)
+    photo = "/static/default_dp.png"
+
+    conn2 = sqlite3.connect("database.db")
+    conn2.row_factory = sqlite3.Row
+    c2 = conn2.cursor()
+
+    c2.execute("SELECT photo FROM users WHERE id=?", (current_user,))
+    row = c2.fetchone()
+
+    if row and row["photo"]:
+        photo = row["photo"]
+
+    conn2.close()
+
     # ---- STORY SYSTEM ----
     cleanup_expired()
 
@@ -44,7 +59,7 @@ def feed():
 
     # ✅ FIXED QUERY (NOW FETCHES OWNER ID ALSO)
     c.execute("""
-        SELECT posts.id, posts.user_id, users.username, posts.caption
+        SELECT posts.id, posts.user_id, users.username, users.photo, posts.caption
         FROM posts
         JOIN users ON posts.user_id = users.id
         ORDER BY posts.id DESC
@@ -53,7 +68,7 @@ def feed():
 
     posts = []
     for row in rows:
-        post_id, owner_id, username, caption = row
+        post_id, owner_id, username, user_photo, caption = row
 
         c.execute("SELECT image_path FROM post_images WHERE post_id=?", (post_id,))
         images = [r[0] for r in c.fetchall()]
@@ -72,8 +87,9 @@ def feed():
 
         posts.append({
             "id": post_id,
-            "owner_id": owner_id,      # ✅ FIXED
-            "username": username,      # ✅ FIXED
+            "owner_id": owner_id,
+            "username": username,
+            "photo": user_photo if user_photo else "/static/default_dp.png",
             "caption": caption,
             "images": images,
             "likes": likes,
@@ -86,9 +102,9 @@ def feed():
         "feed.html",
         posts=posts,
         stories_bar=stories_bar,
-        current_user=current_user
+        current_user=current_user,
+        current_user_photo=photo   # ✅ FIXED
     )
-
 
 # ===============================
 # 📌 UPLOAD POST

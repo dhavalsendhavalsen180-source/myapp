@@ -30,7 +30,7 @@
 
       <!-- 3 DOT MENU ONLY FOR OWN PROFILE -->
       {% if current_user and (current_user == profile.id) %}
-      <a href="/profile/settings" class="text-2xl font-bold px-2">⋮</a>        
+      <a href="/profile/settings" class="text-2xl font-bold px-2">⋮</a>
       {% endif %}
 
       <a href="/auth/logout" class="text-xl">🚪</a>
@@ -45,7 +45,7 @@
       <div>
         <div class="avatar-ring" style="background: linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);">
           <div style="background:white; padding:3px; border-radius:9999px;">
-            <img src="{{ profile.photo }}" alt="DP" class="avatar" onerror="this.src='/static/default_dp.jpg'">
+            <img src="{{ profile.photo }}" alt="DP" class="avatar" onerror="this.src='/static/default_dp.png'">
           </div>
         </div>
       </div>

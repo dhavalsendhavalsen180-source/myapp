@@ -111,7 +111,7 @@ def inbox():
             "chat_id": r["chat_id"],
             "other_id": r["other_id"],
             "username": r["username"],
-            "photo": r["photo"] or "/static/profile/default_dp.jpg",
+            "photo": r["photo"] or "/static/profile/default_dp.png",
             "last_msg": r["last_msg"] or "",
             "last_time": r["last_time"] or "",
             "unread": r["unread_count"] or 0
@@ -134,7 +134,7 @@ def chat_page(other_id):
     other = {
         "id": u["id"],
         "username": u["username"],
-        "photo": u["photo"] or "/static/profile/default_dp.jpg"
+        "photo": u["photo"] or "/static/profile/default_dp.png"
     }
 
     remove_expired_messages_for_chat(chat_id)

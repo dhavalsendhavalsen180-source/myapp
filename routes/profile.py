@@ -1,4 +1,3 @@
-# routes/profile.py
 from flask import Blueprint, render_template, request, redirect, session
 import sqlite3, os
 from werkzeug.utils import secure_filename
@@ -10,6 +9,7 @@ UPLOAD_FOLDER = "static/profile"
 ALLOWED_EXT = {"png", "jpg", "jpeg"}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXT
@@ -31,7 +31,6 @@ def profile(user_id):
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    # USER DATA
     c.execute("SELECT id, username, bio, photo FROM users WHERE id=?", (user_id,))
     u = c.fetchone()
 
@@ -43,7 +42,7 @@ def profile(user_id):
         "id": u["id"],
         "username": u["username"],
         "bio": u["bio"] or "",
-        "photo": u["photo"] if u["photo"] else "/static/default_dp.jpg"
+        "photo": u["photo"] if u["photo"] else "/static/default_dp.png"
     }
 
     # POSTS
@@ -59,32 +58,14 @@ def profile(user_id):
             "image": img["image_path"] if img else None
         })
 
-    # REELS
-    c.execute("""
-        SELECT id, video_path, caption
-        FROM reels
-        WHERE user_id=?
-        ORDER BY id DESC
-    """, (user_id,))
-
-    reels_rows = c.fetchall()
-
-    reels = []
-    for r in reels_rows:
-        reels.append({
-            "id": r["id"],
-            "video": r["video_path"],
-            "caption": r["caption"] or ""
-        })
-
-    # FOLLOWERS / FOLLOWING
+    # FOLLOW COUNTS
     c.execute("SELECT COUNT(*) as total FROM follows WHERE following_id=?", (user_id,))
     followers = c.fetchone()["total"]
 
     c.execute("SELECT COUNT(*) as total FROM follows WHERE follower_id=?", (user_id,))
     following = c.fetchone()["total"]
 
-    # CHECK IF CURRENT USER FOLLOWS
+    # FOLLOW CHECK
     current = session.get("user_id")
     is_following = False
 
@@ -98,7 +79,7 @@ def profile(user_id):
         "profile.html",
         profile=profile_data,
         posts=posts,
-        reels=reels,
+        reels=[],
         followers=followers,
         following=following,
         is_following=is_following,
@@ -122,7 +103,6 @@ def edit_profile():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
 
-    # PHOTO UPDATE
     if photo and photo.filename and allowed_file(photo.filename):
         ext = photo.filename.rsplit(".", 1)[1].lower()
         filename = secure_filename(f"user_{uid}.{ext}")
@@ -133,7 +113,6 @@ def edit_profile():
         photo_url = "/" + save_path.replace("\\", "/")
         c.execute("UPDATE users SET photo=? WHERE id=?", (photo_url, uid))
 
-    # USERNAME + BIO UPDATE
     if username:
         c.execute("UPDATE users SET username=?, bio=? WHERE id=?", (username, bio, uid))
     else:
@@ -144,18 +123,19 @@ def edit_profile():
 
     return redirect(f"/profile/{uid}")
 
-# ------------------ FOLLOWERS LIST ------------------ #
+
+# ------------------ FOLLOWERS ------------------ #
 @profile_bp.route("/<int:user_id>/followers")
 def followers_list(user_id):
 
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
     c.execute("SELECT id, username, photo FROM users WHERE id=?", (user_id,))
-    user = c.fetchone()
-    if not user:
-        conn.close()
+    u = c.fetchone()
+
+    if not u:
         return "User not found", 404
 
     c.execute("""
@@ -163,32 +143,26 @@ def followers_list(user_id):
         FROM follows f
         JOIN users u ON f.follower_id = u.id
         WHERE f.following_id=?
-        ORDER BY f.id DESC
     """, (user_id,))
-    followers = c.fetchall()
 
+    followers = c.fetchall()
     conn.close()
 
-    return render_template(
-        "profile.html",
-        profile=profile_data,
-        posts=posts,
-        reels=reels,
-        followers=followers,
-        following=following,
-        is_following=is_following,
-        current_user=current
-    )
+    return render_template("followers.html", followers=followers, user=u)
+
+
+# ------------------ FOLLOWING ------------------ #
+@profile_bp.route("/<int:user_id>/following")
 def following_list(user_id):
 
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
     c.execute("SELECT id, username, photo FROM users WHERE id=?", (user_id,))
-    user = c.fetchone()
-    if not user:
-        conn.close()
+    u = c.fetchone()
+
+    if not u:
         return "User not found", 404
 
     c.execute("""
@@ -196,36 +170,25 @@ def following_list(user_id):
         FROM follows f
         JOIN users u ON f.following_id = u.id
         WHERE f.follower_id=?
-        ORDER BY f.id DESC
     """, (user_id,))
-    following = c.fetchall()
 
+    following = c.fetchall()
     conn.close()
 
-    return render_template(
-        "profile.html",
-        profile=profile_data,
-        posts=posts,
-        reels=reels,
-        followers=followers,
-        following=following,
-        is_following=is_following,
-        current_user=current
-    )
+    return render_template("following.html", following=following, user=u)
+
+
+# ------------------ SETTINGS ------------------ #
+@profile_bp.route("/settings")
 def settings_page():
     if "user_id" not in session:
         return redirect("/auth/login")
 
-    return render_template(
-        "profile.html",
-        profile=profile_data,
-        posts=posts,
-        reels=reels,
-        followers=followers,
-        following=following,
-        is_following=is_following,
-        current_user=current
-    )
+    return render_template("settings.html")
+
+
+# ------------------ SAVED POSTS ------------------ #
+@profile_bp.route("/saved")
 def saved_page():
     if "user_id" not in session:
         return redirect("/auth/login")
@@ -236,36 +199,38 @@ def saved_page():
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    # Get saved post ids
     c.execute("""
         SELECT posts.id, posts.caption
         FROM post_saves
         JOIN posts ON post_saves.post_id = posts.id
         WHERE post_saves.user_id=?
-        ORDER BY post_saves.id DESC
     """, (uid,))
 
     rows = c.fetchall()
 
     saved_posts = []
     for r in rows:
-        post_id = r["id"]
-
-        # Get first image
-        c.execute("SELECT image_path FROM post_images WHERE post_id=? LIMIT 1", (post_id,))
+        c.execute("SELECT image_path FROM post_images WHERE post_id=? LIMIT 1", (r["id"],))
         img = c.fetchone()
 
         saved_posts.append({
-            "id": post_id,
+            "id": r["id"],
             "caption": r["caption"],
             "image": img["image_path"] if img else None
         })
 
     conn.close()
-################₹############
 
+    return render_template("saved.html", saved_posts=saved_posts)
+
+
+# ------------------ SAVED REELS ------------------ #
 @profile_bp.route("/saved/reels")
 def saved_reels():
+
+    if "user_id" not in session:
+        return redirect("/auth/login")
+
     uid = session["user_id"]
 
     conn = sqlite3.connect(DB_NAME)

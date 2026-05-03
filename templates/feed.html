@@ -197,7 +197,7 @@ async function uploadStoryInstant(event) {
     <div class="story-item my-story-wrapper" onclick="document.getElementById('storyPicker').click()">
       <div class="story-ring2 my-story">
         <img src="/static/profile/user_{{ session['user_id'] }}.jpg"
-             onerror="this.src='/static/default_dp.jpg'">
+             onerror="this.src='/static/default_dp.png'">
       </div>
 
       <div class="add-story-btn">+</div>
@@ -208,7 +208,7 @@ async function uploadStoryInstant(event) {
     {% for s in stories_bar %}
     <div class="story-item" onclick="openStory('{{ s.user_id }}')">
       <div class="story-ring2 {% if s.seen %}seen{% endif %}">
-        <img src="{{ s.last_img }}" onerror="this.src='/static/default_dp.jpg'">
+        <img src="{{ s.last_img }}" onerror="this.src='/static/default_dp.png'">
       </div>
       <div class="story-label">{{ s.user_id }}</div>
     </div>
@@ -235,7 +235,7 @@ function openStory(user_id) {
         <div class="flex items-center space-x-3">
           <div class="story-ring w-10 h-10 rounded-full flex items-center justify-center">
             <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-r from-pink-500 to-yellow-500">
-              {{ post.username[0]|upper }}
+              <img src="{{ post.photo }}" class="w-8 h-8 rounded-full object-cover" onerror="this.src='/static/default_dp.png'">
             </div>
           </div>
 
@@ -345,7 +345,11 @@ function openStory(user_id) {
   <a href="/explore">🔍</a>
   <a href="/create">➕</a>
   <a href="/reels">🎬</a>
-  <a href="/profile/{{ current_user }}">👤</a>
+  <a href="/profile/{{ current_user }}">
+  <img src="{{ current_user_photo }}"
+       class="w-7 h-7 rounded-full object-cover border"
+       onerror="this.src='/static/default_dp.png'">
+</a>
 </div>
 
 
