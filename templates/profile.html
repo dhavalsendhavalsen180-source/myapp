@@ -2,6 +2,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <link rel="stylesheet" href="/static/profile.css">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>{{ profile.username }} • Profile</title>
@@ -66,8 +67,6 @@
                 {% if is_following %}Following{% else %}Follow{% endif %}
               </button>
 
-            {% elif not current_user %}
-              <a href="/auth/login" class="px-4 py-2 btn-primary rounded-md">Login</a>
 
             {% else %}
               <button onclick="openEdit()" class="px-4 py-2 border rounded-md">Edit Profile</button>
@@ -107,11 +106,25 @@
     </div>
   </div>
 
+{% if can_view %}
+
+<!-- POSTS / REELS TABS -->
+<div class="max-w-3xl mx-auto mt-4 bg-white rounded-xl shadow">
+
+  <!-- TABS -->
+  <div class="flex justify-around border-b text-gray-500">
+    <button id="tab-posts" onclick="showTab('posts')" class="py-3 w-full font-semibold border-b-2 border-black text-black">📷</button>
+    <button id="tab-reels" onclick="showTab('reels')" class="py-3 w-full font-semibold">🎬</button>
+</div>
+
+  <!-- POSTS TAB START -->
+  <div id="posts">
+
   <!-- POSTS GRID -->
   <div class="max-w-3xl mx-auto grid grid-cols-3 gap-1 mt-4">
     {% for p in posts %}
       <div class="bg-white overflow-hidden">
-        {% if p.image %}
+        {% if p.image and not p.image.endswith(".mp4") %}
           <a href="/posts/{{ p.id }}">
             <img src="{{ p.image }}" class="w-full h-32 object-cover" alt="post-{{p.id}}">
           </a>
@@ -121,6 +134,38 @@
       </div>
     {% endfor %}
   </div>
+</div> <!-- POSTS TAB END -->
+
+<!-- REELS TAB -->
+<div id="reels" class="hidden p-2">
+  {% if reels and reels|length > 0 %}
+    <div class="grid grid-cols-3 gap-1">
+
+      {% for r in reels %}
+      <div class="relative w-full h-32 bg-black overflow-hidden cursor-pointer"
+           onclick="window.location.href='/reels?start={{ r.id }}'">
+
+<img
+  src="/static/uploads/reels/thumbs/{{ r.thumbnail }}"
+  class="w-full h-full object-cover"
+  loading="lazy"
+  onerror="this.src='/static/default_reel_thumb.jpg'"
+>
+
+        <div class="absolute top-1 right-1 text-white text-xs">
+          🎬
+        </div>
+
+      </div>
+      {% endfor %}
+
+    </div>
+  {% else %}
+    <div class="text-center text-gray-500 py-10">
+      No reels yet
+    </div>
+  {% endif %}
+</div>
 
   <!-- EDIT MODAL -->
   <div id="editModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
@@ -181,6 +226,22 @@
   </div>
 
 <script>
+  function showTab(tab){
+  document.getElementById("posts").classList.add("hidden");
+  document.getElementById("reels").classList.add("hidden");
+
+  document.getElementById(tab).classList.remove("hidden");
+
+  document.getElementById("tab-posts").classList.remove("border-black","text-black");
+  document.getElementById("tab-reels").classList.remove("border-black","text-black");
+
+  if(tab === "posts"){
+    document.getElementById("tab-posts").classList.add("border-b-2","border-black","text-black");
+  } else {
+    document.getElementById("tab-reels").classList.add("border-b-2","border-black","text-black");
+  }
+}
+
   function openEdit(){
     document.getElementById('editModal').classList.remove('hidden');
     document.getElementById('editModal').classList.add('flex');
@@ -232,6 +293,56 @@
     document.getElementById("menuModal").classList.remove("flex");
   }
 </script>
+
+<!-- REEL MODAL -->
+<div id="reelModal" class="fixed inset-0 bg-black hidden items-center justify-center z-50">
+  <video id="reelPlayer" class="max-h-full max-w-full" controls autoplay></video>
+  <button onclick="closeReel()" class="absolute top-5 right-5 text-white text-2xl">✕</button>
+</div>
+<script>
+function closeReel(){
+  const modal = document.getElementById("reelModal");
+  const player = document.getElementById("reelPlayer");
+  player.pause();
+  player.src = "";
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+}
+</script>
+
+<script>
+const videos = document.querySelectorAll("video");
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    const vid = entry.target;
+    if (entry.isIntersecting) {
+      vid.play().catch(() => {});
+    } else {
+      vid.pause();
+    }
+  });
+}, { threshold: 0.6 });
+
+videos.forEach(v => observer.observe(v));
+</script>
+
+{% else %}
+
+<!-- PRIVATE ACCOUNT -->
+<div class="max-w-md mx-auto mt-10 bg-white p-6 rounded-xl text-center shadow">
+  <div class="text-5xl mb-3">🔒</div>
+
+  <h2 class="text-xl font-bold">
+    This Account is Private
+  </h2>
+
+  <p class="text-gray-500 mt-2">
+    Follow this account to see photos and reels.
+  </p>
+</div>
+
+{% endif %}
 
 </body>
 </html>

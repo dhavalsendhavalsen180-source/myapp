@@ -157,9 +157,13 @@ video{
 {% for reel in reels %}
 <div class="reel" ondblclick="like({{ reel.id }})">
 
-  <video id="video-{{ reel.id }}"
-    src="{{ reel.video_path if reel.video_path.startswith('/static') else '/static/reels/' + reel.video_path }}"
-    autoplay playsinline loop></video>
+<video id="video-{{ reel.id }}"
+  src="/static/reels/{{ reel.video_path }}"
+  autoplay
+  playsinline
+  loop
+  muted>
+</video>
 
   <div class="topbar">@{{ reel.username }}</div>
 
@@ -223,7 +227,7 @@ function controlVideos(){
     if(rect.top < middle && rect.bottom > middle){
       // ACTIVE REEL
       v.play();
-      v.muted = globalMuted;
+      v.muted = false;
     } else {
       // OTHER REELS
       v.pause();
@@ -241,11 +245,11 @@ setTimeout(controlVideos, 300);
 
 
 let current=null;
-let globalMuted=true;
+let globalMuted=false;
 
 /* GLOBAL SOUND FIX */
 document.querySelectorAll("video").forEach(v=>{
-  v.muted = globalMuted;
+  v.muted = false;
 
   v.addEventListener("click", ()=>{
     globalMuted = !globalMuted;

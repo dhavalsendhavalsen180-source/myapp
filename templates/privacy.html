@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <title>Account Privacy</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+<!-- TOP -->
+<div class="flex items-center gap-4 p-4 bg-white shadow">
+  <a href="/profile/settings" class="text-xl font-bold">⬅</a>
+
+  <h1 class="text-lg font-bold">
+    Account privacy
+  </h1>
+</div>
+
+<!-- MAIN -->
+<div class="max-w-xl mx-auto mt-5 bg-white rounded-xl shadow overflow-hidden">
+
+  <!-- PRIVATE ACCOUNT -->
+  <form method="POST" action="/profile/toggle_private">
+
+    <div class="flex items-center justify-between p-5 border-b">
+
+      <div>
+        <div class="font-semibold text-gray-900 text-lg">
+          Private account
+        </div>
+
+        <div class="text-sm text-gray-500 mt-1">
+          Only approved followers can see your photos and videos.
+        </div>
+      </div>
+
+      <!-- SWITCH -->
+      <button
+        type="submit"
+        class="{% if profile.is_private %}bg-green-500{% else %}bg-gray-300{% endif %} relative inline-flex h-7 w-14 items-center rounded-full transition">
+
+        <span class="{% if profile.is_private %}translate-x-8{% else %}translate-x-1{% endif %} inline-block h-5 w-5 transform rounded-full bg-white transition">
+        </span>
+
+      </button>
+
+    </div>
+
+  </form>
+
+</div>
+
+<!-- INFO TEXT -->
+<div class="max-w-xl mx-auto mt-5 text-sm text-gray-600 leading-6 px-3">
+
+  <p class="mb-4">
+    When your account is public, your profile and posts can be seen by anyone on or off InsChat, even if they don't have an account.
+  </p>
+
+  <p class="mb-4">
+    When your account is private, only followers you approve can see what you share, including your photos or videos on hashtags and location pages, and your followers and following lists.
+  </p>
+
+  <p>
+    Certain information on your profile, like your profile photo and username, will still be visible to everyone.
+  </p>
+
+</div>
+
+</body>
+</html>

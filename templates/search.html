@@ -1,28 +1,62 @@
 <!doctype html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-white">
 
-<div class="p-3 bg-white shadow">
+<body class="bg-gray-100 text-black">
+
+<div class="p-3 border-b bg-white">
+
   <form method="GET" action="/explore/search">
-    <input type="text" name="q" value="{{ request.args.get('q', '') }}"
-           placeholder="Search"
-           class="w-full p-2 bg-gray-200 rounded-full text-sm">
+
+    <input
+      type="text"
+      name="q"
+      value="{{ query }}"
+      placeholder="Search users..."
+     class="w-full bg-gray-200 rounded-full px-4 py-2 outline-none"
+    >
+
   </form>
+
 </div>
 
-<div class="mt-3 px-3">
+<div class="divide-y bg-white">
+
   {% for u in users %}
-  <a href="/profile/{{ u['username'] }}" class="flex items-center space-x-3 py-2">
-    <img src="{{ url_for('static', filename='uploads/default.png') }}"
-         class="w-10 h-10 rounded-full object-cover">
-    <div>
-      <p class="font-semibold">{{ u['username'] }}</p>
+
+  <a
+    href="/profile/{{ u.id }}"
+    class="flex items-center gap-3 p-3"
+  >
+
+    {% if u.photo %}
+
+    <img
+      src="{{ u.photo }}"
+      class="w-12 h-12 rounded-full object-cover"
+    >
+
+    {% else %}
+
+    <div class="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center">
+      {{ u.username[0].upper() }}
     </div>
+
+    {% endif %}
+
+    <div>
+      <div class="font-semibold">
+        {{ u.username }}
+      </div>
+    </div>
+
   </a>
+
   {% endfor %}
+
 </div>
 
 </body>

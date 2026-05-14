@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reels</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      overflow: hidden;
+    }
+
+    .reels-container {
+      height: 100vh;
+      width: 100%;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+    }
+
+    .reel {
+      height: 100vh;
+      width: 100%;
+      position: relative;
+      scroll-snap-align: start;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    video {
+      height: 100%;
+      width: 100%;
+      object-fit: cover;
+    }
+
+    /* overlay UI */
+    .overlay {
+      position: absolute;
+      bottom: 20px;
+      left: 15px;
+      color: white;
+    }
+
+    .right-ui {
+      position: absolute;
+      right: 10px;
+      bottom: 80px;
+      color: white;
+      text-align: center;
+    }
+
+    .btn {
+      margin-bottom: 20px;
+      font-size: 22px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="reels-container" id="reelsContainer">
+
+  {% for r in reels %}
+  <div class="reel">
+    <video src="{{ r.video }}" muted loop playsinline></video>
+
+    <div class="overlay">
+      <b>@{{ profile.username }}</b><br>
+      {{ r.caption if r.caption else "Awesome reel 🔥" }}
+    </div>
+
+    <div class="right-ui">
+      <div class="btn">❤️</div>
+      <div class="btn">💬</div>
+      <div class="btn">📤</div>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+<script>
+const videos = document.querySelectorAll("video");
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    const vid = entry.target;
+
+    if (entry.isIntersecting) {
+      vid.play().catch(()=>{});
+    } else {
+      vid.pause();
+    }
+  });
+}, { threshold: 0.7 });
+
+videos.forEach(v => observer.observe(v));
+</script>
+
+</body>
+</html>

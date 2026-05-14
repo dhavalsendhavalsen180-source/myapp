@@ -7,7 +7,7 @@ create_bp = Blueprint("create", __name__, url_prefix="/create")
 
 DB_NAME = "database.db"
 
-UPLOAD_REELS_DIR = os.path.join("static", "reels")                 # ✅ reels folder
+UPLOAD_REELS_DIR = os.path.join("static", "uploads", "reels")
 UPLOAD_POSTS_DIR = os.path.join("static", "uploads", "posts")      # ✅ posts folder
 UPLOAD_STORY_DIR = os.path.join("static", "uploads", "stories")    # ✅ story folder
 

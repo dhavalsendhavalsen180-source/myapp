@@ -6,8 +6,11 @@ from flask import Blueprint, render_template, request, session, redirect, jsonif
 
 reels_bp = Blueprint("reels", __name__, url_prefix="/reels")
 
-UPLOAD_FOLDER = "static/reels"
+UPLOAD_FOLDER = "static/uploads/reels"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+THUMB_FOLDER = "static/uploads/reels/thumbs"
+os.makedirs(THUMB_FOLDER, exist_ok=True)
 
 ALLOWED_VIDEO_EXT = {"mp4", "webm", "mov", "mkv"}
 
@@ -92,6 +95,8 @@ def init_reels_db():
         c.execute("ALTER TABLE reels ADD COLUMN shares INTEGER DEFAULT 0")
     if "comments_count" not in cols:
         c.execute("ALTER TABLE reels ADD COLUMN comments_count INTEGER DEFAULT 0")
+    if "audio_name" not in cols:
+        c.execute("ALTER TABLE reels ADD COLUMN audio_name TEXT DEFAULT 'Original Audio'")
 
     conn.commit()
     conn.close()
@@ -123,6 +128,7 @@ def reels_page():
 
     c.execute("""
         SELECT reels.id, reels.user_id, reels.caption, reels.video_path,
+       reels.thumbnail,
                reels.likes, reels.saves, reels.shares, reels.comments_count,
                reels.created_at, reels.audio_name,
                users.username
@@ -141,6 +147,7 @@ def reels_page():
             "username": r["username"],
             "caption": r["caption"] or "",
             "video_path": r["video_path"],
+            "thumbnail": r["thumbnail"],
             "likes": r["likes"],
             "saves": r["saves"],
             "shares": r["shares"],
@@ -181,15 +188,24 @@ def upload_reel():
     save_path = os.path.join(UPLOAD_FOLDER, new_name)
     file.save(save_path)
 
+    # AUTO THUMBNAIL
+    thumb_name = f"{uuid.uuid4().hex}.jpg"
+    thumb_path = os.path.join(THUMB_FOLDER, thumb_name)
+
+    os.system(
+        f'ffmpeg -i "{save_path}" -ss 00:00:01 -vframes 1 "{thumb_path}" -y'
+    )
+
+
     uid = get_user_id()
 
     conn = get_conn()
     c = conn.cursor()
 
     c.execute("""
-        INSERT INTO reels (user_id, caption, video_path, audio_name, created_at)
-        VALUES (?,?,?,?,?)
-    """, (uid, caption, new_name, "Original Audio", datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        INSERT INTO reels (user_id, caption, video_path, thumbnail, audio_name, created_at)
+        VALUES (?,?,?,?,?,?)
+    """, (uid, caption, new_name, thumb_name, "Original Audio", datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
 
     conn.commit()
     conn.close()
@@ -480,3 +496,4 @@ def comment_like(id):
 
     # abhi simple dummy (baad me DB bana denge)
     return jsonify({"ok": True, "likes": 1})
+

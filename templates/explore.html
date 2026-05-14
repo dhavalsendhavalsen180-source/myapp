@@ -3,93 +3,147 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <script src="https://cdn.tailwindcss.com"></script>
+
   <title>Explore</title>
+
+  <style>
+    .no-scrollbar::-webkit-scrollbar{
+      display:none;
+    }
+
+    .no-scrollbar{
+      scrollbar-width:none;
+    }
+  </style>
 </head>
 
-<body class="bg-gray-100">
+<body class="bg-gray-100 text-black pb-20">
 
-<!-- TOP NAV -->
-<div class="flex justify-between items-center px-4 py-3 bg-white shadow">
-  <h1 class="text-xl font-bold">Explore</h1>
-  <a href="/auth/logout" class="text-2xl">🚪</a>
+<!-- TOP -->
+<div class="sticky top-0 z-50 bg-white border-b p-3">
+
+  <form method="GET" action="/explore/search">
+
+    <input
+      type="text"
+      name="q"
+      placeholder="Search users..."
+      class="w-full bg-gray-200 rounded-full px-4 py-2 outline-none"
+    >
+
+  </form>
+
 </div>
 
-<!-- STORIES (USERS DP LIST) -->
-<div class="bg-white p-3 flex space-x-4 overflow-x-auto no-scrollbar">
+<!-- STORIES -->
+<div class="flex gap-4 overflow-x-auto no-scrollbar p-3 border-b bg-white">
 
   {% for u in users %}
-  <a href="/profile/{{ u.username }}" class="text-center">
 
-    <!-- Instagram Round Story DP -->
-    <div class="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500 p-1">
-      <div class="w-full h-full rounded-full overflow-hidden bg-gray-200">
+  <a href="/profile/{{ u.id }}" class="flex-shrink-0 text-center">
+
+    <div class="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500 p-[2px]">
+
+      <div class="w-full h-full rounded-full overflow-hidden bg-gray-700">
 
         {% if u.photo %}
-        <img src="{{ url_for('static', filename='uploads/profile/' ~ u.photo) }}"
-             class="w-full h-full object-cover">
+
+        <img
+          src="{{ u.photo }}"
+          class="w-full h-full object-cover"
+        >
+
         {% else %}
-        <div class="w-full h-full flex items-center justify-center text-xl font-bold">
-          {{ u.username[0] | upper }}
+
+        <div class="w-full h-full flex items-center justify-center text-lg font-bold">
+          {{ u.username[0].upper() }}
         </div>
+
         {% endif %}
 
       </div>
+
     </div>
 
-    <p class="text-xs mt-1">{{ u.username }}</p>
+    <p class="text-xs mt-1 w-16 truncate">
+      {{ u.username }}
+    </p>
+
   </a>
+
   {% endfor %}
 
 </div>
 
-<!-- POSTS GRID -->
-<div class="grid grid-cols-3 gap-1 mt-2 px-1">
+<!-- GRID -->
+<div class="grid grid-cols-3 gap-1">
 
-  {% for p in posts %}
-  <a href="/posts/view/{{ p.id }}">
-    <img src="{{ url_for('static', filename='uploads/' ~ p.images[0]) }}"
-         class="w-full h-32 object-cover bg-gray-300">
-  </a>
+  {% for item in explore_items %}
+
+    {% if item.type == "post" %}
+
+      <a href="/posts/{{ item.id }}">
+
+        <img
+          src="{{ item.media }}"
+          class="w-full h-40 object-cover"
+        >
+
+      </a>
+
+    {% else %}
+
+      <a href="/reels">
+
+        <div class="relative">
+
+          <video
+            class="w-full h-40 object-cover"
+            muted
+            autoplay
+            loop
+            playsinline
+          >
+            <source src="{{ item.media }}" type="video/mp4">
+          </video>
+
+          <div class="absolute top-1 right-1 text-white text-xs">
+            🎬
+          </div>
+
+        </div>
+
+      </a>
+
+    {% endif %}
+
   {% endfor %}
 
 </div>
 
 <!-- BOTTOM NAV -->
-<div class="fixed bottom-0 left-0 right-0 bg-white flex justify-around py-2 text-2xl shadow-inner">
+<div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-3 text-2xl">
+
   <a href="/posts/feed">🏠</a>
-  <a href="/explore">🔍</a>
-  <a href="/posts/upload">➕</a>
-  <a href="/reels">🎬</a>
-  <a href="/profile/{{ current_user }}">👤</a>
-</div>
 
-</body>
-</html>
-
-<!doctype html>
-<html>
-<head>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100">
-
-<!-- SEARCH BAR -->
-<div class="p-3 bg-white shadow">
-  <form method="GET" action="/explore/search">
-    <input type="text" name="q" placeholder="Search"
-           class="w-full p-2 bg-gray-200 rounded-full text-sm">
-  </form>
-</div>
-
-<!-- POSTS GRID -->
-<div class="p-3 grid grid-cols-3 gap-1">
-  {% for img in images %}
-  <a href="/posts/{{ img.post_id }}">
-    <img src="{{ url_for('static', filename='uploads/' + img.image_path) }}"
-         class="w-full h-32 object-cover" />
+  <a href="/explore">
+    🔍
   </a>
-  {% endfor %}
+
+  <a href="/posts/upload">
+    ➕
+  </a>
+
+  <a href="/reels">
+    🎬
+  </a>
+
+  <a href="/profile/{{ current_user }}">
+    👤
+  </a>
+
 </div>
 
 </body>

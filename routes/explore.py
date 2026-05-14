@@ -3,62 +3,120 @@ import sqlite3
 
 explore_bp = Blueprint("explore", __name__, url_prefix="/explore")
 
-# -----------------------------
-# EXPLORE PAGE (GRID + STORIES)
-# -----------------------------
+
+# =========================
+# EXPLORE PAGE
+# =========================
 @explore_bp.route("/")
 def explore_page():
+
     conn = sqlite3.connect("database.db")
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    # Fetch users for story-style top bar
-    c.execute("SELECT id, username, photo FROM users ORDER BY id DESC")
+    # USERS (STORIES BAR)
+    c.execute("""
+        SELECT id, username, photo
+        FROM users
+        ORDER BY id DESC
+    """)
     users = c.fetchall()
 
-    # Fetch posts for explore grid
-    c.execute("SELECT id, user_id FROM posts ORDER BY id DESC")
+    explore_items = []
+
+    # =========================
+    # POSTS
+    # =========================
+    c.execute("""
+        SELECT id, user_id
+        FROM posts
+        ORDER BY id DESC
+    """)
+
     posts_raw = c.fetchall()
 
-    posts = []
     for p in posts_raw:
-        c.execute("SELECT image_path FROM post_images WHERE post_id=?", (p["id"],))
-        imgs = [row["image_path"] for row in c.fetchall()]
-        if not imgs:
-            imgs = ["noimg.jpg"]
 
-        posts.append({
-            "id": p["id"],
-            "user_id": p["user_id"],
-            "images": imgs
+        c.execute("""
+            SELECT image_path
+            FROM post_images
+            WHERE post_id=?
+            LIMIT 1
+        """, (p["id"],))
+
+        img = c.fetchone()
+
+        if img:
+            explore_items.append({
+                "type": "post",
+                "id": p["id"],
+                "media": img["image_path"]
+            })
+
+    # =========================
+    # REELS
+    # =========================
+    c.execute("""
+        SELECT id, video_path
+        FROM reels
+        ORDER BY id DESC
+    """)
+
+    reels = c.fetchall()
+
+    for r in reels:
+
+        explore_items.append({
+            "type": "reel",
+            "id": r["id"],
+            "media": "/static/reels/" + r["video_path"]
         })
 
     conn.close()
 
-    return render_template("explore.html",
-                           users=users,
-                           posts=posts,
-                           current_user=session.get("user_id"))
+    # MIX ORDER
+    explore_items = sorted(
+        explore_items,
+        key=lambda x: x["id"],
+        reverse=True
+    )
 
-# -----------------------------
-# SEARCH USERS PAGE
-# -----------------------------
+    return render_template(
+        "explore.html",
+        users=users,
+        explore_items=explore_items,
+        current_user=session.get("user_id")
+    )
+
+
+# =========================
+# SEARCH PAGE
+# =========================
 @explore_bp.route("/search")
 def explore_search():
+
     q = request.args.get("q", "").strip()
 
     conn = sqlite3.connect("database.db")
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
+    users = []
+
     if q:
-        c.execute("SELECT id, username, photo FROM users WHERE username LIKE ?", (f"%{q}%",))
+        c.execute("""
+            SELECT id, username, photo
+            FROM users
+            WHERE username LIKE ?
+            ORDER BY username ASC
+        """, (f"%{q}%",))
+
         users = c.fetchall()
-    else:
-        users = []
 
     conn.close()
 
-    return render_template("search.html",
-                           users=users,
-                           query=q)
+    return render_template(
+        "search.html",
+        users=users,
+        query=q
+    )
