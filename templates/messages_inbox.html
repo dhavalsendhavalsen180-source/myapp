@@ -6,7 +6,6 @@
 
     <!-- Top Bar -->
     <div class="dm-top">
-        <span class="dm-title">Direct</span>
         <div class="dm-top-icons">
             <a href="/messages/requests" class="icon">📥</a>
             <a href="/messages/new" class="icon">✚</a>
@@ -60,9 +59,13 @@
     <div class="bottom-nav">
         <a href="/posts/feed">🏠</a>
         <a href="/explore">🔍</a>
+        <a href="/create">➕</a>
         <a href="/reels">🎬</a>
-        <a href="/messages" class="active">📨</a>
-        <a href="/profile">👤</a>
+        <a href="/profile/{{ current_user }}">
+  <img src="{{ current_user_photo }}"
+       class="w-7 h-7 rounded-full object-cover border"
+       onerror="this.src='/static/default_dp.png'">
+</a>
     </div>
 </div>
 

@@ -71,12 +71,35 @@
       {{ r.caption if r.caption else "Awesome reel 🔥" }}
     </div>
 
-    <div class="right-ui">
-      <div class="btn">❤️</div>
-      <div class="btn">💬</div>
-      <div class="btn">📤</div>
-    </div>
-  </div>
+    <div class="flex items-center gap-5 text-black">
+
+  <!-- LIKE -->
+  <button class="flex items-center justify-center">
+    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M20.8 4.6c-1.8-1.8-4.7-1.8-6.5 0L12 6.9l-2.3-2.3c-1.8-1.8-4.7-1.8-6.5 0s-1.8 4.7 0 6.5L12 21l8.8-9.9c1.8-1.8 1.8-4.7 0-6.5z"/>
+    </svg>
+  </button>
+
+  <!-- COMMENT -->
+  <button class="flex items-center justify-center">
+    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/>
+    </svg>
+  </button>
+
+  <!-- SHARE -->
+  <button class="flex items-center justify-center">
+    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M22 2L11 13"/>
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M22 2l-7 20-4-9-9-4 20-7z"/>
+    </svg>
+  </button>
+
+</div>
   {% endfor %}
 
 </div>

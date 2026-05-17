@@ -19,24 +19,45 @@
 
 <body class="bg-gray-100 min-h-screen">
 
-  <!-- NAV -->
-  <div class="flex items-center justify-between p-4 bg-white shadow">
-    <div class="flex items-center gap-3">
-      <a href="/posts/feed" class="text-2xl">🏠</a>
-      <h1 class="font-bold text-xl">InsChat</h1>
-    </div>
+<!-- NAV (Instagram style) -->
+<div class="flex items-center justify-between px-4 py-2 bg-white shadow-sm sticky top-0 z-50">
 
-    <div class="flex items-center gap-3">
-      <a href="/social/notifications" class="text-xl">🔔</a>
+  <!-- LEFT (small + clean) -->
+  <div class="flex items-center gap-3">
 
-      <!-- 3 DOT MENU ONLY FOR OWN PROFILE -->
-      {% if current_user and (current_user == profile.id) %}
-      <a href="/profile/settings" class="text-2xl font-bold px-2">⋮</a>
-      {% endif %}
+ <a href="/create" class="text-4xl font-light w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+  +
+</a>
 
-      <a href="/auth/logout" class="text-xl">🚪</a>
-    </div>
   </div>
+
+  <!-- CENTER (username + dropdown) -->
+  <div class="flex items-center gap-1 font-semibold text-base">
+
+    <span>{{ profile.username }}</span>
+
+    <svg class="w-3.5 h-3.5 mt-[2px] text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+
+  </div>
+
+  <!-- RIGHT -->
+  <div class="flex items-center gap-3">
+
+    <a href="/social/notifications" class="text-xl">
+      🔔
+    </a>
+
+    {% if current_user and (current_user == profile.id) %}
+    <a href="/profile/settings" class="text-xl">
+      ☰
+    </a>
+    {% endif %}
+
+  </div>
+
+</div>
 
   <!-- PROFILE HEADER -->
   <div class="max-w-3xl mx-auto mt-6 bg-white rounded-xl shadow p-6">
@@ -111,10 +132,43 @@
 <!-- POSTS / REELS TABS -->
 <div class="max-w-3xl mx-auto mt-4 bg-white rounded-xl shadow">
 
-  <!-- TABS -->
-  <div class="flex justify-around border-b text-gray-500">
-    <button id="tab-posts" onclick="showTab('posts')" class="py-3 w-full font-semibold border-b-2 border-black text-black">📷</button>
-    <button id="tab-reels" onclick="showTab('reels')" class="py-3 w-full font-semibold">🎬</button>
+<!-- TABS -->
+<div class="flex bg-white border-b">
+
+  <!-- POSTS -->
+  <button id="tab-posts"
+    onclick="showTab('posts')"
+    class="flex-1 py-3 flex justify-center items-center relative text-black">
+
+    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <rect x="3" y="3" width="7" height="7"></rect>
+      <rect x="14" y="3" width="7" height="7"></rect>
+      <rect x="14" y="14" width="7" height="7"></rect>
+      <rect x="3" y="14" width="7" height="7"></rect>
+    </svg>
+
+    <div class="absolute bottom-0 w-full h-[2px] bg-black"></div>
+
+  </button>
+
+  <!-- REELS -->
+<!-- REELS (Instagram real style) -->
+<button id="tab-reels"
+  onclick="showTab('reels')"
+  class="flex-1 py-3 flex justify-center items-center text-gray-400">
+
+  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+
+    <!-- reel frame -->
+    <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+
+    <!-- play triangle (Instagram reels feel) -->
+    <path d="M10 9l6 3-6 3V9z" fill="currentColor"></path>
+
+  </svg>
+
+</button>
+
 </div>
 
   <!-- POSTS TAB START -->

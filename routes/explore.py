@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, session, request
 import sqlite3
+import os
 
 explore_bp = Blueprint("explore", __name__, url_prefix="/explore")
 
@@ -14,7 +15,7 @@ def explore_page():
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    # USERS (STORIES BAR)
+    # USERS
     c.execute("""
         SELECT id, username, photo
         FROM users
@@ -81,11 +82,33 @@ def explore_page():
         reverse=True
     )
 
+    # =========================
+    # CURRENT USER PHOTO
+    # =========================
+    current_user = session.get("user_id")
+
+    jpg = f"static/profile/user_{current_user}.jpg"
+    png = f"static/profile/user_{current_user}.png"
+    jpeg = f"static/profile/user_{current_user}.jpeg"
+
+    if os.path.exists(jpg):
+        current_user_photo = "/" + jpg
+
+    elif os.path.exists(png):
+        current_user_photo = "/" + png
+
+    elif os.path.exists(jpeg):
+        current_user_photo = "/" + jpeg
+
+    else:
+        current_user_photo = "/static/default_dp.png"
+
     return render_template(
         "explore.html",
         users=users,
         explore_items=explore_items,
-        current_user=session.get("user_id")
+        current_user=current_user,
+        current_user_photo=current_user_photo
     )
 
 

@@ -3,81 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <script src="https://cdn.tailwindcss.com"></script>
-
   <title>Explore</title>
-
-  <style>
-    .no-scrollbar::-webkit-scrollbar{
-      display:none;
-    }
-
-    .no-scrollbar{
-      scrollbar-width:none;
-    }
-  </style>
 </head>
 
 <body class="bg-gray-100 text-black pb-20">
 
-<!-- TOP -->
+<!-- TOP SEARCH -->
 <div class="sticky top-0 z-50 bg-white border-b p-3">
-
   <form method="GET" action="/explore/search">
-
     <input
       type="text"
       name="q"
       placeholder="Search users..."
       class="w-full bg-gray-200 rounded-full px-4 py-2 outline-none"
     >
-
   </form>
-
 </div>
 
-<!-- STORIES -->
-<div class="flex gap-4 overflow-x-auto no-scrollbar p-3 border-b bg-white">
-
+<!-- USERS -->
+<div class="flex gap-4 overflow-x-auto p-3 border-b bg-white">
   {% for u in users %}
-
   <a href="/profile/{{ u.id }}" class="flex-shrink-0 text-center">
 
     <div class="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500 p-[2px]">
-
       <div class="w-full h-full rounded-full overflow-hidden bg-gray-700">
 
         {% if u.photo %}
-
-        <img
-          src="{{ u.photo }}"
-          class="w-full h-full object-cover"
-        >
-
+        <img src="{{ u.photo }}" class="w-full h-full object-cover">
         {% else %}
-
-        <div class="w-full h-full flex items-center justify-center text-lg font-bold">
+        <div class="w-full h-full flex items-center justify-center font-bold">
           {{ u.username[0].upper() }}
         </div>
-
         {% endif %}
 
       </div>
-
     </div>
 
-    <p class="text-xs mt-1 w-16 truncate">
-      {{ u.username }}
-    </p>
+    <p class="text-xs mt-1 w-16 truncate">{{ u.username }}</p>
 
   </a>
-
   {% endfor %}
-
 </div>
 
-<!-- GRID -->
+<!-- GRID (POSTS + REELS) -->
 <div class="grid grid-cols-3 gap-1">
 
   {% for item in explore_items %}
@@ -85,36 +54,19 @@
     {% if item.type == "post" %}
 
       <a href="/posts/{{ item.id }}">
-
-        <img
-          src="{{ item.media }}"
-          class="w-full h-40 object-cover"
-        >
-
+        <img src="{{ item.media }}" class="w-full h-40 object-cover">
       </a>
 
     {% else %}
 
       <a href="/reels">
-
         <div class="relative">
-
-          <video
-            class="w-full h-40 object-cover"
-            muted
-            autoplay
-            loop
-            playsinline
-          >
-            <source src="{{ item.media }}" type="video/mp4">
+          <video class="w-full h-40 object-cover bg-black" muted playsinline preload="metadata">
+            <source src="{{ item.media }}">
           </video>
 
-          <div class="absolute top-1 right-1 text-white text-xs">
-            🎬
-          </div>
-
+          <div class="absolute top-1 right-1 text-white text-xs">🎬</div>
         </div>
-
       </a>
 
     {% endif %}
@@ -125,26 +77,74 @@
 
 <!-- BOTTOM NAV -->
 <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-3 text-2xl">
+   <a href="/posts/feed" class="flex items-center justify-center">
+  <svg class="w-6 h-6 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+    <path stroke-linecap="round" stroke-linejoin="round"
+      d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1V10.5z"/>
+  </svg>
+</a>
+  <a href="/explore" class="flex items-center justify-center">
+  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+    <circle cx="11" cy="11" r="7"></circle>
+    <path d="M21 21l-4.3-4.3"></path>
+  </svg>
+</a>
+  <a href="/create" class="flex items-center justify-center">
+  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path>
+  </svg>
+</a>
+  <a href="/reels" class="flex items-center justify-center">
+  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
 
-  <a href="/posts/feed">🏠</a>
+    <!-- reel frame -->
+    <rect x="3" y="3" width="18" height="18" rx="3"></rect>
 
-  <a href="/explore">
-    🔍
-  </a>
+    <!-- play triangle -->
+    <path d="M10 9l6 3-6 3V9z" fill="currentColor"></path>
 
-  <a href="/posts/upload">
-    ➕
-  </a>
-
-  <a href="/reels">
-    🎬
-  </a>
-
+  </svg>
+</a>
   <a href="/profile/{{ current_user }}">
-    👤
+    <img src="{{ current_user_photo }}"
+         class="w-7 h-7 rounded-full object-cover border"
+         onerror="this.src='/static/default_dp.png'">
   </a>
 
 </div>
 
 </body>
 </html>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const videos = document.querySelectorAll("video");
+
+  const observer = new IntersectionObserver((entries) => {
+
+    entries.forEach(entry => {
+
+      if (entry.isIntersecting) {
+
+        entry.target.play();
+
+      } else {
+
+        entry.target.pause();
+
+      }
+
+    });
+
+  }, {
+    threshold: 0.7
+  });
+
+  videos.forEach(video => {
+    observer.observe(video);
+  });
+
+});
+</script>
+
