@@ -93,19 +93,44 @@ video{
 .actions div{cursor:pointer}
 .actions span{font-size:12px;display:block}
 
-/* HEART */
+/* HEART ANIMATION */
 .heart{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%) scale(0);
-  font-size:80px;
-  opacity:0;
-  transition:.2s;
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%) scale(0);
+opacity:0;
+pointer-events:none;
+transition:all .35s cubic-bezier(.175,.885,.32,1.275);
+filter:drop-shadow(0 0 25px rgba(255,0,90,.7));
+z-index:999;
 }
+
+.heart svg{
+width:120px;
+height:120px;
+fill:#ff004f;
+stroke:#fff;
+stroke-width:1.5;
+}
+
 .heart.show{
-  transform:translate(-50%,-50%) scale(1.2);
-  opacity:1;
+opacity:1;
+transform:translate(-50%,-50%) scale(1);
+animation:heartPop .7s ease;
+}
+
+.heart.break{
+opacity:0;
+transform:translate(-50%,-50%) scale(1.8) rotate(-12deg);
+filter:blur(2px);
+}
+
+@keyframes heartPop{
+0%{transform:translate(-50%,-50%) scale(.2)}
+40%{transform:translate(-50%,-50%) scale(1.25)}
+60%{transform:translate(-50%,-50%) scale(.95)}
+100%{transform:translate(-50%,-50%) scale(1)}
 }
 
 /* COMMENT SHEET */
@@ -147,6 +172,69 @@ video{
   border-radius:6px;
   font-size:11px;
 }
+.liked{fill:#ff3040!important;stroke:#ff3040!important;transform:scale(1.12);}
+.heart{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:90px;opacity:0;transition:.25s;pointer-events:none;}
+.heart.show{opacity:1;transform:translate(-50%,-50%) scale(1.25);}
+z-index:9999;
+color:white;
+text-shadow:0 0 25px rgba(255,255,255,.9);
+
+
+.reel-userbar{position:absolute;bottom:180px;left:15px;right:80px;display:flex;justify-content:space-between;align-items:center;color:white}
+.reel-userbar .left{display:flex;align-items:center;gap:10px}
+.avatar{width:38px;height:38px;border-radius:50%;border:2px solid white;object-fit:cover}
+.username{font-weight:600;font-size:14px}
+.fire{color:orange}
+.age{font-size:12px;opacity:0.8}
+.sub{font-size:12px;opacity:0.7}
+.follow-btn{background:#0095f6;color:white;border:none;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600}
+.follow-btn.following{background:transparent;border:1px solid white}
+.reel-userbar a:active {
+  transform: scale(0.97);
+}
+
+.reel-userbar{
+  position:absolute;
+  bottom:95px;
+
+  left:12px;
+  right:70px;   /* 🔥 important */
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  z-index:20;
+}
+
+.user-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+
+  text-decoration:none;
+  color:white;
+
+  flex:1;   /* 🔥 important */
+}
+
+.follow-btn{
+  background:#0095f6;
+  color:white;
+  border:none;
+
+  padding:7px 18px;
+
+  border-radius:10px;
+
+  font-size:14px;
+  font-weight:700;
+
+  cursor:pointer;
+
+  margin-left:10px;   /* 🔥 username ke pass */
+}
+
 </style>
 </head>
 
@@ -155,7 +243,7 @@ video{
 <div class="reels-wrapper" id="wrapper">
 
 {% for reel in reels %}
-<div class="reel" ondblclick="like({{ reel.id }})">
+<div class="reel" ondblclick="dblLike({{ reel.id }})">
 
 <video id="video-{{ reel.id }}"
   src="/static/reels/{{ reel.video_path }}"
@@ -169,12 +257,31 @@ video{
 
   <div class="caption">{{ reel.caption }}</div>
 
-  <!-- AUDIO -->
-  <div class="audio" onclick="openAudio('{{ reel.audio_name|default('Original Audio') }}')">
-    <div class="marquee">
-      🎵 {{ reel.audio_name|default('Original Audio') }} • @{{ reel.username }}
+<!-- REEL USER BAR (INSTAGRAM FIXED) -->
+<div class="reel-userbar">
+
+  <a href="/profile/{{ reel.user_id }}" class="user-left">
+    
+    <img class="avatar" src="/static/profile/user_1.jpg">
+
+    <div class="user-info">
+      <div class="username-row">
+        <span class="username">@{{ reel.username }}</span>
+        <span class="fire">🔥</span>
+        <span class="age">• 18+</span>
+      </div>
+      <div class="sub">Tap to view profile</div>
     </div>
-  </div>
+
+  </a>
+
+{% if reel.user_id != session.user_id %}
+<button class="follow-btn" id="follow-{{ reel.user_id }}" onclick="followUser({{ reel.user_id }})">
+  Follow
+</button>
+{% endif %}
+
+</div>
 
   <!-- ACTIONS -->
 <div class="absolute right-3 bottom-20 flex flex-col items-center gap-5 text-white">
@@ -206,7 +313,7 @@ video{
   </div>
 
   <!-- SHARE -->
-  <div onclick="share({{ reel.id }})" class="flex flex-col items-center">
+  <div onclick="openShare({{ reel.id }})" class="flex flex-col items-center">
     <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
       <path stroke-linecap="round" stroke-linejoin="round"
         d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
@@ -228,7 +335,7 @@ video{
 </div>
 
 <!-- DOUBLE TAP HEART -->
-<div class="heart hidden" id="heart-{{ reel.id }}">
+<div class="heart" id="heart-{{ reel.id }}">
   ❤️
 </div>
 {% endfor %}
@@ -302,18 +409,57 @@ document.querySelectorAll("video").forEach(v=>{
 });
 
 
-/* LIKE */
+/* INSTAGRAM LIKE */
 function like(id){
-  fetch(`/reels/like_toggle/${id}`,{method:"POST"})
+
+  fetch(`/reels/like_toggle/${id}`,{
+    method:"POST"
+  })
+
   .then(r=>r.json())
+
   .then(d=>{
-    if(d.ok){
-      document.getElementById(`likeCount-${id}`).innerText=d.count;
-      let h=document.getElementById(`heart-${id}`);
-      h.classList.add("show");
-      setTimeout(()=>h.classList.remove("show"),500);
+
+    if(!d.ok) return;
+
+    document.getElementById(`likeCount-${id}`).innerText = d.count;
+
+    const icon = document.getElementById(`likeIcon-${id}`);
+    const heart = document.getElementById(`heart-${id}`);
+
+    if(d.liked){
+      icon.classList.add("liked");
+    }else{
+      icon.classList.remove("liked");
     }
+
+    heart.classList.add("show");
+
+    setTimeout(()=>{
+      heart.classList.remove("show");
+    },500);
+
   });
+}
+
+function dblLike(id){
+
+  const icon = document.getElementById(`likeIcon-${id}`);
+
+  if(icon.classList.contains("liked")){
+
+    const heart = document.getElementById(`heart-${id}`);
+
+    heart.classList.add("show");
+
+    setTimeout(()=>{
+      heart.classList.remove("show");
+    },500);
+
+    return;
+  }
+
+  like(id);
 }
 
 /* SAVE FIX */
@@ -326,10 +472,57 @@ async function save(id){
   }
 }
 
-/* SHARE */
+/* FOLLOW BUTTON */
+async function followUser(userId){
+
+  const btn = document.getElementById(`follow-${userId}`);
+
+  const res = await fetch(`/reels/follow/${userId}`,{
+    method:"POST"
+  });
+
+  const d = await res.json();
+
+  if(d.ok){
+
+    if(d.following){
+      btn.innerText = "Following";
+      btn.classList.add("following");
+    }else{
+      btn.innerText = "Follow";
+      btn.classList.remove("following");
+    }
+
+  }
+}
+
+/* SHARE - Instagram style fix */
 function share(id){
-  navigator.clipboard.writeText(location.href);
-  fetch(`/reels/share/${id}`,{method:"POST"});
+
+  const reelUrl = `${window.location.origin}/reels?open=${id}`;
+
+  // copy link
+  navigator.clipboard.writeText(reelUrl)
+    .then(() => {
+      alert("Link copied ✅");
+    })
+    .catch(() => {
+      alert("Copy failed ❌");
+    });
+
+  // backend count update
+  fetch(`/reels/share/${id}`, {
+    method: "POST"
+  });
+
+  // optional: share sheet (mobile Instagram style)
+  if (navigator.share) {
+    navigator.share({
+      title: "Check this Reel",
+      text: "Watch this reel",
+      url: reelUrl
+    });
+  }
 }
 
 /* AUDIO */
@@ -403,3 +596,4 @@ function openCommentsPage(id){
 
 </body>
 </html>
+{% include "reels_sher_nano.html" %}

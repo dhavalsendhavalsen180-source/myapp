@@ -19,7 +19,7 @@ ALLOWED_VIDEO_EXT = {"mp4", "webm", "mov", "mkv"}
 # ✅ DB CONNECTION
 # ===============================
 def get_conn():
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect("database.db", timeout=20)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -67,7 +67,18 @@ def init_reels_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
-
+    # =========================
+# FOLLOW SYSTEM TABLE
+# =========================
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS follows (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        follower_id INTEGER,
+        following_id INTEGER,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(follower_id, following_id)
+    )
+    """)   
     # saves table
     c.execute("""
         CREATE TABLE IF NOT EXISTS reel_saves (
@@ -221,24 +232,25 @@ def like_toggle(reel_id):
     init_reels_db()
 
     if "user_id" not in session:
-        return jsonify({"ok": False, "error": "login required"})
+        return jsonify({"ok": False})
 
     uid = get_user_id()
 
-    conn = get_conn()
+    conn = sqlite3.connect("database.db", timeout=10)
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    c.execute("SELECT id FROM reel_likes WHERE reel_id=? AND user_id=?", (reel_id, uid))
-    row = c.fetchone()
+    c.execute("SELECT 1 FROM reel_likes WHERE reel_id=? AND user_id=?", (reel_id, uid))
+    liked = c.fetchone()
 
-    if row:
+    if liked:
         c.execute("DELETE FROM reel_likes WHERE reel_id=? AND user_id=?", (reel_id, uid))
-        c.execute("UPDATE reels SET likes = likes - 1 WHERE id=? AND likes > 0", (reel_id,))
-        action = "unliked"
+        c.execute("UPDATE reels SET likes = CASE WHEN likes > 0 THEN likes - 1 ELSE 0 END WHERE id=?", (reel_id,))
+        new_state = False
     else:
-        c.execute("INSERT INTO reel_likes (reel_id, user_id) VALUES (?,?)", (reel_id, uid))
+        c.execute("INSERT OR IGNORE INTO reel_likes (reel_id, user_id) VALUES (?, ?)", (reel_id, uid))
         c.execute("UPDATE reels SET likes = likes + 1 WHERE id=?", (reel_id,))
-        action = "liked"
+        new_state = True
 
     conn.commit()
 
@@ -247,7 +259,11 @@ def like_toggle(reel_id):
 
     conn.close()
 
-    return jsonify({"ok": True, "action": action, "count": count})
+    return jsonify({
+        "ok": True,
+        "liked": new_state,
+        "count": count
+    })
 
 
 # ===============================
@@ -499,3 +515,91 @@ def comment_like(id):
     # abhi simple dummy (baad me DB bana denge)
     return jsonify({"ok": True, "likes": 1})
 
+
+@reels_bp.route("/follow/<int:user_id>", methods=["POST"])
+def follow_user(user_id):
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"ok": False})
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute("SELECT id FROM follows WHERE follower_id=? AND following_id=?", (uid, user_id))
+    row = c.fetchone()
+
+    if row:
+        c.execute("DELETE FROM follows WHERE follower_id=? AND following_id=?", (uid, user_id))
+        following = False
+    else:
+        c.execute("INSERT INTO follows (follower_id, following_id) VALUES (?,?)", (uid, user_id))
+        following = True
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"ok": True, "following": following})
+
+# =========================
+# FOLLOWING USERS LIST FIX
+# =========================
+@reels_bp.route("/api/following_users")
+def following_users():
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"users": []})
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT u.id, u.username, u.photo
+        FROM follows f
+        JOIN users u ON u.id = f.following_id
+        WHERE f.follower_id=?
+    """, (uid,))
+
+    users = [
+        {
+            "id": r["id"],
+            "username": r["username"],
+            "avatar": r["photo"] or "/static/default.jpg"
+        }
+        for r in c.fetchall()
+    ]
+
+    conn.close()
+    return jsonify({"users": users})
+
+
+# =========================
+# SHARE TO USER (DM STYLE)
+# =========================
+@reels_bp.route("/reels/share_to_user/<int:reel_id>/<int:user_id>", methods=["POST"])
+def share_to_user(reel_id, user_id):
+    sender = session.get("user_id")
+    if not sender:
+        return jsonify({"ok": False})
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS reel_shares (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER,
+            receiver_id INTEGER,
+            reel_id INTEGER,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    c.execute("""
+        INSERT INTO reel_shares (sender_id, receiver_id, reel_id)
+        VALUES (?,?,?)
+    """, (sender, user_id, reel_id))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"ok": True})

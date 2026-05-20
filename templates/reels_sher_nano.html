@@ -1,0 +1,172 @@
+<div id="shareModal" class="share-modal">
+
+  <div class="sheet">
+
+    <div class="top">
+      <b>Share to</b>
+      <span onclick="closeShare()">✕</span>
+    </div>
+
+    <!-- USER LIST -->
+    <div id="userList" class="userList"></div>
+
+    <!-- OPTIONS -->
+    <div class="options">
+
+      <button onclick="shareWhatsApp()">📱 WhatsApp</button>
+      <button onclick="copyLink()">🔗 Copy Link</button>
+      <button onclick="moreShare()">📲 More</button>
+
+    </div>
+
+  </div>
+</div>
+
+<style>
+.share-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:flex-end;
+  z-index:99999;
+}
+
+.sheet{
+  width:100%;
+  background:white;
+  border-radius:18px 18px 0 0;
+  padding:12px;
+  max-height:75vh;
+  animation:up .2s ease;
+}
+
+@keyframes up{
+  from{transform:translateY(100%)}
+  to{transform:translateY(0)}
+}
+
+.top{
+  display:flex;
+  justify-content:space-between;
+  font-weight:700;
+  padding:8px;
+}
+
+.userList{
+  max-height:300px;
+  overflow:auto;
+}
+
+.user{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+}
+
+.user img{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  object-fit:cover;
+}
+
+.user .name{
+  font-weight:600;
+  font-size:14px;
+}
+
+.user .sub{
+  font-size:12px;
+  opacity:0.6;
+}
+
+.options button{
+  width:100%;
+  padding:12px;
+  margin-top:6px;
+  border:none;
+  background:#f2f2f2;
+  border-radius:10px;
+  font-weight:600;
+}
+</style>
+
+<script>
+
+let currentReel=null;
+
+/* OPEN SHARE */
+function openShare(id){
+  currentReel=id;
+  document.getElementById("shareModal").style.display="flex";
+  loadUsers();
+}
+
+/* CLOSE */
+function closeShare(){
+  document.getElementById("shareModal").style.display="none";
+}
+
+/* LOAD FOLLOWING USERS (IMPORTANT) */
+async function loadUsers(){
+
+  const box=document.getElementById("userList");
+  box.innerHTML="Loading...";
+
+  const res = await fetch("/api/following_users");
+  const data = await res.json();
+
+  box.innerHTML="";
+
+  data.users.forEach(u=>{
+    box.innerHTML += `
+      <div class="user" onclick="sendToUser(${u.id})">
+
+        <img src="${u.avatar || '/static/default.jpg'}">
+
+        <div>
+          <div class="name">${u.username}</div>
+          <div class="sub">${u.fullname || ''}</div>
+        </div>
+
+      </div>
+    `;
+  });
+}
+
+/* SEND TO USER (DM STYLE) */
+async function sendToUser(uid){
+
+  await fetch(`/reels/share_to_user/${currentReel}/${uid}`,{
+    method:"POST"
+  });
+
+  alert("Shared!");
+  closeShare();
+}
+
+/* WHATSAPP */
+function shareWhatsApp(){
+  let url=window.location.href;
+  window.open("https://wa.me/?text="+encodeURIComponent(url));
+}
+
+/* COPY */
+function copyLink(){
+  navigator.clipboard.writeText(window.location.href);
+  alert("Copied!");
+}
+
+/* MORE */
+function moreShare(){
+  navigator.share({
+    title:"Reel",
+    url:window.location.href
+  });
+}
+
+</script>
