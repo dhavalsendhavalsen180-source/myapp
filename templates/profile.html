@@ -19,41 +19,75 @@
 
 <body class="bg-gray-100 min-h-screen">
 
-<!-- NAV (Instagram style) -->
-<div class="flex items-center justify-between px-4 py-2 bg-white shadow-sm sticky top-0 z-50">
+<div class="flex items-center justify-between px-4 py-3 bg-white border-b sticky top-0 z-50">
 
-  <!-- LEFT (small + clean) -->
+  <!-- LEFT -->
   <div class="flex items-center gap-3">
 
- <a href="/create" class="text-4xl font-light w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-  +
-</a>
+    <a href="/create"
+       class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-gray-100 text-3xl font-light">
+      +
+    </a>
 
   </div>
 
-  <!-- CENTER (username + dropdown) -->
-  <div class="flex items-center gap-1 font-semibold text-base">
+  <!-- CENTER -->
+  <div class="flex items-center gap-1 font-semibold text-[17px]">
 
     <span>{{ profile.username }}</span>
 
-    <svg class="w-3.5 h-3.5 mt-[2px] text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    <svg class="w-4 h-4 text-gray-700 mt-[1px]"
+         fill="none"
+         viewBox="0 0 24 24"
+         stroke="currentColor">
+
+      <path stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 9l-7 7-7-7" />
     </svg>
 
   </div>
 
   <!-- RIGHT -->
-  <div class="flex items-center gap-3">
+  <div class="flex items-center gap-5">
 
-    <a href="/social/notifications" class="text-xl">
-      🔔
+    <!-- NOTIFICATIONS -->
+    <a href="/social/notifications"
+       class="relative">
+
+      <svg class="w-7 h-7"
+           viewBox="0 0 24 24"
+           fill="none"
+           stroke="currentColor"
+           stroke-width="1.8">
+
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 01-6 0"/>
+      </svg>
+
+      <span id="notif-badge"
+            class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center font-bold">
+      </span>
+
     </a>
 
-    {% if current_user and (current_user == profile.id) %}
-    <a href="/profile/settings" class="text-xl">
-      ☰
+    <!-- SETTINGS -->
+    <a href="/profile/settings">
+
+      <svg class="w-7 h-7"
+           fill="none"
+           viewBox="0 0 24 24"
+           stroke="currentColor"
+           stroke-width="1.8">
+
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+
     </a>
-    {% endif %}
 
   </div>
 
@@ -86,11 +120,11 @@
               <button id="followBtn" onclick="toggleFollow({{ profile.id }})"
                 class="px-4 py-2 rounded-md font-semibold {% if is_following %}btn-outline{% else %}btn-primary{% endif %}">
                 {% if is_following %}Following{% else %}Follow{% endif %}
-              </button>
+              </a>
 
 
             {% else %}
-              <button onclick="openEdit()" class="px-4 py-2 border rounded-md">Edit Profile</button>
+              <button onclick="openEdit()" class="px-4 py-2 border rounded-md">Edit Profile</a>
             {% endif %}
           </div>
 
@@ -149,7 +183,7 @@
 
     <div class="absolute bottom-0 w-full h-[2px] bg-black"></div>
 
-  </button>
+  </a>
 
   <!-- REELS -->
 <!-- REELS (Instagram real style) -->
@@ -167,7 +201,7 @@
 
   </svg>
 
-</button>
+</a>
 
 </div>
 
@@ -226,7 +260,7 @@
     <div class="bg-white rounded-xl w-full max-w-lg p-6">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-semibold">Edit Profile</h3>
-        <button onclick="closeEdit()" class="text-gray-500">✕</button>
+        <button onclick="closeEdit()" class="text-gray-500">✕</a>
       </div>
 
       <form id="editForm" method="POST" action="/profile/edit" enctype="multipart/form-data" class="space-y-4">
@@ -246,8 +280,8 @@
         </div>
 
         <div class="flex justify-end gap-3">
-          <button type="button" onclick="closeEdit()" class="px-4 py-2 border rounded">Cancel</button>
-          <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Save</button>
+          <button type="button" onclick="closeEdit()" class="px-4 py-2 border rounded">Cancel</a>
+          <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Save</a>
         </div>
       </form>
     </div>
@@ -259,7 +293,7 @@
 
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-semibold">Menu</h3>
-        <button onclick="closeMenu()" class="text-gray-500 text-xl">✕</button>
+        <button onclick="closeMenu()" class="text-gray-500 text-xl">✕</a>
       </div>
 
       <div class="space-y-3">
@@ -267,7 +301,7 @@
           🔖 Saved Posts
         </a>
 
-        <a href="/settings" class="block w-full text-center py-3 rounded-lg border font-semibold">
+        <a href="/profile/settings" class="block w-full text-center py-3 rounded-lg border font-semibold">
           ⚙️ Settings
         </a>
 
@@ -351,7 +385,7 @@
 <!-- REEL MODAL -->
 <div id="reelModal" class="fixed inset-0 bg-black hidden items-center justify-center z-50">
   <video id="reelPlayer" class="max-h-full max-w-full" controls autoplay></video>
-  <button onclick="closeReel()" class="absolute top-5 right-5 text-white text-2xl">✕</button>
+  <button onclick="closeReel()" class="absolute top-5 right-5 text-white text-2xl">✕</a>
 </div>
 <script>
 function closeReel(){

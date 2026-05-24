@@ -128,41 +128,42 @@ function renderUsers(users){
 
   const box = document.getElementById("shareUsers");
 
-  if(!users || users.length === 0){
-    box.innerHTML = `
-      <div style="grid-column:span 4;text-align:center;color:#777;font-size:13px">
-        No users
-      </div>`;
+  if(!users.length){
+    box.innerHTML = "<div style='grid-column:span 4;text-align:center;color:#777'>No users</div>";
     return;
   }
 
   box.innerHTML = "";
 
-  users.forEach(user => {
+  users.forEach(user=>{
 
     box.innerHTML += `
       <div onclick="sendReel(${user.id})"
       style="text-align:center;cursor:pointer;">
 
-        <img src="${user.avatar}"
-        onerror="this.src='/static/default_dp.png'"
+        <img src="${
+          user.avatar && user.avatar !== 'None' && user.avatar !== 'null'
+          ? (user.avatar.startsWith('http') ? user.avatar : '/static/profile/' + user.avatar)
+          : '/static/profile/user_1.jpg'
+        }"
+        onerror="this.src='/static/profile/user_1.jpg'"
         style="
-          width:60px;
-          height:60px;
-          border-radius:50%;
-          object-fit:cover;
-          border:2px solid #eee;
+        width:60px;
+        height:60px;
+        border-radius:50%;
+        object-fit:cover;
+        border:2px solid #eee;
         ">
 
         <div style="
-          font-size:12px;
-          margin-top:6px;
-          color:#111;
-          white-space:nowrap;
-          overflow:hidden;
-          text-overflow:ellipsis;
+        font-size:12px;
+        margin-top:6px;
+        color:#111;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
         ">
-          ${user.username}
+        ${user.username}
         </div>
 
       </div>

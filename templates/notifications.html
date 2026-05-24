@@ -1,69 +1,358 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Notifications — InsChat</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Notifications • InsChat</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+
+body{
+    background:#000;
+    color:#fff;
+    font-family:Arial,sans-serif;
+}
+
+::-webkit-scrollbar{
+    width:0;
+}
+
+/* CARD */
+.notify-card{
+    transition:.18s;
+}
+
+.notify-card:hover{
+    background:#0f0f0f;
+}
+
+/* INSTAGRAM STORY BORDER */
+.story-ring{
+    background:
+    linear-gradient(#000,#000) padding-box,
+    linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5) border-box;
+
+    border:2px solid transparent;
+}
+
+/* FOLLOW BTN */
+.follow-btn{
+    background:#0095f6;
+}
+
+.follow-btn:hover{
+    background:#1877f2;
+}
+
+/* MESSAGE BTN */
+.msg-btn{
+    background:#262626;
+}
+
+.msg-btn:hover{
+    background:#333;
+}
+
+/* SECTION */
+.section-title{
+    color:#a1a1aa;
+    font-size:14px;
+    font-weight:700;
+    padding:18px 16px 8px;
+}
+
+/* BLUE DOT */
+.blue-dot{
+    width:8px;
+    height:8px;
+    border-radius:999px;
+    background:#0095f6;
+}
+
+</style>
+
 </head>
 
-<body class="bg-gray-100">
+<body>
 
-<!-- NAVBAR -->
-<div class="flex items-center justify-between p-4 bg-white shadow">
-  <h1 class="text-xl font-bold">Notifications</h1>
-  <a href="/posts/feed" class="text-2xl">🏠</a>
+<!-- TOP BAR -->
+<div class="sticky top-0 z-50 bg-black border-b border-[#1f1f1f]">
+
+    <div class="max-w-xl mx-auto flex items-center justify-between px-4 py-4">
+
+        <div class="text-2xl font-bold">
+            Notifications
+        </div>
+
+        <a href="/posts/feed"
+        class="text-2xl">
+            🏠
+        </a>
+
+    </div>
+
 </div>
 
-<div class="max-w-xl mx-auto mt-4 space-y-3">
 
-  {% if notifications|length == 0 %}
-    <div class="text-center text-gray-500 mt-10 text-lg">No notifications yet</div>
-  {% endif %}
 
-  {% for n in notifications %}
-    <div class="bg-white p-4 rounded-xl shadow flex items-center space-x-3 
-                {% if not n.is_read %} border-l-4 border-blue-500 {% endif %}">
-      
-      <!-- USER ICON -->
-      <div class="w-12 h-12 bg-gradient-to-r from-pink-500 to-yellow-500 text-white
-                  rounded-full flex items-center justify-center text-xl font-bold">
-        {{ n.actor_id }}
-      </div>
+<div class="max-w-xl mx-auto pb-32">
 
-      <!-- TEXT -->
-      <div class="flex-grow text-sm">
 
-        {% if n.type == "like" %}
-          <span class="font-semibold">Someone</span> liked your post ❤️
+<!-- FOLLOW REQUESTS -->
+<div class="px-4 py-4 border-b border-[#161616] flex items-center gap-3">
+
+    <div class="relative">
+
+        <div class="flex -space-x-3">
+
+            <img src="/static/default_dp.png"
+            class="w-10 h-10 rounded-full border-2 border-black object-cover">
+
+            <img src="/static/default_dp.png"
+            class="w-10 h-10 rounded-full border-2 border-black object-cover">
+
+        </div>
+
+    </div>
+
+    <div class="flex-1">
+
+        <div class="font-semibold text-[15px]">
+            Follow requests
+        </div>
+
+        <div class="text-gray-400 text-sm">
+            Approve or ignore requests
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- TODAY -->
+<div class="section-title">
+Today
+</div>
+
+
+
+{% for n in notifications %}
+
+<div class="notify-card px-4 py-4 flex items-center gap-3 border-b border-[#121212]">
+
+    <!-- PROFILE -->
+    <a href="/profile/{{ n.actor_id }}">
+
+        <div class="story-ring rounded-full p-[2px]">
+
+            <img
+
+            src="{% if n.actor_photo and n.actor_photo != 'None' and n.actor_photo != 'null' %}
+
+                    {% if n.actor_photo.startswith('/static/') %}
+                        {{ n.actor_photo }}
+                    {% else %}
+                        /static/profile/{{ n.actor_photo }}
+                    {% endif %}
+
+                {% else %}
+                    /static/default_dp.png
+                {% endif %}"
+
+            onerror="this.src='/static/default_dp.png'"
+
+            class="w-14 h-14 rounded-full object-cover bg-[#111]">
+
+        </div>
+
+    </a>
+
+
+
+    <!-- TEXT -->
+    <div class="flex-1 min-w-0">
+
+        <div class="text-[15px] leading-5 break-words">
+
+            <a
+            href="/profile/{{ n.actor_id }}"
+            class="font-semibold hover:underline">
+
+                {{ n.actor_username }}
+
+            </a>
+
+
+            {% if n.type == "follow" %}
+
+                started following you 👤
+
+            {% elif n.type == "like" %}
+
+                liked your post ❤️
+
+            {% elif n.type == "comment" %}
+
+                commented on your post 💬
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- TIME -->
+        <div class="flex items-center gap-2 mt-1">
+
+            <div class="text-gray-500 text-xs">
+
+                {{ n.created_at }}
+
+            </div>
+
+            {% if not n.is_read %}
+                <div class="blue-dot"></div>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+
+    <!-- RIGHT -->
+    <div class="shrink-0">
+
+        {% if n.type == "follow" %}
+
+            <button
+            class="follow-btn text-white text-sm font-semibold px-4 py-1.5 rounded-lg">
+
+                Follow
+            </button>
+
+        {% elif n.type == "like" %}
+
+            <div class="w-12 h-12 rounded bg-[#111] flex items-center justify-center text-xl">
+                ❤️
+            </div>
+
         {% elif n.type == "comment" %}
-          <span class="font-semibold">Someone</span> commented on your post 💬
-        {% elif n.type == "follow" %}
-          <span class="font-semibold">Someone</span> started following you 👤
+
+            <button
+            class="msg-btn text-white text-sm px-4 py-1.5 rounded-lg">
+
+                Reply
+
+            </button>
+
         {% endif %}
 
-        <div class="text-gray-500 text-xs mt-1">{{ n.created_at }}</div>
-      </div>
-
-      <!-- READ BUTTON -->
-      {% if not n.is_read %}
-      <button onclick="markRead({{ n.id }})"
-              class="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs">
-        Mark read
-      </button>
-      {% endif %}
     </div>
-  {% endfor %}
 
 </div>
 
+{% endfor %}
+
+
+
+<!-- SUGGESTIONS -->
+<div class="section-title mt-2">
+People you may know
+</div>
+
+
+
+<!-- USER -->
+<div class="px-4 py-4 flex items-center gap-3 border-b border-[#121212]">
+
+    <img
+    src="/static/default_dp.png"
+    class="w-14 h-14 rounded-full object-cover">
+
+    <div class="flex-1">
+
+        <div class="font-semibold">
+            Meghji Patel
+        </div>
+
+        <div class="text-gray-500 text-sm">
+            3 mutual followers
+        </div>
+
+    </div>
+
+    <button
+    class="follow-btn px-4 py-1.5 rounded-lg text-sm font-semibold">
+
+        Follow
+
+    </button>
+
+</div>
+
+
+
+<div class="px-4 py-4 flex items-center gap-3 border-b border-[#121212]">
+
+    <img
+    src="/static/default_dp.png"
+    class="w-14 h-14 rounded-full object-cover">
+
+    <div class="flex-1">
+
+        <div class="font-semibold">
+            Rohit Raj
+        </div>
+
+        <div class="text-gray-500 text-sm">
+            Followed by Vishal + 2 more
+        </div>
+
+    </div>
+
+    <button
+    class="follow-btn px-4 py-1.5 rounded-lg text-sm font-semibold">
+
+        Follow
+
+    </button>
+
+</div>
+
+
+
+</div>
+
+
+
 <script>
-async function markRead(id) {
-  await fetch(`/social/notifications/mark_read/${id}`, {
-    method: "POST"
-  });
-  location.reload();
+
+/* AUTO MARK READ */
+
+async function autoRead(){
+
+    {% for n in notifications %}
+
+        {% if not n.is_read %}
+
+            fetch("/social/notifications/mark_read/{{ n.id }}",{
+                method:"POST"
+            })
+
+        {% endif %}
+
+    {% endfor %}
+
 }
+
+autoRead()
+
 </script>
 
 </body>

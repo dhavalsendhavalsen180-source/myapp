@@ -515,7 +515,9 @@ def comment_like(id):
     # abhi simple dummy (baad me DB bana denge)
     return jsonify({"ok": True, "likes": 1})
 
-
+# =========================
+#   user id
+# =========================
 @reels_bp.route("/follow/<int:user_id>", methods=["POST"])
 def follow_user(user_id):
     uid = session.get("user_id")
@@ -544,7 +546,8 @@ def follow_user(user_id):
 # FOLLOWING USERS LIST FIX
 # =========================
 @reels_bp.route("/api/following_users")
-def following_users():
+def reels_following_users():
+
     uid = session.get("user_id")
     if not uid:
         return jsonify({"users": []})
@@ -559,25 +562,39 @@ def following_users():
         WHERE f.follower_id=?
     """, (uid,))
 
-    users = [
-        {
+    users = []
+
+    for r in c.fetchall():
+
+        photo = r["photo"]
+
+        if not photo or str(photo).lower() in ["none", "null", ""]:
+            avatar = "/static/default_dp.png"
+        elif str(photo).startswith("http"):
+            avatar = photo
+        elif str(photo).startswith("/static/"):
+            avatar = photo
+        else:
+            avatar = "/static/profile/" + photo
+
+        users.append({
             "id": r["id"],
             "username": r["username"],
-            "avatar": r["photo"] or "/static/default.jpg"
-        }
-        for r in c.fetchall()
-    ]
+            "avatar": avatar
+        })
 
     conn.close()
-    return jsonify({"users": users})
 
+    return jsonify({"users": users})
 
 # =========================
 # SHARE TO USER (DM STYLE)
 # =========================
-@reels_bp.route("/reels/share_to_user/<int:reel_id>/<int:user_id>", methods=["POST"])
+@reels_bp.route("/share_to_user/<int:reel_id>/<int:user_id>", methods=["POST"])
 def share_to_user(reel_id, user_id):
+
     sender = session.get("user_id")
+
     if not sender:
         return jsonify({"ok": False})
 
@@ -595,7 +612,11 @@ def share_to_user(reel_id, user_id):
     """)
 
     c.execute("""
-        INSERT INTO reel_shares (sender_id, receiver_id, reel_id)
+        INSERT INTO reel_shares (
+            sender_id,
+            receiver_id,
+            reel_id
+        )
         VALUES (?,?,?)
     """, (sender, user_id, reel_id))
 
