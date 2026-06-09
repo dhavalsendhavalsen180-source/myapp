@@ -155,6 +155,7 @@ def profile(user_id):
 
 # ------------------ EDIT PROFILE ------------------ #
 @profile_bp.route("/edit", methods=["POST"])
+@profile_bp.route("/edit", methods=["POST"])
 def edit_profile():
 
     if "user_id" not in session:
@@ -169,26 +170,26 @@ def edit_profile():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
 
+    # CHECK DUPLICATE USERNAME
+    c.execute("SELECT id FROM users WHERE username=? AND id!=?", (username, uid))
+    if c.fetchone():
+        conn.close()
+        return redirect(f"/profile/{uid}?error=username_taken")
+
     if photo and photo.filename and allowed_file(photo.filename):
         ext = photo.filename.rsplit(".", 1)[1].lower()
         filename = secure_filename(f"user_{uid}.{ext}")
         save_path = os.path.join(UPLOAD_FOLDER, filename)
-
         photo.save(save_path)
-
         photo_url = "/" + save_path.replace("\\", "/")
         c.execute("UPDATE users SET photo=? WHERE id=?", (photo_url, uid))
 
-    if username:
-        c.execute("UPDATE users SET username=?, bio=? WHERE id=?", (username, bio, uid))
-    else:
-        c.execute("UPDATE users SET bio=? WHERE id=?", (bio, uid))
+    c.execute("UPDATE users SET username=?, bio=? WHERE id=?", (username, bio, uid))
 
     conn.commit()
     conn.close()
 
     return redirect(f"/profile/{uid}")
-
 
 # ------------------ FOLLOWERS ------------------ #
 @profile_bp.route("/<int:user_id>/followers")

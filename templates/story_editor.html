@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Story Editor</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+
+body{
+    margin:0;
+    overflow:hidden;
+    background:black;
+    font-family:Arial;
+}
+
+/* MAIN */
+.editor{
+    width:100vw;
+    height:100vh;
+    position:relative;
+    background:black;
+    overflow:hidden;
+}
+
+/* PREVIEW */
+#preview{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    position:absolute;
+    top:0;
+    left:0;
+}
+
+/* TOP BAR */
+.topbar{
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    z-index:100;
+    padding:15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    color:white;
+}
+
+/* TOOLS */
+.tools{
+    display:flex;
+    gap:14px;
+    align-items:center;
+}
+
+.tool-btn{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:rgba(0,0,0,.5);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    backdrop-filter:blur(8px);
+    cursor:pointer;
+}
+
+/* BOTTOM FILTERS */
+.filters{
+    position:absolute;
+    bottom:85px;
+    left:0;
+    right:0;
+    z-index:100;
+    display:flex;
+    gap:10px;
+    overflow-x:auto;
+    padding:10px;
+}
+
+.filter{
+    min-width:70px;
+    height:90px;
+    border-radius:14px;
+    background:#222;
+    color:white;
+    font-size:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:2px solid transparent;
+    cursor:pointer;
+}
+
+/* BOTTOM BAR */
+.bottombar{
+    position:absolute;
+    bottom:0;
+    left:0;
+    right:0;
+    z-index:100;
+    padding:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+/* STORY BUTTON */
+.story-btn{
+    background:#0095f6;
+    color:white;
+    padding:12px 20px;
+    border-radius:30px;
+    font-weight:bold;
+}
+
+/* TEXT OVERLAY */
+.text-item{
+    position:absolute;
+    color:white;
+    font-size:34px;
+    font-weight:bold;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    z-index:80;
+    text-shadow:0 0 10px black;
+    cursor:move;
+}
+
+/* STICKER */
+.sticker{
+    position:absolute;
+    font-size:55px;
+    z-index:80;
+    cursor:move;
+}
+
+/* TEXT INPUT MODAL */
+.text-modal{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.85);
+    z-index:200;
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    gap:15px;
+}
+
+.text-modal input{
+    width:80%;
+    padding:15px;
+    border:none;
+    border-radius:12px;
+    font-size:20px;
+}
+
+.text-modal button{
+    background:white;
+    padding:10px 20px;
+    border-radius:10px;
+}
+
+/* FILTERS */
+.normal{filter:none;}
+.clarendon{filter:contrast(120%) saturate(140%);}
+.gingham{filter:brightness(110%) sepia(20%);}
+.moon{filter:grayscale(100%);}
+.lark{filter:brightness(120%) contrast(90%);}
+.reyes{filter:sepia(45%) brightness(115%);}
+.juno{filter:saturate(180%) contrast(110%);}
+.slumber{filter:saturate(50%) brightness(110%);}
+
+</style>
+</head>
+
+<body>
+
+<div class="editor" id="editor">
+
+    <!-- PREVIEW -->
+    <img id="preview">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+
+        <div class="tools">
+
+            <!-- CLOSE -->
+            <div class="tool-btn" onclick="history.back()">
+                ✕
+            </div>
+
+        </div>
+
+        <div class="tools">
+
+            <!-- TEXT -->
+            <div class="tool-btn" onclick="openText()">
+                Aa
+            </div>
+
+            <!-- STICKER -->
+            <div class="tool-btn" onclick="addSticker('😂')">
+                😀
+            </div>
+
+            <!-- MUSIC -->
+            <div class="tool-btn">
+                🎵
+            </div>
+
+            <!-- DRAW -->
+            <div class="tool-btn">
+                ✏️
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters">
+
+        <div class="filter" onclick="setFilter('normal')">Normal</div>
+        <div class="filter" onclick="setFilter('clarendon')">Clarendon</div>
+        <div class="filter" onclick="setFilter('gingham')">Gingham</div>
+        <div class="filter" onclick="setFilter('moon')">Moon</div>
+        <div class="filter" onclick="setFilter('lark')">Lark</div>
+        <div class="filter" onclick="setFilter('reyes')">Reyes</div>
+        <div class="filter" onclick="setFilter('juno')">Juno</div>
+        <div class="filter" onclick="setFilter('slumber')">Slumber</div>
+
+    </div>
+
+    <!-- BOTTOM -->
+    <div class="bottombar">
+
+        <!-- PICK IMAGE -->
+        <label class="tool-btn">
+            📷
+            <input type="file"
+                   hidden
+                   accept="image/*"
+                   onchange="pickImage(event)">
+        </label>
+
+        <!-- SHARE -->
+        <button class="story-btn" onclick="uploadStory()">
+            Your Story
+        </button>
+
+    </div>
+
+</div>
+
+<!-- TEXT MODAL -->
+<div class="text-modal" id="textModal">
+
+    <input id="storyText" placeholder="Type something...">
+
+    <button onclick="addText()">
+        Add Text
+    </button>
+
+</div>
+
+<script>
+
+/* PICK IMAGE */
+function pickImage(e){
+
+    let file = e.target.files[0];
+
+    if(!file) return;
+
+    let url = URL.createObjectURL(file);
+
+    let img = document.getElementById("preview");
+
+    img.src = url;
+}
+
+/* FILTER */
+function setFilter(cls){
+
+    let img = document.getElementById("preview");
+
+    img.className = cls;
+}
+
+/* OPEN TEXT */
+function openText(){
+
+    document.getElementById("textModal").style.display = "flex";
+}
+
+/* ADD TEXT */
+function addText(){
+
+    let txt = document.getElementById("storyText").value;
+
+    if(!txt) return;
+
+    let div = document.createElement("div");
+
+    div.className = "text-item";
+
+    div.innerText = txt;
+
+    enableDrag(div);
+
+    document.getElementById("editor").appendChild(div);
+
+    document.getElementById("storyText").value = "";
+
+    document.getElementById("textModal").style.display = "none";
+}
+
+/* ADD STICKER */
+function addSticker(emoji){
+
+    let s = document.createElement("div");
+
+    s.className = "sticker";
+
+    s.innerHTML = emoji;
+
+    s.style.left = "40%";
+    s.style.top = "40%";
+
+    enableDrag(s);
+
+    document.getElementById("editor").appendChild(s);
+}
+
+/* DRAG SYSTEM */
+function enableDrag(el){
+
+    let move = false;
+
+    el.addEventListener("touchstart", () => {
+        move = true;
+    });
+
+    window.addEventListener("touchmove", (e) => {
+
+        if(!move) return;
+
+        let t = e.touches[0];
+
+        el.style.left = t.clientX + "px";
+        el.style.top = t.clientY + "px";
+    });
+
+    window.addEventListener("touchend", () => {
+        move = false;
+    });
+}
+
+/* UPLOAD */
+function uploadStory(){
+
+    alert("Instagram style story ready 🚀");
+
+    /* Later:
+       convert canvas/image
+       upload to flask backend
+    */
+}
+
+</script>
+
+</body>
+</html>

@@ -9,7 +9,7 @@
 <style>
 body{margin:0;background:#0b0b0b;color:#fff;font-family:Inter,system-ui,Arial}
 .container{max-width:900px;margin:12px auto;padding:12px}
-.preview{background:#070707;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;height:520px}
+.preview{background:#070707;border-radius:16px;overflow:visible;display:flex;align-items:center;justify-content:center;height:520px}
 .btn{padding:12px 16px;border-radius:12px;background:#111;border:1px solid rgba(255,255,255,0.12);cursor:pointer;font-weight:700}
 </style>
 </head>
@@ -24,18 +24,97 @@ body{margin:0;background:#0b0b0b;color:#fff;font-family:Inter,system-ui,Arial}
 
   <h2 class="text-2xl font-bold mt-3">Editor</h2>
 
-  <div class="preview mt-4" id="previewArea">
-    {% if media_path %}
-      {% set ext = media_path.rsplit('.',1)[-1].lower() %}
-      {% if ext in ['mp4','webm','mov','mkv'] %}
-        <video id="mediaEl" controls style="max-width:100%;max-height:100%" src="/create/editor_temp/{{ media_path }}"></video>
-      {% else %}
-        <img id="mediaEl" src="/create/editor_temp/{{ media_path }}" style="max-width:100%;max-height:100%">
-      {% endif %}
-    {% else %}
-      <div class="text-gray-500">No media loaded. Upload from Create screen.</div>
-    {% endif %}
-  </div>
+<div class="preview mt-4 relative" id="previewArea">
+
+{% if media_path %}
+  {% set ext = media_path.rsplit('.',1)[-1].lower() %}
+
+  {% if ext in ['mp4','webm','mov','mkv'] %}
+    <video
+      id="mediaEl"
+      controls
+      style="
+      max-width:100%;
+      max-height:100%;
+      position:relative;
+      z-index:1;
+      "
+      src="/create/editor_temp/{{ media_path }}">
+    </video>
+  {% else %}
+    <img
+      id="mediaEl"
+      src="/create/editor_temp/{{ media_path }}"
+      style="
+      max-width:100%;
+      max-height:100%;
+      position:relative;
+      z-index:1;
+      ">
+  {% endif %}
+
+{% endif %}
+
+<div id="textPreview"
+style="
+position:absolute;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+font-size:42px;
+font-weight:900;
+color:white;
+text-shadow:
+0 0 8px rgba(0,0,0,.9),
+0 0 20px rgba(0,0,0,.8);
+z-index:9999;
+cursor:move;
+user-select:none;
+text-align:center;
+max-width:90%;
+">
+</div>
+
+</div>
+
+
+  <div class="mt-4 overflow-x-auto flex gap-3">
+
+<button class="btn filterBtn" data-filter="none">Normal</button>
+
+<button class="btn filterBtn"
+data-filter="contrast(1.1) saturate(1.2)">
+Vivid
+</button>
+
+<button class="btn filterBtn"
+data-filter="grayscale(1)">
+Mono
+</button>
+
+<button class="btn filterBtn"
+data-filter="sepia(.35)">
+Warm
+</button>
+
+<button class="btn filterBtn"
+data-filter="brightness(1.1)">
+Bright
+</button>
+
+<button class="btn filterBtn"
+data-filter="hue-rotate(180deg)">
+Cool
+</button>
+
+</div>
+
+<textarea
+id="overlayText"
+placeholder="Write something..."
+class="w-full mt-4 p-3 rounded-xl bg-black border border-gray-700"
+style="min-height:100px"
+></textarea>  
 
   <div class="mt-5 flex gap-3">
     <button class="btn w-full" id="exportBtn">Continue → Publish</button>
@@ -52,6 +131,28 @@ body{margin:0;background:#0b0b0b;color:#fff;font-family:Inter,system-ui,Arial}
     const res = await fetch(url);
     return await res.blob();
   }
+
+
+document.querySelectorAll(".filterBtn").forEach(btn=>{
+
+  btn.onclick=()=>{
+
+    let f = btn.dataset.filter;
+
+    if(mediaEl){
+      mediaEl.style.filter = f;
+    }
+
+  };
+
+});
+
+const txt=document.getElementById("overlayText");
+const preview=document.getElementById("textPreview");
+
+txt.oninput=()=>{
+  preview.innerText=txt.value;
+};
 
   exportBtn.addEventListener('click', async ()=>{
     if(!mediaEl) return alert('No media to export');

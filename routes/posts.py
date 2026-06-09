@@ -47,11 +47,34 @@ def feed():
 
     conn2.close()
 
-    # ---- STORY SYSTEM ----
+# ---- STORY SYSTEM ----
+
     cleanup_expired()
 
+    stories = load_stories_for_feed()
+
+    my_story_seen = False
+
+    my_stories = [
+        s for s in stories
+        if str(s.get("user_id")) == str(current_user)
+    ]
+
+    if my_stories:
+
+        my_story_seen = True
+
+        for s in my_stories:
+
+            viewers = [str(v) for v in s.get("viewers", [])]
+
+            if str(current_user) not in viewers:
+                my_story_seen = False
+                break
+
+    has_my_story = len(my_stories) > 0
+
     stories_bar = get_storybar_for_user(current_user)
-    _stories = load_stories_for_feed()
 
     # -------- POSTS LOAD ----------
     conn = sqlite3.connect("database.db")
@@ -103,7 +126,9 @@ def feed():
         posts=posts,
         stories_bar=stories_bar,
         current_user=current_user,
-        current_user_photo=photo   # ✅ FIXED
+        current_user_photo=photo,   # ✅ FIXED
+        my_story_seen=my_story_seen,
+        has_my_story=has_my_story
     )
 
 # ===============================

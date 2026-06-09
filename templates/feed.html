@@ -66,24 +66,32 @@
 
     .story-bar {
       width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 15px;
+
       overflow-x: auto;
       white-space: nowrap;
+
       padding: 10px;
-      display: flex;
-      gap: 15px;
       border-bottom: 1px solid #ddd;
-      background:white;
+      background: white;
+
+     -webkit-overflow-scrolling: touch;
     }
 
-    .story-item {
-      display: inline-block;
-      text-align: center;
-      cursor: pointer;
-      width: 70px;
-      flex-shrink: 0;
-    }
+.story-item {
+  flex: 0 0 auto;
+  text-align: center;
+  width: 70px;
+}
 
-    .story-ring2 {
+.my-story-wrapper{
+  position: relative;
+  display: inline-block;
+}
+    .story-ring2 { border: 2px solid white;
       width: 60px;
       height: 60px;
       border-radius: 50%;
@@ -101,17 +109,16 @@
       border-radius: 50%;
     }
 
-    .story-ring2:not(.seen) {
-      background: linear-gradient(45deg, #f99, #f63, #f36, #c3f, #63f);
-    }
+.my-story {
+  background: linear-gradient(45deg,#f99,#f63,#f36,#c3f,#63f)!important;
+}
+
 
     .story-ring2.seen {
       background: #ccc;
     }
 
-    .my-story {
-      background: #0095f6 !important;
-    }
+.my-story{background:linear-gradient(45deg,#f99,#f63,#f36,#c3f,#63f)!important;}
 
     .story-label {
       font-size: 12px;
@@ -139,31 +146,39 @@
       border: 2px solid white;
     }
 
-    .my-story-wrapper {
-      position: relative;
-      display: inline-block;
-    }
+.my-story{background:linear-gradient(45deg,#f99,#f63,#f36,#c3f,#63f)!important;}
   </style>
 
 <script>
-async function uploadStoryInstant(event) {
-    let file = event.target.files[0];
-    if (!file) return;
-
-    let form = new FormData();
-    form.append("story", file);
-
-    let res = await fetch("/stories/add/insta", { method: "POST", body: form });
-    let out = await res.json();
-
-    if (out.ok) {
-      window.location.reload();
-    } else {
-      alert("Story upload failed");
-    }
-}
 </script>
 
+<script>
+async function uploadStoryInstant(event) {
+    try {
+        let file = event.target.files[0];
+        if (!file) return;
+
+        let form = new FormData();
+        form.append("story", file);
+
+        let res = await fetch("/stories/add", {
+            method: "POST",
+            body: form
+        });
+
+        if (res.ok) {
+            window.location.reload();
+        } else {
+            alert("Upload failed");
+        }
+
+    } catch(e) {
+        console.log(e);
+        alert("JS ERROR");
+    }
+}
+
+</script>
 </head>
 
 <body class="bg-gray-100">
@@ -201,40 +216,44 @@ async function uploadStoryInstant(event) {
 
 </div>
 
-  <!-- STORY BAR -->
-  <div class="story-bar">
+<!-- STORY BAR -->
+<div class="story-bar">
 
-    <!-- YOUR STORY -->
-    <div class="story-item my-story-wrapper" onclick="document.getElementById('storyPicker').click()">
-      <div class="story-ring2 my-story">
-        <img src="/static/profile/user_{{ session['user_id'] }}.jpg"
-             onerror="this.src='/static/default_dp.png'">
-      </div>
+  <!-- YOUR STORY -->
+  <div class="story-item my-story-wrapper">
 
-      <div class="add-story-btn">+</div>
-      <div class="story-label">Your Story</div>
+    <!-- OPEN STORY -->
+    <div class="story-ring2 {% if has_my_story and my_story_seen %}seen{% elif has_my_story %}my-story{% endif %}"
+         onclick="openStory('{{ current_user }}')">
+
+      <img src="{{ current_user_photo }}"
+           onerror="this.src='/static/default_dp.png'">
     </div>
 
-    <!-- OTHER USERS -->
-    {% for s in stories_bar %}
-    <div class="story-item" onclick="openStory('{{ s.user_id }}')">
-      <div class="story-ring2 {% if s.seen %}seen{% endif %}">
-        <img src="{{ s.last_img }}" onerror="this.src='/static/default_dp.png'">
-      </div>
-      <div class="story-label">{{ s.user_id }}</div>
+    <!-- PLUS BUTTON ONLY UPLOAD -->
+    <div class="add-story-btn"
+         onclick="document.getElementById('storyPicker').click()">
+      +
     </div>
-    {% endfor %}
 
+    <div class="story-label">Your Story</div>
   </div>
 
-<script>
-function openStory(user_id) {
-    window.location.href = "/stories/view/" + user_id;
-}
-</script>
+  <!-- OTHER USERS -->
+{% for s in stories_bar %}
+  {% if s.user_id != current_user %}
 
+    <div class="story-item" onclick="openStory('{{ s.user_id }}')">
+      <div class="story-ring2 {% if s.seen %}seen{% else %}my-story{% endif %}">
+        <img src="{{ s.last_img }}" onerror="this.src='/static/default_dp.png'">
+      </div>
+      <div class="story-label">{{ s.username }}</div>
+    </div>
 
-  <!-- FEED -->
+  {% endif %}
+{% endfor %}
+</div>
+<!-- FEED -->
   <div class="max-w-xl mx-auto mt-4 space-y-6 pb-24">
 
     {% for post in posts %}
@@ -389,92 +408,15 @@ function openStory(user_id) {
 
 
 <script>
-
-  /* ============= CAROUSEL SCROLL ============= */
-  function scrollByTrack(postId, dir){
-    const track = document.getElementById("track-" + postId);
-    if(!track) return;
-    track.scrollBy({ left: dir * track.clientWidth, behavior: "smooth" });
-  }
-
-
-  /* ============= LIKE (AJAX + ANIMATION) ============= */
-  async function toggleLike(postId, btnEl) {
-    try{
-      const res = await fetch(`/social/posts/like/${postId}`, {
-        method: "POST",
-        headers: { "X-Requested-With": "XMLHttpRequest" }
-      });
-
-      const j = await res.json();
-      if (!j.ok) return alert("Login required");
-
-      const heart = document.getElementById(`heart-${postId}`);
-      const countEl = document.getElementById(`like-count-${postId}`);
-
-      if (j.action === "liked") {
-        btnEl.classList.add("text-red-600");
-
-        heart.classList.add("show");
-        setTimeout(() => heart.classList.remove("show"), 800);
-      } else {
-        btnEl.classList.remove("text-red-600");
-      }
-
-      if (j.count !== undefined) {
-        countEl.innerText = `${j.count} likes`;
-      }
-
-    }catch(e){
-      console.log("Like error", e);
-    }
-  }
-
-
-  /* ============= DOUBLE TAP SUPPORT ============= */
-  let lastTapTime = {};
-  function onImageTap(postId){
-    const now = new Date().getTime();
-    const last = lastTapTime[postId] || 0;
-
-    if(now - last < 300){
-      toggleLike(postId, document.querySelector(`#like-btn-${postId}`));
-    }
-    lastTapTime[postId] = now;
-  }
-
-
-  /* ============= NOTIFICATION COUNT ============= */
-  async function loadNotifCount() {
-    try{
-      const res = await fetch("/social/notifications/count");
-      const j = await res.json();
-      if (!j.ok) return;
-
-      const badge = document.getElementById("notif-badge");
-
-      if (j.count > 0) {
-        badge.innerText = j.count;
-        badge.classList.remove("hidden");
-        badge.className = "absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full";
-      } else {
-        badge.classList.add("hidden");
-      }
-    }catch(e){
-      console.log("notif error", e);
-    }
-  }
-
-  setInterval(loadNotifCount, 5000);
-  loadNotifCount();
-
 </script>
 
 <script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js?v=1");
-}
 </script>
 
 </body>
 </html>
+<script>
+function openStory(user_id){
+    window.location.href = "/stories/view/" + user_id;
+}
+</script>

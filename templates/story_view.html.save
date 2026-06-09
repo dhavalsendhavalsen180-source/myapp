@@ -292,38 +292,6 @@ font-weight:600;
 color:black;
 }
 
-#heartBurst{
-position:absolute;
-left:50%;
-top:-5px;
-pointer-events:none;
-}
-
-.flyHeart{
-position:absolute;
-font-size:22px;
-animation:heartFly 6s linear forwards;
-}
-
-@keyframes heartFly{
-
-0%{
-opacity:1;
-transform:translate(0,0) scale(1);
-}
-
-100%{
-opacity:0;
-transform:
-translate(
-calc(-60px + 120px * var(--x)),
--160px
-)
-rotate(30deg)
-scale(2);
-}
-}
-
 </style>
 </head>
 
@@ -339,6 +307,13 @@ scale(2);
         <span>Activity</span>
         <span onclick="closeActivity()">✕</span>
     </div>
+
+    <div id="activityList"
+style="
+height:calc(85vh - 70px);
+overflow-y:auto;
+background:white;">
+</div>
 
     <iframe id="activityFrame"
             style="
@@ -356,41 +331,28 @@ scale(2);
     <div class="leftTap" onclick="prev()"></div>
     <div class="rightTap" onclick="next()"></div>
 
-<!-- TOP -->
-<div class="top">
+    <!-- TOP -->
+    <div class="top">
 
-    <div class="progress-wrap">
-        {% for s in stories %}
-        <div class="progress">
-            <div class="fill" id="p{{ loop.index0 }}"></div>
+        <div class="progress-wrap">
+            {% for s in stories %}
+            <div class="progress">
+                <div class="fill" id="p{{ loop.index0 }}"></div>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
 
-    <div class="header">
+        <div class="header">
 
-        <div class="user">
+            <div class="user">
+                <img src="{{ profile_photo }}" onerror="this.src='/static/default_dp.png'">
 
-            <img src="{{ profile_photo }}"
-                 onclick="window.location='/profile/{{ owner_id }}'"
-                 style="cursor:pointer;"
-                 onerror="this.src='/static/default_dp.png'">
-
-            <div>
-
-                <div class="username"
-                     onclick="window.location='/profile/{{ owner_id }}'"
-                     style="cursor:pointer;">
-
-                    {{ owner }}
-
+                <div>
+                    <div class="username">{{ owner }}</div>
+                    <div class="time">4 min</div>
                 </div>
-
-                <div class="time">4 min</div>
-
             </div>
 
-        </div>
 
 <div class="top-right">
 
@@ -452,26 +414,22 @@ z-index:999;
 <div class="msg-wrap" style="justify-content:space-between;width:100%;">
 
     <div class="msg"
-     onclick="openActivity()"
-     id="activityBtn"
-     style="
-     flex:none;
-     width:120px;
-     cursor:pointer;
-     font-weight:600;
-     position:relative;">
+         onclick="openActivity()"
+         style="
+         flex:none;
+         width:120px;
+         cursor:pointer;
+         font-weight:600;">
 
-    <div id="heartBurst"></div>
+        <svg viewBox="0 0 24 24"
+             style="width:20px;height:20px;stroke:white;fill:none;stroke-width:2;margin-right:8px;">
+            <path d="M12 19V5"></path>
+            <path d="M5 12L12 19L19 12"></path>
+        </svg>
 
-    <svg viewBox="0 0 24 24"
-         style="width:20px;height:20px;stroke:white;fill:none;stroke-width:2;margin-right:8px;">
-        <path d="M12 19V5"></path>
-        <path d="M5 12L12 19L19 12"></path>
-    </svg>
+        Activity
 
-    Activity
-
-</div>
+    </div>
 
     <div class="bottom-actions" style="margin-left:auto;">
 
@@ -587,8 +545,6 @@ function load(){
 
     initLike();
 
-    checkLikes();
-
     document.querySelectorAll(".fill").forEach(e=>{
         e.style.transition="none";
         e.style.width="0%";
@@ -629,29 +585,6 @@ function load(){
     }
 }
 
-let lastLikes = -1;
-
-function checkLikes(){
-
-    fetch("/stories/activity_count/" + stories[i].id)
-    .then(r=>r.json())
-    .then(d=>{
-
-        if(d.likes > 0){
-
-            startHeartFountain();
-
-        }else{
-
-            stopHeartFountain();
-
-        }
-
-    });
-}
-
-setInterval(checkLikes,5000);
-
 function animate(t){
 
     let bar=document.getElementById("p"+i);
@@ -661,50 +594,6 @@ function animate(t){
     setTimeout(()=>{
         bar.style.width="100%";
     },50);
-}
-
-let heartInterval = null;
-
-function startHeartFountain(){
-
-    if(heartInterval) return;
-
-    heartInterval = setInterval(()=>{
-
-        createHeartFountain();
-
-    },700); // har 0.7 second naya batch
-
-}
-
-function stopHeartFountain(){
-
-    clearInterval(heartInterval);
-    heartInterval = null;
-
-}
-
-function createHeartFountain(){
-
-    let box = document.getElementById("heartBurst");
-
-    if(!box) return;
-
-    for(let i=0;i<5;i++){
-
-        let h=document.createElement("div");
-
-        h.className="flyHeart";
-        h.innerHTML=["❤️","💖","💕","💜","💙"][Math.floor(Math.random()*5)];
-
-        h.style.setProperty("--x",Math.random());
-
-        box.appendChild(h);
-
-        setTimeout(()=>{
-            h.remove();
-        },6000);
-    }
 }
 
 function next(){

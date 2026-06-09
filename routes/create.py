@@ -1,6 +1,7 @@
 # routes/create.py
 from flask import Blueprint, render_template, request, redirect, session, flash, url_for, send_from_directory
-import os, uuid, sqlite3, shutil
+import os, uuid, sqlite3, shutil, json, time
+import json, time
 from werkzeug.utils import secure_filename
 
 create_bp = Blueprint("create", __name__, url_prefix="/create")
@@ -9,7 +10,7 @@ DB_NAME = "database.db"
 
 UPLOAD_REELS_DIR = os.path.join("static", "uploads", "reels")
 UPLOAD_POSTS_DIR = os.path.join("static", "uploads", "posts")      # ✅ posts folder
-UPLOAD_STORY_DIR = os.path.join("static", "uploads", "stories")    # ✅ story folder
+UPLOAD_STORY_DIR = os.path.join("static", "stories")    # ✅ story folder
 
 EDITOR_TEMP_DIR = os.path.join("static", "editor_temp")
 
@@ -198,14 +199,22 @@ def publish():
             return redirect("/reels")
 
         elif mode == "story":
-            db_path = "/static/uploads/stories/" + dest_name
+            from routes.stories import load_stories, save_stories
 
-            c.execute("""
-                INSERT INTO stories (user_id, media_path, expires_at)
-                VALUES (?, ?, datetime('now','+24 hours'))
-            """, (user_id, db_path))
+            stories = load_stories()
 
-            conn.commit()
+            stories.append({
+                "id": max([s.get("id",0) for s in stories], default=0) + 1,
+                "user_id": str(user_id),
+                "filename": dest_name,
+                "timestamp": int(time.time()),
+                "viewers": [],
+                "likes": [],
+                "reactions": {}
+            })
+
+            save_stories(stories)
+
             conn.close()
 
             flash("Story uploaded successfully!", "success")
