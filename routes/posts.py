@@ -99,6 +99,23 @@ def feed():
         c.execute("SELECT COUNT(*) FROM likes WHERE post_id=?", (post_id,))
         likes = c.fetchone()[0]
 
+        #feed post like #
+        c.execute("""
+            SELECT 1
+            FROM likes
+            WHERE post_id=? AND username=?
+        """, (post_id, current_user))
+
+        liked_by_me = c.fetchone() is not None
+
+#post save clor change reset nahi hoga #
+        c.execute(
+            "SELECT 1 FROM post_saves WHERE post_id=? AND user_id=?",
+            (post_id, current_user)
+        )
+
+        saved_by_me = c.fetchone() is not None
+
         c.execute("""
             SELECT users.username, comments.comment
             FROM comments
@@ -116,6 +133,8 @@ def feed():
             "caption": caption,
             "images": images,
             "likes": likes,
+            "liked_by_me": liked_by_me,
+            "saved_by_me": saved_by_me,
             "comments": comments
         })
 
@@ -442,14 +461,21 @@ def get_followers():
 
     # users who follow me
     c.execute("""
-        SELECT users.id, users.username
-        FROM follows
-        JOIN users ON follows.follower_id = users.id
-        WHERE follows.following_id=?
-        ORDER BY users.username ASC
+    SELECT users.id,
+           users.username,
+           users.photo
+    FROM follows
+    JOIN users ON follows.follower_id = users.id
+    WHERE follows.following_id=?
+    ORDER BY users.username ASC
     """, (uid,))
 
-    followers = [{"id": r["id"], "username": r["username"]} for r in c.fetchall()]
+    followers = [{
+        "id": r["id"],
+        "username": r["username"],
+        "photo": r["photo"] or "/static/default_dp.png"
+    } for r in c.fetchall()]
+
     conn.close()
 
     return {"ok": True, "followers": followers}

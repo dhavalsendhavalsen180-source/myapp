@@ -136,24 +136,6 @@ background:#fafafa;
 Viewed Story
 </div>
 
-{% for u in viewers %}
-<a href="/profile/{{ u.id }}"
-   style="text-decoration:none;color:inherit;">
-
-<div class="user">
-
-<img src="{{ u.photo }}"
-onerror="this.src='/static/default_dp.png'">
-
-<div class="info">
-<div class="name">{{ u.username }}</div>
-<div class="sub">Viewed your story</div>
-</div>
-
-</div>
-
-</a>
-{% endfor %}
 
 {% for u in likes %}
 <a href="/profile/{{ u.id }}"
@@ -170,6 +152,25 @@ onerror="this.src='/static/default_dp.png'">
 </div>
 
 <div class="heart">❤️</div>
+
+</div>
+
+</a>
+{% endfor %}
+
+{% for u in viewers %}
+<a href="/profile/{{ u.id }}"
+   style="text-decoration:none;color:inherit;">
+
+<div class="user">
+
+<img src="{{ u.photo }}"
+onerror="this.src='/static/default_dp.png'">
+
+<div class="info">
+<div class="name">{{ u.username }}</div>
+<div class="sub">Viewed your story</div>
+</div>
 
 </div>
 

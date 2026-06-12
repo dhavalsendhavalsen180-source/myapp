@@ -148,34 +148,75 @@
       <div class="flex items-center gap-5">
 
         <!-- LIKE FORM -->
-        <form method="POST" action="/posts/like_toggle/{{ post.id }}" id="likeForm">
-          <button type="submit" class="icon-btn" id="likeBtn">
-            {% if liked_by_me %}
-              ❤️
-            {% else %}
-              🤍
-            {% endif %}
-          </button>
-        </form>
+<form method="POST" action="/posts/like_toggle/{{ post.id }}">
+  <button type="submit" class="icon-btn">
 
+<svg id="likeSvg"
+     class="w-7 h-7 {% if liked_by_me %}text-red-500{% endif %}"
+     viewBox="0 0 24 24"
+     fill="{% if liked_by_me %}currentColor{% else %}none{% endif %}"
+     stroke="currentColor"
+     stroke-width="1.8">
+
+      <path stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M20.8 4.6c-1.8-1.8-4.7-1.8-6.5 0L12 6.9 9.7 4.6c-1.8-1.8-4.7-1.8-6.5 0s-1.8 4.7 0 6.5L12 21l8.8-9.9c1.8-1.8 1.8-4.7 0-6.5z"/>
+    </svg>
+
+  </button>
+</form>
         <!-- COMMENT BUTTON -->
-        <button onclick="openCommentBox()" class="icon-btn">💬</button>
+<button onclick="openCommentBox()" class="icon-btn">
+
+  <svg class="w-7 h-7"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="1.8">
+
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/>
+  </svg>
+
+</button>
 
         <!-- SHARE BUTTON -->
-        <button onclick="openShare()" class="icon-btn">📤</button>
-      </div>
+<button onclick="openShare()" class="icon-btn">
+
+  <svg class="w-7 h-7"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="1.8">
+
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M16 6l-4-4-4 4M12 2v14"/>
+  </svg>
+
+</button>
 
       <!-- SAVE BUTTON -->
-      <button onclick="toggleSave()" class="icon-btn" id="saveBtn">
-        {% if saved_by_me %}
-          🔖
-        {% else %}
-          📑
-        {% endif %}
-      </button>
+<button onclick="toggleSave()" class="icon-btn">
 
-    </div>
+  <svg id="saveSvg"
+       class="w-7 h-7"
+       viewBox="0 0 24 24"
+       fill="{% if saved_by_me %}currentColor{% else %}none{% endif %}"
+       stroke="currentColor"
+       stroke-width="1.8">
 
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M5 5v16l7-5 7 5V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"/>
+  </svg>
+
+</button>
     <!-- LIKES -->
     <div class="px-4 text-sm font-semibold text-gray-800" id="likesCount">
       {{ likes }} likes
@@ -336,18 +377,20 @@
   }
 
   // ❤️ Update Like UI without reload
-  function updateLikeUI(){
-    const likeBtn = document.getElementById("likeBtn");
+function updateLikeUI(){
+    const likeSvg = document.getElementById("likeSvg");
     const likesCountDiv = document.getElementById("likesCount");
 
     if(likedByMe){
-      likeBtn.innerText = "❤️";
+        likeSvg.classList.add("text-red-500");
+        likeSvg.setAttribute("fill", "currentColor");
     } else {
-      likeBtn.innerText = "🤍";
+        likeSvg.classList.remove("text-red-500");
+        likeSvg.setAttribute("fill", "none");
     }
 
     likesCountDiv.innerText = likesCount + " likes";
-  }
+}
 
   // ❤️ Like toggle function (AJAX)
   async function toggleLikeAjax(){
@@ -498,24 +541,35 @@
 
   let savedByMe = {{ "true" if saved_by_me else "false" }};
 
-  async function toggleSave(){
+async function toggleSave(){
     try{
-      const res = await fetch("/posts/save_toggle/{{ post.id }}", { method: "POST" });
-      const data = await res.json();
+        const res = await fetch("/posts/save_toggle/{{ post.id }}", {
+            method: "POST"
+        });
 
-      if(data.ok){
-        savedByMe = !savedByMe;
+        const data = await res.json();
 
-        const btn = document.getElementById("saveBtn");
-        btn.innerText = savedByMe ? "🔖" : "📑";
-      } else {
-        alert("Login required");
-      }
+        if(data.ok){
+
+            savedByMe = !savedByMe;
+
+            const saveSvg = document.getElementById("saveSvg");
+
+            if(savedByMe){
+                saveSvg.setAttribute("fill", "currentColor");
+            }else{
+                saveSvg.setAttribute("fill", "none");
+            }
+
+        }else{
+            alert("Login required");
+        }
 
     }catch(e){
-      alert("Network error");
+        console.log(e);
+        alert("Network error");
     }
-  }
+}
 </script>
 
 </body>

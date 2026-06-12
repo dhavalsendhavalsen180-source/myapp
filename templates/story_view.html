@@ -30,8 +30,25 @@ body{
 .story-media{
     width:100%;
     height:100%;
-    object-fit:contain;
+    object-fit:cover;
     background:black;
+}
+
+.leftTap,
+.rightTap{
+    position:absolute;
+    top:0;
+    width:50%;
+    height:100%;
+    z-index:40;
+}
+
+.leftTap{
+    left:0;
+}
+
+.rightTap{
+    right:0;
 }
 
 /* TOP */
@@ -324,6 +341,19 @@ scale(2);
 }
 }
 
+#storyMenu{
+    display:none;
+    position:absolute;
+    top:60px;
+    right:12px;
+    background:white;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 4px 20px rgba(0,0,0,.25);
+    z-index:999;
+    min-width:160px;
+}
+
 </style>
 </head>
 
@@ -416,20 +446,17 @@ scale(2);
     </div>
 
 {% if owner_id|string == session.get("user_id")|string %}
-<div id="storyMenu"
-style="
-display:none;
-position:absolute;
-bottom:80px;
-right:15px;
-background:#111;
-border-radius:12px;
-padding:10px;
-z-index:999;
-">
+
+<div id="storyMenu">
 
     <div onclick="deleteStory()"
-         style="color:red;padding:10px;">
+         style="
+         padding:14px 18px;
+         background:white;
+         color:#ff3040;
+         font-weight:600;
+         text-align:center;
+         ">
         Delete Story
     </div>
 
@@ -483,20 +510,8 @@ z-index:999;
             <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
         </svg>
 
-        <!-- More -->
-        <svg onclick="toggleMenu()"
-             viewBox="0 0 24 24"
-             style="width:28px;height:28px;stroke:white;fill:none;stroke-width:2;cursor:pointer;">
-            <circle cx="5" cy="12" r="1"></circle>
-            <circle cx="12" cy="12" r="1"></circle>
-            <circle cx="19" cy="12" r="1"></circle>
-        </svg>
+  {% else %}
 
-    </div>
-
-</div>
-
-{% else %}
         <!-- VIEWER UI -->
         <div class="msg-wrap">
 
@@ -543,6 +558,8 @@ z-index:999;
 <script>
 
 let stories = {{ stories|tojson }};
+let storyUsers = {{ story_users|tojson }};
+let currentOwner = "{{ owner_id }}";
 let currentUser = "{{ current_user }}";
 let i = 0;
 let timer;
@@ -579,6 +596,29 @@ function toggleLike(){
     });
 }
 
+let startX = 0;
+
+document.addEventListener("touchstart",(e)=>{
+    startX = e.touches[0].clientX;
+});
+
+document.addEventListener("touchend",(e)=>{
+
+    let endX = e.changedTouches[0].clientX;
+    let diff = endX - startX;
+
+    // swipe left
+    if(diff < -80){
+        next();
+    }
+
+    // swipe right
+    if(diff > 80){
+        prev();
+    }
+
+});
+
 function load(){
 
     clearTimeout(timer);
@@ -602,33 +642,39 @@ function load(){
 
     let src="/stories/media/"+s.filename;
 
-    if(src.match(/\.(jpg|jpeg|png|gif)$/i)){
+const imageExts = [
+    "jpg","jpeg","png","gif",
+    "webp","bmp","tiff","tif",
+    "heic","heif","avif"
+];
 
-        img.src=src;
-        img.style.display="block";
+const ext = s.filename.split('.').pop().toLowerCase();
 
-        animate(5000);
+if(imageExts.includes(ext))
+{
+    img.src = src;
+    img.style.display = "block";
 
-        timer=setTimeout(next,5000);
+    animate(5000);
+    timer = setTimeout(next,5000);
+}
+else
+{
+    vid.src = src;
+    vid.style.display = "block";
 
-    }else{
+    vid.onloadedmetadata = ()=>{
 
-        vid.src=src;
-        vid.style.display="block";
+        vid.play();
 
-        vid.onloadedmetadata=()=>{
+        let t = (vid.duration*1000) || 5000;
 
-            vid.play();
-
-            let t=(vid.duration*1000)||5000;
-
-            animate(t);
-
-            timer=setTimeout(next,t);
-        };
-    }
+        animate(t);
+        timer = setTimeout(next,t);
+ };
 }
 
+} // <-- YE load() KO BAND KARTA HAI
 let lastLikes = -1;
 
 function checkLikes(){
@@ -713,19 +759,41 @@ function next(){
 
         i++;
         load();
-
-    }else{
-
-        history.back();
+        return;
     }
+
+    let idx = storyUsers.indexOf(currentOwner);
+
+    if(idx !== -1 && idx < storyUsers.length - 1){
+
+        let nextUser = storyUsers[idx + 1];
+
+        window.location.href =
+            "/stories/view/" + nextUser;
+
+        return;
+    }
+
+    window.location.href="/posts/feed";
 }
 
 function prev(){
 
-    if(i>0){
+    if(i > 0){
 
         i--;
         load();
+        return;
+    }
+
+    let idx = storyUsers.indexOf(currentOwner);
+
+    if(idx > 0){
+
+        let prevUser = storyUsers[idx - 1];
+
+        window.location.href =
+            "/stories/view/" + prevUser;
     }
 }
 

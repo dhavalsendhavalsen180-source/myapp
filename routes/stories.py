@@ -13,7 +13,19 @@ DATA_DIR = "data"
 STORY_FILE = os.path.join(DATA_DIR, "stories.json")
 REPLIES_FILE = os.path.join(DATA_DIR, "story_replies.json")
 
-ALLOWED = {"png", "jpg", "jpeg", "gif", "mp4", "webm"}
+ALLOWED = {
+    # Images
+    "jpg", "jpeg", "png", "gif", "webp",
+    "bmp", "tiff", "tif",
+    "heic", "heif",
+    "avif",
+
+    # Videos
+    "mp4", "webm", "mov",
+    "m4v", "3gp", "3g2",
+    "avi", "mkv", "mpeg",
+    "mpg", "wmv"
+}
 EXPIRE_SECONDS = 24 * 60 * 60
 
 os.makedirs(STORY_FOLDER, exist_ok=True)
@@ -203,6 +215,14 @@ def view(username):
     for s in user_stories:
          s.setdefault("likes", [])
 
+    story_users = []
+
+    for item in get_storybar_for_user(session.get("user_id")):
+        story_users.append(str(item["user_id"]))
+
+    if str(username) not in story_users:
+        story_users.insert(0, str(username))
+
     return render_template(
         "story_view.html",
         stories=user_stories,
@@ -210,8 +230,9 @@ def view(username):
         owner_id=username,
         replies=replies,
         profile_photo=profile_photo,
-        current_user=session.get("user_id")
-   )
+        current_user=session.get("user_id"),
+        story_users=story_users
+    )
 
 # ---------------- REACT ----------------
 @stories_bp.route("/api/react", methods=["POST"])
@@ -461,6 +482,14 @@ def story_activity(story_id):
                 "username": u["username"],
                 "photo": u["photo"] or "/static/default_dp.png"
             })
+
+    # remove duplicates
+    liked_ids = [str(x["id"]) for x in likes]
+
+    viewers = [
+        v for v in viewers
+        if str(v["id"]) not in liked_ids
+    ]
 
     conn.close()
 

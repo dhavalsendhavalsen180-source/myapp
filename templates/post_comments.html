@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comments</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body{background:#000;color:white;font-family:system-ui}
+
+/* HEADER */
+.header{display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid #222}
+
+/* COMMENT */
+.comment{display:flex;gap:10px;padding:12px;border-bottom:1px solid #111}
+.avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;background:#333}
+.content{flex:1}
+.username{font-weight:600;font-size:13px;cursor:pointer}
+.text{font-size:14px}
+.meta{font-size:11px;color:#aaa;margin-top:4px}
+.reply{cursor:pointer;margin-left:6px}
+.like{cursor:pointer;margin-right:6px}
+.followBtn{font-size:11px;background:#0095f6;padding:3px 8px;border-radius:6px}
+
+/* INPUT */
+.inputBox{position:fixed;bottom:0;width:100%;background:#111;padding:10px;display:flex;gap:10px}
+input{flex:1;padding:8px;border-radius:20px;border:none;background:#222;color:white}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <button onclick="history.back()">⬅</button>
+  <b>Comments</b>
+  <div></div>
+</div>
+
+<div id="commentList"></div>
+
+<div class="inputBox">
+  <input id="commentInput" placeholder="Add a comment...">
+  <button onclick="sendComment()">Post</button>
+</div>
+
+<script>
+
+let reelId = "{{ reel_id }}";
+let currentUser = "{{ current_user or '' }}";
+let replyTo = null;
+
+/* LOAD */
+async function loadComments(){
+  try{
+    const res = await fetch(`/reels/comments/${reelId}`);
+    const d = await res.json();
+
+    let html="";
+
+    d.comments.forEach(c=>{
+      html += renderComment(c);
+    });
+
+    document.getElementById("commentList").innerHTML = html;
+
+  }catch(e){
+    console.error(e);
+  }
+}
+
+/* RENDER COMMENT */
+function renderComment(c){
+
+  let isMe = String(c.user_id) === String(currentUser);
+
+  return `
+  <div class="comment" onclick="event.stopPropagation()">
+
+    <img src="${c.profile || '/static/default_dp.png'}"
+         class="avatar"
+         onerror="this.src='/static/default_dp.png'"
+         onclick="openProfile(${c.user_id})">
+
+    <div class="content">
+
+      <div class="username" onclick="openProfile(${c.user_id})">
+        @${c.username}
+      </div>
+
+      <div class="text">${c.text}</div>
+
+      <div class="meta">
+        <span class="like" onclick="likeComment(${c.id}, this)">
+          ❤️ ${c.likes || 0}
+        </span>
+
+        <span class="reply" onclick="setReply('${c.id}','${c.username}')">
+          Reply
+        </span>
+      </div>
+
+      ${c.replies ? c.replies.map(r=>`
+        <div style="margin-left:20px;margin-top:8px">
+          <div class="username" onclick="openProfile(${r.user_id})">@${r.username}</div>
+          <div class="text">${r.text}</div>
+        </div>
+      `).join("") : ""}
+
+    </div>
+
+    ${!isMe ? `
+      <button class="followBtn" onclick="followUser(${c.user_id}, this)">
+        Follow
+      </button>
+    ` : ``}
+
+  </div>`;
+}
+
+/* PROFILE */
+function openProfile(id){
+  window.location.href = "/profile/" + id;
+}
+
+/* FOLLOW */
+async function followUser(id,btn){
+  btn.innerText="...";
+  const res = await fetch(`/social/follow/${id}`,{method:"POST"});
+  const d = await res.json();
+
+  btn.innerText = d.action === "followed" ? "Following" : "Follow";
+}
+
+/* LIKE COMMENT */
+async function likeComment(id, el){
+  const res = await fetch(`/reels/comment_like/${id}`,{method:"POST"});
+  const d = await res.json();
+
+  if(d.ok){
+    el.innerText = "❤️ " + d.likes;
+  }
+}
+
+/* REPLY */
+function setReply(id,user){
+  replyTo = id;
+  document.getElementById("commentInput").placeholder = "Reply to @" + user;
+}
+
+/* SEND */
+async function sendComment(){
+  let text = document.getElementById("commentInput").value;
+  if(!text) return;
+
+  let fd = new FormData();
+  fd.append("comment", text);
+
+  if(replyTo){
+    fd.append("reply_to", replyTo);
+  }
+
+  await fetch(`/reels/comment/${reelId}`,{
+    method:"POST",
+    body:fd
+  });
+
+  document.getElementById("commentInput").value="";
+  replyTo=null;
+
+  loadComments();
+}
+
+/* AUTO REFRESH */
+setInterval(loadComments,5000);
+
+loadComments();
+
+</script>
+
+</body>
+</html>

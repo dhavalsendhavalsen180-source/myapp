@@ -17,13 +17,16 @@
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
+
     .carousel-track img {
-      flex:0 0 100%;
-      scroll-snap-align:center;
-      object-fit:cover;
-      max-height: 650px;
-      width:100%;
+        flex: 0 0 100%;
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        background: transparent;
+        max-height: none;
     }
+
     .carousel-btn {
       position:absolute;
       top:50%;
@@ -38,23 +41,55 @@
     .carousel-btn.left { left:10px; }
     .carousel-btn.right { right:10px; }
 
-    .like-heart {
-      position:absolute;
-      top:50%;
-      left:50%;
-      transform:translate(-50%,-50%) scale(0);
-      font-size:4.5rem;
-      color:white;
-      opacity:0;
-      pointer-events:none;
-      transition: transform .25s ease, opacity .25s ease;
-      z-index:20;
-      text-shadow: 0 10px 25px rgba(0,0,0,0.5);
+.like-heart{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%) scale(0);
+    font-size:110px;
+    opacity:0;
+    pointer-events:none;
+    z-index:999;
+
+    filter: drop-shadow(0 0 15px rgba(255,0,80,.8))
+            drop-shadow(0 0 35px rgba(255,0,80,.5));
+}
+
+.like-heart.show{
+    animation: heartPop 0.9s ease forwards;
+}
+
+@keyframes heartPop{
+
+    0%{
+        opacity:0;
+        transform:translate(-50%,-50%) scale(0);
     }
-    .like-heart.show {
-      transform:translate(-50%,-50%) scale(1);
-      opacity:1;
+
+    20%{
+        opacity:1;
+        transform:translate(-50%,-50%) scale(1.45);
     }
+
+    35%{
+        transform:translate(-50%,-50%) scale(1.1);
+    }
+
+    50%{
+        transform:translate(-50%,-50%) scale(1.3);
+    }
+
+    70%{
+        opacity:1;
+        transform:translate(-50%,-50%) scale(1);
+    }
+
+    100%{
+        opacity:0;
+        transform:translate(-50%,-50%) scale(1.8);
+    }
+}
+
 
     .no-scrollbar::-webkit-scrollbar { display:none; }
 
@@ -273,16 +308,38 @@ async function uploadStoryInstant(event) {
         </div>
 
         <!-- DELETE ONLY OWN POST -->
-        {% if post.user_id == current_user %}
-        <form method="POST" action="/posts/delete/{{ post.id }}">
-          <button class="text-red-500 text-sm font-semibold">Delete</button>
-        </form>
+        {% if post.owner_id == current_user %}
+        <div class="relative">
+          <button onclick="toggleMenu({{ post.id }})"
+                  class="text-2xl text-gray-600">
+            ⋮
+          </button>
+
+          <div id="menu-{{ post.id }}"
+               class="hidden absolute right-0 top-8 bg-white border rounded-lg shadow-lg w-32 z-50">
+  
+            <a href="/posts/{{ post.id }}"
+               class="block px-4 py-2 hover:bg-gray-100">
+              View
+            </a>
+
+            <form method="POST"
+                  action="/posts/delete/{{ post.id }}"
+                  onsubmit="return confirm('Delete this post?')">
+
+              <button type="submit"
+                      class="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100">
+                Delete
+              </button>
+
+            </form>
+
+          </div>
+        </div>
         {% endif %}
-      </div>
-
-
+        </div>
       <!-- IMAGES (CAROUSEL + DOUBLE TAP) -->
-      <div class="relative bg-black">
+      <div class="relative">
 
         {% if post.images and post.images|length > 1 %}
         <div class="carousel">
@@ -300,74 +357,109 @@ async function uploadStoryInstant(event) {
           <button class="carousel-btn right" onclick="scrollByTrack('{{ post.id }}', +1)">›</button>
         </div>
 
-        {% elif post.images and post.images|length == 1 %}
-        <img src="{{ post.images[0] }}"
-             class="w-full max-h-[650px] object-cover"
-             ondblclick="toggleLike({{ post.id }}, document.querySelector('#like-btn-{{ post.id }}'))"
-             ontouchend="onImageTap({{ post.id }})">
-        {% else %}
-        <div class="p-12 text-center text-gray-400">No Image</div>
-        {% endif %}
+{% elif post.images and post.images|length == 1 %}
+<img src="{{ post.images[0] }}"
+     class="w-full h-auto block"
+     ondblclick="toggleLike({{ post.id }}, document.querySelector('#like-btn-{{ post.id }}'))"
+     ontouchend="onImageTap({{ post.id }})">
+{% else %}
+<div class="p-12 text-center text-gray-400">No Image</div>
+{% endif %}
 
         <!-- HEART ANIMATION -->
         <div id="heart-{{ post.id }}" class="like-heart">❤️</div>
       </div>
 
+<!-- ACTION ROW -->
+<div class="px-4 pt-3">
 
-      <!-- ACTION BUTTONS -->
-      <div class="flex items-center px-4 py-2 space-x-4 text-2xl">
+  <div class="flex items-center justify-between">
 
-        <button id="like-btn-{{ post.id }}"
-                onclick="toggleLike({{ post.id }}, this)"
-                class="transition">
-          ❤️
-        </button>
+    <!-- LEFT SIDE -->
+    <div class="flex items-center gap-4">
 
-        <a href="/posts/{{ post.id }}">💬</a>
+      <!-- LIKE -->
+      <button id="like-btn-{{ post.id }}"
+              onclick="toggleLike({{ post.id }}, this)">
 
-        <a href="/posts/{{ post.id }}" class="text-xl">📤</a>
+        <svg class="w-7 h-7 {% if post.liked_by_me %}text-red-500{% endif %}"
+             viewBox="0 0 24 24"
+             fill="{% if post.liked_by_me %}currentColor{% else %}none{% endif %}"
+             stroke="currentColor"
+             stroke-width="1.8">
 
-      </div>
+          <path stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M20.8 4.6c-1.8-1.8-4.7-1.8-6.5 0L12 6.9 9.7 4.6c-1.8-1.8-4.7-1.8-6.5 0s-1.8 4.7 0 6.5L12 21l8.8-9.9c1.8-1.8 1.8-4.7 0-6.5z"/>
+        </svg>
 
+      </button>
 
-      <!-- LIKES + CAPTION -->
-      <div class="px-4 pb-2">
-        <div id="like-count-{{ post.id }}" class="text-sm font-semibold">
-          {{ post.likes }} likes
-        </div>
+        <!-- COMMENT BUTTON -->
+<button onclick="openComment({{ post.id }})" class="icon-btn">
 
-        <div class="text-sm">
-          <span class="font-semibold">@{{ post.username }}</span>
-          <span class="text-gray-700">{{ post.caption }}</span>
-        </div>
-      </div>
+  <svg class="w-7 h-7"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="1.8">
 
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/>
+  </svg>
 
-      <!-- COMMENTS -->
-      <div class="px-4 pb-3 text-sm text-gray-700 space-y-1">
-        {% for c in post.comments %}
-        <p>
-          <span class="font-semibold">@{{ c.username }}</span>
-          <span>{{ c.comment }}</span>
-        </p>
-        {% endfor %}
-      </div>
+</button>
 
+        <!-- SHARE BUTTON -->
+<button onclick="openShare({{ post.id }})" class="icon-btn">
 
-      <!-- ADD COMMENT -->
-      <form method="POST"
-            action="/posts/comment/{{ post.id }}"
-            class="px-4 pb-4 flex items-center space-x-2">
-        <input name="comment" placeholder="Add a comment..." required
-               class="flex-grow rounded-lg border px-3 py-2 text-sm" />
-        <button class="text-blue-500 font-semibold">Post</button>
-      </form>
+  <svg class="w-7 h-7"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="1.8">
+
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M16 6l-4-4-4 4M12 2v14"/>
+  </svg>
+
+</button>
+
+    <!-- RIGHT SIDE SAVE -->
+    <button id="save-btn-{{ post.id }}"
+            onclick="toggleSave({{ post.id }}, this)">
+
+      <svg class="w-7 h-7 {% if post.saved_by_me %}text-black{% endif %}"
+           viewBox="0 0 24 24"
+           fill="{% if post.saved_by_me %}currentColor{% else %}none{% endif %}"
+           stroke="currentColor"
+           stroke-width="1.8">
+
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/>
+      </svg>
+
+    </button>
+
+  </div>
+
+  <!-- LIKE COUNT -->
+  <div id="likes-count-{{ post.id }}"
+       class="mt-2 font-semibold text-sm">
+    {{ post.likes }} likes
+  </div>
 
     </div>
     {% endfor %}
 
   </div>
-
 
 <!-- 🏠🔍➕🎬BOTTOM NAV -->
 <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-inner flex justify-around py-2 text-2xl">
@@ -406,17 +498,135 @@ async function uploadStoryInstant(event) {
 </a>
 </div>
 
-
 <script>
+async function toggleLike(postId, btn){
+
+try{
+
+    const res = await fetch("/posts/like_toggle/" + postId, {
+        method: "POST"
+    });
+
+    if(res.ok){
+
+        const svg = btn.querySelector("svg");
+
+        const countBox = document.getElementById(
+            "likes-count-" + postId
+        );
+
+        let current = parseInt(countBox.innerText) || 0;
+
+        if(svg.getAttribute("fill") === "currentColor"){
+
+            svg.setAttribute("fill", "none");
+            svg.classList.remove("text-red-500");
+
+            countBox.innerText = (current - 1) + " likes";
+
+        }else{
+
+            svg.setAttribute("fill", "currentColor");
+            svg.classList.add("text-red-500");
+
+            countBox.innerText = (current + 1) + " likes";
+
+            // ❤️ Heart Animation
+            const heart = document.getElementById(
+                "heart-" + postId
+            );
+
+            if(heart){
+
+                heart.classList.remove("show");
+
+                void heart.offsetWidth;
+
+                heart.classList.add("show");
+
+                setTimeout(() => {
+                    heart.classList.remove("show");
+                }, 900);
+            }
+        }
+
+    }
+
+}catch(e){
+    console.log(e);
+}
+
+}
 </script>
 
 <script>
+async function toggleSave(postId, btn){
+
+    try{
+
+        const res = await fetch("/posts/save_toggle/" + postId,{
+            method:"POST"
+        });
+
+        const data = await res.json();
+
+        if(data.ok){
+
+            const svg = btn.querySelector("svg");
+
+            if(data.action === "saved"){
+                svg.setAttribute("fill","currentColor");
+            }else{
+                svg.setAttribute("fill","none");
+            }
+
+        }
+
+    }catch(e){
+        console.log(e);
+    }
+
+}
 </script>
 
-</body>
-</html>
+<script>
+function toggleMenu(postId){
+
+  document.querySelectorAll("[id^='menu-']").forEach(el=>{
+    if(el.id !== "menu-" + postId){
+      el.classList.add("hidden");
+    }
+  });
+
+  document
+    .getElementById("menu-" + postId)
+    .classList.toggle("hidden");
+}
+
+document.addEventListener("click", function(e){
+
+  if(!e.target.closest(".relative")){
+    document.querySelectorAll("[id^='menu-']").forEach(el=>{
+      el.classList.add("hidden");
+    });
+  }
+
+});
+</script>
+
+<script>
+function openComment(postId){
+    alert("Comment popup open: " + postId);
+}
+</script>
+
 <script>
 function openStory(user_id){
     window.location.href = "/stories/view/" + user_id;
 }
 </script>
+
+{% include "post_share.html" %}
+
+</body>
+</html>
