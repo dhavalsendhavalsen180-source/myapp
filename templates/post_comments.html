@@ -46,14 +46,15 @@ input{flex:1;padding:8px;border-radius:20px;border:none;background:#222;color:wh
 
 <script>
 
-let reelId = "{{ reel_id }}";
+let postId = "{{ post_id }}";
 let currentUser = "{{ current_user or '' }}";
 let replyTo = null;
 
 /* LOAD */
 async function loadComments(){
   try{
-    const res = await fetch(`/reels/comments/${reelId}`);
+
+    const res = await fetch(`/posts/comments_api/${postId}`)
     const d = await res.json();
 
     let html="";
@@ -160,7 +161,7 @@ async function sendComment(){
     fd.append("reply_to", replyTo);
   }
 
-  await fetch(`/reels/comment/${reelId}`,{
+  await fetch(`/posts/comment/${postId}`,{
     method:"POST",
     body:fd
   });

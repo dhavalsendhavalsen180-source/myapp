@@ -70,7 +70,7 @@ def explore_page():
         explore_items.append({
             "type": "reel",
             "id": r["id"],
-            "media": "/static/reels/" + r["video_path"]
+            "media": "/static/uploads/reels/" + r["video_path"]
         })
 
     conn.close()

@@ -152,6 +152,14 @@ def reels_page():
     for r in c.fetchall():
         created_at = r["created_at"] or ""
 
+        c.execute("""
+            SELECT 1
+            FROM reel_likes
+            WHERE reel_id=? AND user_id=?
+        """, (r["id"], get_user_id()))
+
+        liked = c.fetchone() is not None
+
         reels.append({
             "id": r["id"],
             "user_id": r["user_id"],
@@ -160,6 +168,7 @@ def reels_page():
             "video_path": r["video_path"],
             "thumbnail": r["thumbnail"],
             "likes": r["likes"],
+            "liked": liked,
             "saves": r["saves"],
             "shares": r["shares"],
             "comments_count": r["comments_count"],

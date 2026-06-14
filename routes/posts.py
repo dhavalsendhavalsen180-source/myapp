@@ -545,3 +545,50 @@ def save_toggle(post_id):
     conn.close()
 
     return {"ok": True, "action": action}
+############ comment ##################
+@posts_bp.route("/comments/<int:post_id>")
+def comments_page(post_id):
+
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    return render_template(
+        "post_comments.html",
+        post_id=post_id,
+        current_user=session["user_id"]
+    )
+#####################################
+#####################################
+@posts_bp.route("/comments_api/<int:post_id>")
+def comments_api(post_id):
+
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT comments.id,
+               comments.user_id,
+               comments.comment,
+               users.username,
+               users.photo
+        FROM comments
+        JOIN users ON comments.user_id = users.id
+        WHERE comments.post_id=?
+        ORDER BY comments.id DESC
+    """, (post_id,))
+
+    comments = []
+
+    for r in c.fetchall():
+        comments.append({
+            "id": r["id"],
+            "user_id": r["user_id"],
+            "username": r["username"],
+            "text": r["comment"],
+            "profile": r["photo"]
+        })
+
+    conn.close()
+
+    return {"comments": comments}
