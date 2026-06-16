@@ -15,15 +15,15 @@ body {
 }
 
 .reels-wrapper{
-  height:100dvh;
+  height:100%;
   overflow-y:scroll;
   scroll-snap-type:y mandatory;
-  -webkit-overflow-scrolling: touch;
+  -webkit-overflow-scrolling:touch;
   scroll-behavior:smooth;
 }
 
 .reel{
-  height:100dvh;
+  height:100%;
   position:relative;
   scroll-snap-align:start;
 }
@@ -46,7 +46,7 @@ video{
 /* CAPTION */
 .caption{
   position:absolute;
-  bottom:90px;
+  bottom:95px;
   left:15px;
   color:white;
   max-width:70%;
@@ -56,7 +56,7 @@ video{
 /* AUDIO */
 .audio{
   position:absolute;
-  bottom:140px;
+  bottom:70px;
   left:15px;
   width:70%;
   color:white;
@@ -79,7 +79,7 @@ video{
 .actions{
   position:absolute;
   right:15px;
-  bottom:120px;
+  bottom:180px;
   display:flex;
   flex-direction:column;
   gap:18px;
@@ -175,7 +175,7 @@ filter:blur(2px);
 .heart.show{opacity:1;transform:translate(-50%,-50%) scale(1.25);}
 
 
-.reel-userbar{position:absolute;bottom:180px;left:15px;right:80px;display:flex;justify-content:space-between;align-items:center;color:white}
+.reel-userbar{position:absolute;bottom:110px;left:15px;right:80px;display:flex;justify-content:space-between;align-items:center;color:white}
 .reel-userbar .left{display:flex;align-items:center;gap:10px}
 .avatar{width:38px;height:38px;border-radius:50%;border:2px solid white;object-fit:cover}
 .username{font-weight:600;font-size:14px}
@@ -190,10 +190,10 @@ filter:blur(2px);
 
 .reel-userbar{
   position:absolute;
-  bottom:95px;
+  bottom:75px;   /* niche le jane ke liye */
 
   left:12px;
-  right:70px;   /* 🔥 important */
+  right:70px;
 
   display:flex;
   align-items:center;
@@ -265,6 +265,7 @@ filter:blur(2px);
   color:red;
 }
 
+
 </style>
 </head>
 
@@ -287,6 +288,7 @@ filter:blur(2px);
 {% else %}
 
 <video
+  style="width:100%;height:100%;object-fit:cover;"
   id="video-{{ reel.id }}"
   src="/static/uploads/reels/{{ reel.video_path }}"
   autoplay
@@ -372,7 +374,7 @@ filter:blur(2px);
 </div>
 
   <!-- ACTIONS -->
-<div class="absolute right-3 bottom-20 flex flex-col items-center gap-5 text-white">
+<div class="absolute right-3 bottom-16 flex flex-col items-center gap-4 text-white">
 
   <!-- LIKE -->
 <div onclick="like({{ reel.id }})" class="flex flex-col items-center cursor-pointer">
@@ -448,6 +450,50 @@ filter:blur(2px);
     </button>
 
   </div>
+</div>
+
+<!-- REELS BOTTOM NAV -->
+<div class="fixed bottom-0 left-0 right-0 z-[9999]
+bg-black
+flex justify-around items-center
+h-14 text-white">
+
+  <a href="/posts/feed">
+    <!-- Home -->
+    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 10.5L12 3l9 7.5V21h-6v-6H9v6H3z"/>
+    </svg>
+  </a>
+
+  <a href="/explore">
+    <!-- Search -->
+    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="7"/>
+      <path d="M21 21l-4.3-4.3"/>
+    </svg>
+  </a>
+
+  <a href="/create">
+    <!-- Plus -->
+    <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 5v14M5 12h14"/>
+    </svg>
+  </a>
+
+  <a href="/reels">
+    <!-- Reels -->
+    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="18" height="18" rx="3"/>
+      <path d="M10 9l6 3-6 3z" fill="currentColor"/>
+    </svg>
+  </a>
+
+  <a href="/profile/{{ current_user }}">
+    <img src="{{ current_user_photo }}"
+         class="w-7 h-7 rounded-full border border-white"
+         onerror="this.src='/static/default_dp.png'">
+  </a>
+
 </div>
 
 <script>
@@ -693,6 +739,28 @@ function toggleMenu(id){
     menu.style.display = "block";
   }
 }
+
+function fixReelHeight(){
+const h = window.innerHeight;
+
+document.body.style.overflow = "hidden";
+document.documentElement.style.overflow = "hidden";
+
+document.querySelectorAll('.reel').forEach(el=>{
+    el.style.height = h + 'px';
+    el.style.minHeight = h + 'px';
+});
+
+document.getElementById('wrapper').style.height = h + 'px';
+
+wrapper.scrollTop = Math.round(wrapper.scrollTop);
+
+}
+
+window.addEventListener('load', fixReelHeight);
+window.addEventListener('resize', fixReelHeight);
+
+
 </script>
 
 {% include "reels_sher_nano.html" %}
