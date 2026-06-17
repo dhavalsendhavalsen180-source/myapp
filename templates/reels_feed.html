@@ -43,14 +43,20 @@ video{
   font-weight:700;
 }
 
-/* CAPTION */
 .caption{
   position:absolute;
-  bottom:95px;
+  bottom:65px;
   left:15px;
+  right:90px;
+
   color:white;
-  max-width:70%;
   font-size:14px;
+
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+
+  overflow:hidden;
 }
 
 /* AUDIO */
@@ -181,7 +187,6 @@ filter:blur(2px);
 .username{font-weight:600;font-size:14px}
 .fire{color:orange}
 .age{font-size:12px;opacity:0.8}
-.sub{font-size:12px;opacity:0.7}
 .follow-btn{background:#0095f6;color:white;border:none;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600}
 .follow-btn.following{background:transparent;border:1px solid white}
 .reel-userbar a:active {
@@ -190,7 +195,7 @@ filter:blur(2px);
 
 .reel-userbar{
   position:absolute;
-  bottom:75px;   /* niche le jane ke liye */
+  bottom:95px;   /* niche le jane ke liye */
 
   left:12px;
   right:70px;
@@ -265,6 +270,25 @@ filter:blur(2px);
   color:red;
 }
 
+.caption.open{
+  -webkit-line-clamp:unset;
+  overflow:visible;
+  background:rgba(0,0,0,.4);
+  padding:6px;
+  border-radius:8px;
+}
+
+.moreBtn{
+  color:#cfcfcf;
+  font-weight:600;
+  cursor:pointer;
+  margin-left:4px;
+}
+
+.caption.open{
+  -webkit-line-clamp:unset;
+  overflow:visible;
+}
 
 </style>
 </head>
@@ -344,15 +368,23 @@ filter:blur(2px);
 
    <div class="topbar">Reels</div>
 
- <div class="caption">{{ reel.caption }}</div>
+<div class="caption">
+  <b>@{{ reel.username }}</b>
+  <span class="captionText">{{ reel.caption }}</span>
+
+  <span class="moreBtn"
+        onclick="expandCaption(this)">
+        more
+  </span>
+</div>
 
 <!-- REEL USER BAR (INSTAGRAM FIXED) -->
 <div class="reel-userbar">
 
   <a href="/profile/{{ reel.user_id }}" class="user-left">
 
-    <img class="avatar"
-         src="{{ reel.profile_photo or '/static/default_dp.png' }}">
+<img class="avatar"
+src="{{ reel.profile_photo if reel.profile_photo else '/static/default_dp.png' }}">
 
     <div class="user-info">
       <div class="username-row">
@@ -360,7 +392,6 @@ filter:blur(2px);
         <span class="fire">🔥</span>
         <span class="age">• 18+</span>
       </div>
-      <div class="sub">Tap to view profile</div>
     </div>
 
   </a>
@@ -738,6 +769,11 @@ function toggleMenu(id){
 
     menu.style.display = "block";
   }
+}
+
+function expandCaption(btn){
+  btn.parentElement.classList.add("open");
+  btn.style.display = "none";
 }
 
 function fixReelHeight(){

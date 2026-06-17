@@ -142,7 +142,7 @@ def reels_page():
        reels.thumbnail,
                reels.likes, reels.saves, reels.shares, reels.comments_count,
                reels.created_at, reels.audio_name,
-               users.username
+               users.username, users.photo
         FROM reels
         JOIN users ON reels.user_id = users.id
         ORDER BY reels.id DESC
@@ -164,6 +164,7 @@ def reels_page():
             "id": r["id"],
             "user_id": r["user_id"],
             "username": r["username"],
+            "profile_photo": r["photo"],
             "caption": r["caption"] or "",
             "video_path": r["video_path"],
             "thumbnail": r["thumbnail"],
