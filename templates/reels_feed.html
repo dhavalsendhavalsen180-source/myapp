@@ -290,6 +290,24 @@ filter:blur(2px);
   overflow:visible;
 }
 
+.reels-wrapper{
+  height:100vh;
+  overflow-y:auto;
+
+  scroll-snap-type:y mandatory;
+  scroll-snap-stop:always;   /* 🔥 important */
+
+  overscroll-behavior-y:contain;
+}
+
+.reel{
+  height:100vh;
+  min-height:100vh;
+
+  scroll-snap-align:start;
+  scroll-snap-stop:always;   /* 🔥 important */
+}
+
 </style>
 </head>
 
@@ -775,6 +793,23 @@ function expandCaption(btn){
   btn.parentElement.classList.add("open");
   btn.style.display = "none";
 }
+
+let isScrolling = false;
+
+wrapper.addEventListener("wheel", function(e){
+
+  if(isScrolling) {
+    e.preventDefault();
+    return;
+  }
+
+  isScrolling = true;
+
+  setTimeout(()=>{
+    isScrolling = false;
+  },500);
+
+},{passive:false});
 
 function fixReelHeight(){
 const h = window.innerHeight;
