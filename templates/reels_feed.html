@@ -415,8 +415,16 @@ src="{{ reel.profile_photo if reel.profile_photo else '/static/default_dp.png' }
   </a>
 
 {% if reel.user_id != session.user_id %}
-<button class="follow-btn" id="follow-{{ reel.user_id }}" onclick="followUser({{ reel.user_id }})">
-  Follow
+<button
+  class="follow-btn {% if reel.following %}following{% endif %}"
+  id="follow-{{ reel.user_id }}"
+  onclick="followUser({{ reel.user_id }})">
+
+  {% if reel.following %}
+      Following
+  {% else %}
+      Follow
+  {% endif %}
 </button>
 {% endif %}
 
@@ -561,7 +569,7 @@ function controlVideos(){
     if(rect.top < middle && rect.bottom > middle){
       // ACTIVE REEL
       v.play();
-      v.muted = false;
+    v.muted = globalMuted;  
     } else {
       // OTHER REELS
       v.pause();
@@ -580,17 +588,37 @@ setTimeout(controlVideos, 300);
 
 let current=null;
 let globalMuted=false;
+let clickTimer = null;
 
 /* GLOBAL SOUND FIX */
+
 document.querySelectorAll("video").forEach(v=>{
-  v.muted = false;
 
-  v.addEventListener("click", ()=>{
-    globalMuted = !globalMuted;
-    document.querySelectorAll("video").forEach(x=>x.muted = globalMuted);
+  v.muted = globalMuted;
+
+  v.addEventListener("click", function(){
+
+    if(clickTimer){
+      clearTimeout(clickTimer);
+      clickTimer = null;
+      return;
+    }
+
+    clickTimer = setTimeout(()=>{
+
+      globalMuted = !globalMuted;
+
+      document.querySelectorAll("video").forEach(x=>{
+        x.muted = globalMuted;
+      });
+
+      clickTimer = null;
+
+    },250);
+
   });
-});
 
+});
 
 /* INSTAGRAM LIKE */
 function like(id){

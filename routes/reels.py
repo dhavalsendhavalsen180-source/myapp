@@ -160,6 +160,14 @@ def reels_page():
 
         liked = c.fetchone() is not None
 
+        c.execute("""
+            SELECT 1
+            FROM follows
+            WHERE follower_id=? AND following_id=?
+        """, (get_user_id(), r["user_id"]))
+
+        is_following = c.fetchone() is not None
+
         reels.append({
             "id": r["id"],
             "user_id": r["user_id"],
@@ -170,6 +178,7 @@ def reels_page():
             "thumbnail": r["thumbnail"],
             "likes": r["likes"],
             "liked": liked,
+            "following": is_following,
             "saves": r["saves"],
             "shares": r["shares"],
             "comments_count": r["comments_count"],
