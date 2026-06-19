@@ -116,8 +116,30 @@ def inbox():
             "last_time": r["last_time"] or "",
             "unread": r["unread_count"] or 0
         })
-    return render_template("messages_inbox.html", chats=inbox)
 
+    uid = session["user_id"]
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("SELECT photo FROM users WHERE id=?", (uid,))
+    user = c.fetchone()
+
+    current_user_photo = "/static/default_dp.png"
+
+    if user and user["photo"]:
+        current_user_photo = user["photo"]
+
+    conn.close()
+
+    return render_template(
+        "messages_inbox.html",
+        chats=inbox,
+        current_user=uid,
+        current_user_photo=current_user_photo,
+    )
+
+#########№###################################
 @messages_bp.route("/chat/<int:other_id>")
 def chat_page(other_id):
     if "user_id" not in session:
@@ -402,3 +424,11 @@ def disconnect_handler():
             set_last_seen(me)
             if not is_ghost(me):
                 emit("presence", {"chat_id": chat_id, "user_id": me, "status":"offline", "last_seen": datetime.utcnow().isoformat()}, room=room, include_self=False)
+
+############ test ############
+@socketio.on("send_message")
+def send_message(data):
+    print("SEND MESSAGE EVENT:", data)
+
+    me = session.get("user_id")
+    chat_id = data.get("chat_id")

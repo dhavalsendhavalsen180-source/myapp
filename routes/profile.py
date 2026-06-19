@@ -255,8 +255,10 @@ def settings_page():
 
 
 # ------------------ SAVED POSTS ------------------ #
+# ------------------ SAVED ------------------ #
 @profile_bp.route("/saved")
 def saved_page():
+
     if "user_id" not in session:
         return redirect("/auth/login")
 
@@ -266,6 +268,7 @@ def saved_page():
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
+    # SAVED POSTS
     c.execute("""
         SELECT posts.id, posts.caption
         FROM post_saves
@@ -276,45 +279,39 @@ def saved_page():
     rows = c.fetchall()
 
     saved_posts = []
+
     for r in rows:
-        c.execute("SELECT image_path FROM post_images WHERE post_id=? LIMIT 1", (r["id"],))
+        c.execute(
+            "SELECT image_path FROM post_images WHERE post_id=? LIMIT 1",
+            (r["id"],)
+        )
+
         img = c.fetchone()
 
         saved_posts.append({
             "id": r["id"],
             "caption": r["caption"],
-            "image": img["image_path"] if img else None,
+            "image": img["image_path"] if img else None
         })
 
-    conn.close()
-
-    return render_template("saved.html", saved_posts=saved_posts)
-
-
-# ------------------ SAVED REELS ------------------ #
-@profile_bp.route("/saved/reels")
-def saved_reels():
-
-    if "user_id" not in session:
-        return redirect("/auth/login")
-
-    uid = session["user_id"]
-
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-
+    # SAVED REELS
     c.execute("""
         SELECT r.*
-        FROM reel_saves s
-        JOIN reels r ON r.id = s.reel_id
-        WHERE s.user_id=?
+        FROM reel_saves rs
+        JOIN reels r ON r.id = rs.reel_id
+        WHERE rs.user_id=?
+        ORDER BY rs.id DESC
     """, (uid,))
 
-    reels = c.fetchall()
+    saved_reels = c.fetchall()
+
     conn.close()
 
-    return render_template("saved_reels.html", reels=reels)
+    return render_template(
+        "saved.html",
+        saved_posts=saved_posts,
+        saved_reels=saved_reels
+    )
 
 ########################################
 @profile_bp.route("/reels")

@@ -48,11 +48,36 @@
     </div>
 
     <!-- REELS TAB -->
-    <div id="reels" class="p-5 hidden">
-      <div class="text-gray-500 text-sm text-center py-10">
-        Saved Reels will show here...
-      </div>
-    </div>
+<div id="reels" class="p-4 hidden">
+
+{% if saved_reels %}
+
+<div class="grid grid-cols-3 gap-1">
+
+{% for reel in saved_reels %}
+
+<a href="/reels?open={{ reel.id }}">
+
+<video
+class="w-full h-32 object-cover"
+src="/static/uploads/reels/{{ reel.video_path }}">
+</video>
+
+</a>
+
+{% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="text-gray-500 text-center py-10">
+No saved reels yet
+</div>
+
+{% endif %}
+
+</div>
 
     <!-- AUDIO TAB -->
     <div id="audio" class="p-5 hidden">

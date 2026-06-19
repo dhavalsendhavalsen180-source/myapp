@@ -6,6 +6,8 @@ from flask import Blueprint, render_template, request, session, redirect, jsonif
 
 reels_bp = Blueprint("reels", __name__, url_prefix="/reels")
 
+DB_NAME = "database.db"
+
 UPLOAD_FOLDER = "static/uploads/reels"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -168,6 +170,14 @@ def reels_page():
 
         is_following = c.fetchone() is not None
 
+        c.execute("""
+            SELECT 1
+            FROM reel_saves
+            WHERE reel_id=? AND user_id=?
+        """, (r["id"], get_user_id()))
+
+        saved = c.fetchone() is not None
+
         reels.append({
             "id": r["id"],
             "user_id": r["user_id"],
@@ -180,15 +190,34 @@ def reels_page():
             "liked": liked,
             "following": is_following,
             "saves": r["saves"],
+            "saved": saved,
             "shares": r["shares"],
             "comments_count": r["comments_count"],
             "created_at": created_at, "audio_name": r["audio_name"]
         })
 
+
+    uid = get_user_id()
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute("SELECT photo FROM users WHERE id=?", (uid,))
+    user = c.fetchone()
+
+    current_user_photo = "/static/default_dp.png"
+
+    if user and user["photo"]:
+        current_user_photo = user["photo"]
+
     conn.close()
 
-    return render_template("reels_feed.html", reels=reels, current_user=get_user_id())
-
+    return render_template(
+        "reels_feed.html",
+        reels=reels,
+        current_user=uid,
+        current_user_photo=current_user_photo
+    )
 
 # ===============================
 # ⬆️ UPLOAD REEL
@@ -290,27 +319,66 @@ def like_toggle(reel_id):
 # ===============================
 @reels_bp.route("/save_toggle/<int:reel_id>", methods=["POST"])
 def save_toggle(reel_id):
-    uid = session.get("user_id")
-    if not uid:
-        return {"ok": False}
 
-    conn = sqlite3.connect(DB_NAME)
+    uid = session.get("user_id")
+
+    if not uid:
+        return jsonify({"ok": False})
+
+    conn = get_conn()
     c = conn.cursor()
 
-    c.execute("SELECT id FROM reel_saves WHERE user_id=? AND reel_id=?", (uid, reel_id))
+    c.execute(
+        "SELECT id FROM reel_saves WHERE user_id=? AND reel_id=?",
+        (uid, reel_id)
+    )
+
     exists = c.fetchone()
 
     if exists:
-        c.execute("DELETE FROM reel_saves WHERE user_id=? AND reel_id=?", (uid, reel_id))
-        state = "removed"
+
+        c.execute(
+            "DELETE FROM reel_saves WHERE user_id=? AND reel_id=?",
+            (uid, reel_id)
+        )
+
+        c.execute(
+            "UPDATE reels SET saves = CASE WHEN saves > 0 THEN saves - 1 ELSE 0 END WHERE id=?",
+            (reel_id,)
+        )
+
+        saved = False
+
     else:
-        c.execute("INSERT INTO reel_saves (user_id, reel_id) VALUES (?,?)", (uid, reel_id))
-        state = "saved"
+
+        c.execute(
+            "INSERT INTO reel_saves (user_id,reel_id) VALUES (?,?)",
+            (uid, reel_id)
+        )
+
+        c.execute(
+            "UPDATE reels SET saves=saves+1 WHERE id=?",
+            (reel_id,)
+        )
+
+        saved = True
 
     conn.commit()
+
+    c.execute(
+        "SELECT saves FROM reels WHERE id=?",
+        (reel_id,)
+    )
+
+    count = c.fetchone()["saves"]
+
     conn.close()
 
-    return {"ok": True, "state": state}
+    return jsonify({
+        "ok": True,
+        "saved": saved,
+        "count": count
+    })
 
 # ===============================
 # 📤 SHARE REEL (COUNT)

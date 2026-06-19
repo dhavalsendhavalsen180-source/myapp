@@ -308,6 +308,11 @@ filter:blur(2px);
   scroll-snap-stop:always;   /* 🔥 important */
 }
 
+.saved-icon{
+    fill:black;
+    stroke:black;
+}
+
 </style>
 </head>
 
@@ -471,16 +476,26 @@ src="{{ reel.profile_photo if reel.profile_photo else '/static/default_dp.png' }
   </div>
 
   <!-- SAVE -->
-  <div onclick="save({{ reel.id }})" class="flex flex-col items-center">
-    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-      <path stroke-linecap="round" stroke-linejoin="round"
-        d="M5 5v16l7-5 7 5V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"/>
-    </svg>
-    <span id="saveCount-{{ reel.id }}" class="text-xs mt-1">{{ reel.saves }}</span>
-  </div>
+<div onclick="save({{ reel.id }})" class="flex flex-col items-center">
 
+<svg id="saveIcon-{{ reel.id }}"
+     class="w-7 h-7 {% if reel.saved %}saved-icon{% endif %}"
+     viewBox="0 0 24 24"
+     fill="{% if reel.saved %}currentColor{% else %}none{% endif %}"
+     stroke="currentColor"
+     stroke-width="1.8">
+
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M5 5v16l7-5 7 5V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"/>
+</svg>
+
+  <span id="saveCount-{{ reel.id }}">
+    {{ reel.saves }}
+  </span>
 </div>
 
+</div>
 <!-- DOUBLE TAP HEART -->
 <div class="heart" id="heart-{{ reel.id }}">
   ❤️
@@ -569,7 +584,7 @@ function controlVideos(){
     if(rect.top < middle && rect.bottom > middle){
       // ACTIVE REEL
       v.play();
-    v.muted = globalMuted;  
+    v.muted = globalMuted;
     } else {
       // OTHER REELS
       v.pause();
@@ -675,12 +690,24 @@ function dblLike(id){
 
 /* SAVE FIX */
 async function save(id){
-  const res = await fetch(`/reels/save_toggle/${id}`,{method:"POST"});
-  const d = await res.json();
-  if(d.ok){
-    const el=document.getElementById(`saveCount-${id}`);
-    if(el) el.innerText=d.saves;
-  }
+
+    const res = await fetch(`/reels/save_toggle/${id}`,{
+        method:"POST"
+    });
+
+    const d = await res.json();
+
+    if(!d.ok) return;
+
+    document.getElementById(`saveCount-${id}`).innerText = d.count;
+
+    const icon = document.getElementById(`saveIcon-${id}`);
+
+    if(d.saved){
+        icon.classList.add("saved-icon");
+    }else{
+        icon.classList.remove("saved-icon");
+    }
 }
 
 /* FOLLOW BUTTON */
