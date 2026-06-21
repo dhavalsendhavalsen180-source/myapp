@@ -50,6 +50,13 @@
 
 <script src="/static/js/messages.js"></script>
 
+<!-- Long Press Menu -->
+<div id="msgMenu" class="msg-menu">
+  <div id="deleteMeBtn">Delete for me</div>
+  <div id="deleteAllBtn">Delete for everyone</div>
+  <div id="cancelMenuBtn">Cancel</div>
+</div>
+
 <script>
   document.getElementById("audioBtn").onclick = () => {
     location.href = `/call/${window.chat_id}?type=audio&caller=1`;

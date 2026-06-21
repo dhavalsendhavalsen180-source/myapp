@@ -272,7 +272,6 @@
         <div>
           <label class="text-sm font-medium">Bio</label>
           <textarea name="bio" rows="3" class="w-full border rounded px-3 py-2">{{ profile.bio }}</textarea>
-{% if request.args.get("error") == "username_taken" %}<div class="max-w-3xl mx-auto mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm font-semibold">⚠️ Username already taken. Try another one.</div>{% endif %}
         </div>
 
         <div>

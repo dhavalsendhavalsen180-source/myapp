@@ -130,35 +130,6 @@ def follow_toggle(target_id):
         conn.close()
         return jsonify({"ok": True, "action": "unfollowed"})
 
-# Check private account
-    c.execute(
-        "SELECT is_private FROM users WHERE id=?",
-        (target_id,)
-    )
-    private_user = c.fetchone()
-
-    if private_user and private_user[0] == 1:
-
-        c.execute("""
-            SELECT id FROM follow_requests
-            WHERE sender_id=? AND receiver_id=?
-        """, (me, target_id))
-
-        if not c.fetchone():
-            c.execute("""
-                INSERT INTO follow_requests
-                (sender_id, receiver_id)
-                VALUES (?,?)
-            """, (me, target_id))
-
-        conn.commit()
-        conn.close()
-
-        return jsonify({
-            "ok": True,
-            "action": "requested"
-        })
-
     else:
         # Follow
         c.execute(
@@ -373,7 +344,7 @@ def explore():
     return render_template("explore.html", posts=posts)
 
 
-#follow keliye
+#follow keliye 
 
 @social_bp.route("/suggestions")
 def suggestions():

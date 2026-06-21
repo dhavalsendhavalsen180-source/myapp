@@ -1,6 +1,7 @@
 from flask import Flask, send_from_directory, render_template
 from flask_cors import CORS
 from flask_socketio import SocketIO
+from socketio_init import socketio
 
 from flask import Flask, send_from_directory, render_template
 
@@ -23,6 +24,8 @@ app = Flask(__name__)
 CORS(app)
 app.secret_key = "kuch_strong_secret_key"
 
+socketio.init_app(app)
+
 # DATABASE INIT
 auth_backend.init_users_db()
 auth_backend.init_posts_db()
@@ -30,8 +33,6 @@ auth_backend.init_posts_extras()
 auth_backend.init_notifications_db()
 init_reels_db()
 
-# SOCKET.IO INIT (Option A)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # BLUEPRINTS
 app.register_blueprint(basic_bp)

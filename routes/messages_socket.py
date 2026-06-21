@@ -75,7 +75,15 @@ def set_last_seen(user_id):
     conn.commit(); conn.close()
 
 def typing_stop(chat_id, user_id):
-    socketio.emit("typing_stop", {"chat_id": chat_id, "user_id": user_id}, room=f"chat_{chat_id}", include_self=False)
+    socketio.emit(
+        "typing_stop",
+        {
+            "chat_id": chat_id,
+            "user_id": user_id
+        },
+        room=f"chat_{chat_id}"
+    )
+
     typing_timers.pop((chat_id, user_id), None)
 
 def is_ghost(user_id):
@@ -179,9 +187,15 @@ SELECT
         ) THEN 1 ELSE 0
     END AS seen
 FROM messages m
-WHERE m.chat_id=? AND m.deleted=0
+WHERE m.chat_id=?
+AND m.deleted=0
+AND (
+    m.deleted_for IS NULL
+    OR m.deleted_for=''
+    OR instr(','||m.deleted_for||',', ','||?||',') = 0
+)
 ORDER BY m.id ASC
-""", (me, chat_id))
+""", (me, chat_id, str(me)))
 
     msgs = [dict(x) for x in c.fetchall()]
     conn.close()
@@ -203,6 +217,9 @@ def on_connect():
 
 @socketio.on("join_chat")
 def join_chat(data):
+
+    print("JOIN_CHAT_EVENT_RECEIVED")
+
     chat_id = data.get("chat_id")
     me = session.get("user_id")
     if not me or not chat_id:
@@ -227,6 +244,8 @@ def join_chat(data):
             )
         """, (me, chat_id, me, me))
         conn.commit(); conn.close()
+
+        print("EMITTING messages_seen")
 
         socketio.emit("messages_seen", {"chat_id": chat_id, "user_id": me}, room=room, include_self=False)
         socketio.emit("presence", {"chat_id": chat_id, "user_id": me, "status": "online"}, room=room, include_self=False)
@@ -255,6 +274,8 @@ def typing_event(data):
 #--------------------------- send -----------------------#
 @socketio.on("send_message")
 def send_message(data):
+    print("SEND MESSAGE:", data)
+
     me = session.get("user_id")
     chat_id = data.get("chat_id")
 
@@ -304,6 +325,9 @@ def send_message(data):
 def seen_messages(data):
     me = session.get("user_id")
     chat_id = data.get("chat_id")
+
+    print("SEEN EVENT:", me, chat_id)
+
     if not me or not chat_id:
         return
 
@@ -373,6 +397,32 @@ def delete_message(data):
     c.execute("UPDATE messages SET deleted=1, msg='' WHERE id=?", (mid,)); conn.commit(); conn.close()
     socketio.emit("message_deleted", {"chat_id": chat_id, "message_id": mid}, room=f"chat_{chat_id}")
 
+#############delet for me ##################
+@socketio.on("delete_for_me")
+def delete_for_me(data):
+    me = session.get("user_id")
+    mid = data.get("message_id")
+    chat_id = data.get("chat_id")
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute(
+        "UPDATE messages SET deleted_for = COALESCE(deleted_for,'') || ? WHERE id=?",
+        (f"{me},", mid)
+    )
+
+    conn.commit()
+    conn.close()
+
+    emit(
+        "deleted_for_me",
+        {
+            "chat_id": chat_id,
+            "message_id": mid
+        }
+    )
+
 #--------------------------- lock_chat -----------------------#
 @socketio.on("lock_chat")
 def lock_chat(data):
@@ -426,9 +476,3 @@ def disconnect_handler():
                 emit("presence", {"chat_id": chat_id, "user_id": me, "status":"offline", "last_seen": datetime.utcnow().isoformat()}, room=room, include_self=False)
 
 ############ test ############
-@socketio.on("send_message")
-def send_message(data):
-    print("SEND MESSAGE EVENT:", data)
-
-    me = session.get("user_id")
-    chat_id = data.get("chat_id")

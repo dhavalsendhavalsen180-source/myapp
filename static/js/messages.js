@@ -30,6 +30,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const activeDot = document.getElementById("activeDot");
     const voiceBtn = document.getElementById("voiceBtn");
 
+    let selectedMessageId = null;
+
+    const msgMenu = document.getElementById("msgMenu");
+    const deleteMeBtn = document.getElementById("deleteMeBtn");
+    const deleteAllBtn = document.getElementById("deleteAllBtn");
+    const cancelMenuBtn = document.getElementById("cancelMenuBtn");
+
     /* ================= HELPERS ================= */
     function scrollBottom(){
         if(!messagesArea) return;
@@ -46,64 +53,95 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    /* ================= RENDER ================= */
-    function renderMessage(m, isMine){
-        if(!messagesArea || !m) return;
 
-        const row = document.createElement("div");
-        row.className = "msg-row " + (isMine ? "me" : "them");
+/* ================= RENDER ================= */
+function renderMessage(m, isMine){
+    if(!messagesArea || !m) return;
 
-        const bubble = document.createElement("div");
-        bubble.className = "msg-bubble";
+    const row = document.createElement("div");
+    row.className = "msg-row " + (isMine ? "me" : "them");
+    row.dataset.id = m.id;
 
-        if(m.deleted){
-            bubble.innerText = "Message deleted";
-        }
-        else if(m.attachment){
-            if(m.attachment.startsWith("data:image")){
-                const img = document.createElement("img");
-                img.src = m.attachment;
-                img.className = "chat-photo";
-                bubble.appendChild(img);
-            }
-            else if(m.attachment.startsWith("data:audio")){
-                const audio = document.createElement("audio");
-                audio.controls = true;
-                audio.src = m.attachment;
-                bubble.appendChild(audio);
-            }
-            if(m.msg){
-                const cap = document.createElement("div");
-                cap.className = "caption";
-                cap.innerText = m.msg;
-                bubble.appendChild(cap);
-            }
-        }
-        else{
-            bubble.innerText = m.msg || "";
-        }
+    const bubble = document.createElement("div");
+    bubble.className = "msg-bubble";
 
-        const meta = document.createElement("div");
-        meta.className = "meta";
-
-        const time = document.createElement("span");
-        time.className = "time";
-        time.innerText = timeText(m.created_at);
-        meta.appendChild(time);
-
-        if(isMine){
-            const tick = document.createElement("span");
-            tick.className = "tick";
-            tick.innerText = m.seen ? "✔✔" : "✔";
-            if(m.seen) tick.classList.add("seen");
-            meta.appendChild(tick);
-        }
-
-        bubble.appendChild(meta);
-        row.appendChild(bubble);
-        messagesArea.appendChild(row);
-        scrollBottom();
+    if(m.deleted){
+        bubble.innerText = "Message deleted";
     }
+    else if(m.attachment){
+        if(m.attachment.startsWith("data:image")){
+            const img = document.createElement("img");
+            img.src = m.attachment;
+            img.className = "chat-photo";
+            bubble.appendChild(img);
+        }
+        else if(m.attachment.startsWith("data:audio")){
+            const audio = document.createElement("audio");
+            audio.controls = true;
+            audio.src = m.attachment;
+            bubble.appendChild(audio);
+        }
+
+        if(m.msg){
+            const cap = document.createElement("div");
+            cap.className = "caption";
+            cap.innerText = m.msg;
+            bubble.appendChild(cap);
+        }
+    }
+    else{
+        bubble.innerText = m.msg || "";
+    }
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+
+    const time = document.createElement("span");
+    time.className = "time";
+    time.innerText = timeText(m.created_at);
+    meta.appendChild(time);
+
+if(isMine){
+
+    const tick = document.createElement("span");
+    tick.className = "tick";
+    tick.innerText = m.seen ? "✔✔" : "✔";
+
+    if(m.seen){
+        tick.classList.add("seen");
+    }
+
+    meta.appendChild(tick);
+}
+
+let pressTimer;
+
+bubble.addEventListener("touchstart", () => {
+
+    selectedMessageId = m.id;
+
+    if(isMine){
+        deleteAllBtn.style.display = "block";
+    }else{
+        deleteAllBtn.style.display = "none";
+    }
+
+    pressTimer = setTimeout(() => {
+        msgMenu.classList.add("show");
+    }, 700);
+
+});
+
+bubble.addEventListener("touchend", () => {
+    clearTimeout(pressTimer);
+});
+
+    bubble.appendChild(meta);
+    row.appendChild(bubble);
+    messagesArea.appendChild(row);
+
+    scrollBottom();
+}
 
     /* ================= LOAD OLD ================= */
     if(Array.isArray(window.initialMessages)){
@@ -166,6 +204,36 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    /* ================= badha mate dilet ================= */
+
+    socket.on("message_deleted", d=>{
+        if(!d || d.chat_id !== chat_id) return;
+
+        const row = document.querySelector(
+            `.msg-row[data-id="${d.message_id}"]`
+        );
+
+        if(row){
+            const bubble = row.querySelector(".msg-bubble");
+            bubble.innerHTML =
+                '<div style="font-style:italic;color:#888;">Message deleted</div>';
+        }
+    });
+
+    /* ================= maramate dilet ================= */
+socket.on("deleted_for_me", d=>{
+
+    if(!d || d.chat_id !== chat_id) return;
+
+    const row = document.querySelector(
+        `.msg-row[data-id="${d.message_id}"]`
+    );
+
+    if(row){
+        row.remove();
+    }
+});
+
     /* ================= TYPING ================= */
     let typingTimer;
     if(msgInput){
@@ -226,6 +294,37 @@ document.addEventListener("DOMContentLoaded", () => {
             }catch(err){
                 console.error(err);
             }
+        };
+    }
+
+
+    if(deleteMeBtn){
+        deleteMeBtn.onclick = () => {
+
+            socket.emit("delete_for_me", {
+                chat_id,
+                message_id: selectedMessageId
+            });
+
+           msgMenu.classList.remove("show");
+        };
+   }
+
+    if(deleteAllBtn){
+        deleteAllBtn.onclick = () => {
+
+            socket.emit("message_delete", {
+                chat_id,
+                message_id: selectedMessageId
+            });
+
+            msgMenu.classList.remove("show");
+        };
+    }
+
+    if(cancelMenuBtn){
+        cancelMenuBtn.onclick = () => {
+            msgMenu.classList.remove("show");
         };
     }
 
