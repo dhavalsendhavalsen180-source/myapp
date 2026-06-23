@@ -180,11 +180,16 @@ SELECT
     m.view_once,
     m.expires_at,
     m.attachment,
-    CASE 
-        WHEN EXISTS (
-            SELECT 1 FROM message_receipts r
-            WHERE r.message_id = m.id AND r.user_id = ?
-        ) THEN 1 ELSE 0
+    CASE
+        WHEN m.sender_id = ?
+         AND EXISTS (
+            SELECT 1
+            FROM message_receipts r
+            WHERE r.message_id = m.id
+              AND r.user_id <> m.sender_id
+         )
+        THEN 1
+        ELSE 0
     END AS seen
 FROM messages m
 WHERE m.chat_id=?
@@ -196,7 +201,6 @@ AND (
 )
 ORDER BY m.id ASC
 """, (me, chat_id, str(me)))
-
     msgs = [dict(x) for x in c.fetchall()]
     conn.close()
 
@@ -209,7 +213,6 @@ ORDER BY m.id ASC
     )
 
 # ----------------- SOCKET EVENTS -----------------
-
 @socketio.on("connect")
 def on_connect():
     me = session.get("user_id")
@@ -228,6 +231,8 @@ def join_chat(data):
     sid = request.sid
     user_sockets.setdefault(me, set()).add(sid)
     presence_cache[me] = presence_cache.get(me, 0) + 1
+
+    print("JOIN:", me, "COUNT:", presence_cache.get(me,0))
 
     room = f"chat_{chat_id}"
     join_room(room)
@@ -457,22 +462,55 @@ def set_ghost(data):
 #--------------------------- disconnect -----------------------#
 @socketio.on("disconnect")
 def disconnect_handler():
-    me=session.get("user_id"); sid=request.sid
-    if not me: return
-    sockets=user_sockets.get(me,set())
-    if sid in sockets: sockets.remove(sid)
-    if sockets: user_sockets[me]=sockets; return
-    else: user_sockets.pop(me,None)
-    rooms=list(socketio.server.rooms(sid))
+    me = session.get("user_id")
+    sid = request.sid
+
+    if not me:
+        return
+
+    sockets = user_sockets.get(me, set())
+
+    if sid in sockets:
+        sockets.remove(sid)
+
+    if sockets:
+        user_sockets[me] = sockets
+        return
+    else:
+        user_sockets.pop(me, None)
+
+    # presence counter fix
+    presence_cache[me] = max(0, presence_cache.get(me, 1) - 1)
+
+    if presence_cache[me] > 0:
+        return
+
+    rooms = list(socketio.server.rooms(sid))
+
     for room in rooms:
         leave_room(room)
-        chat_id=None
+
+        chat_id = None
+
         if room.startswith("chat_"):
-            try: chat_id=int(room.split("_")[1])
-            except: pass
+            try:
+                chat_id = int(room.split("_")[1])
+            except:
+                pass
+
         if chat_id:
             set_last_seen(me)
-            if not is_ghost(me):
-                emit("presence", {"chat_id": chat_id, "user_id": me, "status":"offline", "last_seen": datetime.utcnow().isoformat()}, room=room, include_self=False)
 
-############ test ############
+            if not is_ghost(me):
+                emit(
+                    "presence",
+                    {
+                        "chat_id": chat_id,
+                        "user_id": me,
+                        "status": "offline",
+                        "last_seen": datetime.utcnow().isoformat()
+                    },
+                    room=room,
+                    include_self=False
+                )
+

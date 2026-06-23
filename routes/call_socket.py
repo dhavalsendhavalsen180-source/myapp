@@ -34,11 +34,13 @@ def clear_call(chat_id):
 
 
 # ================= JOIN CHAT ROOM ================
-@socketio.on("join_chat")
-def join_chat(data):
+# ================= JOIN CHAT ROOM ================
+@socketio.on("join_call_chat")
+def join_call_chat(data):
     chat_id = data.get("chat_id")
     if not chat_id:
         return
+
     join_room(f"chat_{chat_id}")
     emit("joined_chat", {"chat_id": chat_id})
 

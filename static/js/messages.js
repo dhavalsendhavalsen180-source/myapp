@@ -10,14 +10,38 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error("Socket.IO missing");
     }
 
-    /* ================= SOCKET ================= */
-    const socket = io();
-    const chat_id = window.chat_id;
-    const me = window.me;
+/* ================= SOCKET ================= */
 
-    socket.on("connect", () => {
-        if(chat_id) socket.emit("join_chat", { chat_id });
-    });
+const socket = io({
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000
+});
+
+const chat_id = window.chat_id;
+const me = window.me;
+
+socket.on("connect", () => {
+
+    console.log("SOCKET CONNECTED JS:", socket.id);
+
+    if(chat_id){
+        socket.emit("join_chat", {
+            chat_id: Number(chat_id)
+        });
+    }
+});
+
+socket.on("reconnect", () => {
+
+    console.log("SOCKET RECONNECTED");
+
+    if(chat_id){
+        socket.emit("join_chat", {
+            chat_id: Number(chat_id)
+        });
+    }
+});
 
     /* ================= ELEMENTS ================= */
     const msgInput = document.getElementById("msgInput");
@@ -31,10 +55,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const voiceBtn = document.getElementById("voiceBtn");
 
     let selectedMessageId = null;
+let editingMessageId = null;
 
     const msgMenu = document.getElementById("msgMenu");
     const deleteMeBtn = document.getElementById("deleteMeBtn");
     const deleteAllBtn = document.getElementById("deleteAllBtn");
+    const editMsgBtn = document.getElementById("editMsgBtn");
     const cancelMenuBtn = document.getElementById("cancelMenuBtn");
 
     /* ================= HELPERS ================= */
@@ -45,14 +71,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function timeText(t){
         if(!t) return "";
+
         try{
-            return new Date(t.replace(" ", "T"))
-                .toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
-        }catch{
+            const d = new Date(t.replace(" ", "T") + "Z");
+
+            return d.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+        }catch(e){
             return "";
         }
     }
-
 
 /* ================= RENDER ================= */
 function renderMessage(m, isMine){
@@ -122,8 +152,10 @@ bubble.addEventListener("touchstart", () => {
 
     if(isMine){
         deleteAllBtn.style.display = "block";
+        editMsgBtn.style.display = "block";
     }else{
         deleteAllBtn.style.display = "none";
+        editMsgBtn.style.display = "none";
     }
 
     pressTimer = setTimeout(() => {
@@ -170,6 +202,19 @@ bubble.addEventListener("touchend", () => {
             const text = msgInput.value.trim();
             if(!text && !pendingAttachment) return;
 
+    if(editingMessageId){
+
+        socket.emit("message_edit", {
+            chat_id,
+            message_id: editingMessageId,
+            new_text: text
+        });
+
+        editingMessageId = null;
+        msgInput.value = "";
+        return;
+    }
+
             socket.emit("send_message", {
                 chat_id,
                 msg: text,
@@ -202,6 +247,30 @@ bubble.addEventListener("touchend", () => {
             t.innerText = "✔✔";
             t.classList.add("seen");
         });
+    });
+
+    socket.on("message_edited", d => {
+
+        if(!d || d.chat_id !== chat_id) return;
+
+        const row = document.querySelector(
+            `.msg-row[data-id="${d.message.id}"]`
+        );
+
+        if(!row) return;
+
+        const bubble = row.querySelector(".msg-bubble");
+
+        bubble.innerHTML = `
+            ${d.message.msg}
+            <div style="
+                font-size:11px;
+                opacity:.7;
+                margin-top:3px;
+            ">
+                edited
+            </div>
+        `;
     });
 
     /* ================= badha mate dilet ================= */
@@ -322,15 +391,40 @@ socket.on("deleted_for_me", d=>{
         };
     }
 
-    if(cancelMenuBtn){
-        cancelMenuBtn.onclick = () => {
-            msgMenu.classList.remove("show");
-        };
-    }
 
-    /* ================= LEAVE ================= */
-    window.addEventListener("beforeunload", ()=>{
-        socket.emit("leave", { chat_id });
-    });
+if(editMsgBtn){
+
+editMsgBtn.onclick = () => {
+
+    const row = document.querySelector(
+        `.msg-row[data-id="${selectedMessageId}"]`
+    );
+
+    if(!row) return;
+
+    const oldText =
+        row.querySelector(".msg-bubble").innerText;
+
+    msgInput.value = oldText;
+
+    editingMessageId = selectedMessageId;
+
+    msgInput.focus();
+
+    msgMenu.classList.remove("show");
+};
+
+}
+
+if(cancelMenuBtn){
+cancelMenuBtn.onclick = () => {
+msgMenu.classList.remove("show");
+};
+}
+
+/* ================= LEAVE ================= */
+window.addEventListener("beforeunload", ()=>{
+socket.emit("leave", { chat_id });
+});
 
 });
