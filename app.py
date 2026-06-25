@@ -24,6 +24,11 @@ app = Flask(__name__)
 CORS(app)
 app.secret_key = "kuch_strong_secret_key"
 
+import os
+
+app.config["GOOGLE_CLIENT_ID"] = os.environ.get("GOOGLE_CLIENT_ID")
+app.config["GOOGLE_CLIENT_SECRET"] = os.environ.get("GOOGLE_CLIENT_SECRET")
+
 socketio.init_app(app)
 
 # DATABASE INIT
