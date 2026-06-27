@@ -29,9 +29,14 @@ def register():
         password = request.form.get("password", "").strip()
         email = request.form.get("email", "").strip()
         phone = request.form.get("phone", "").strip()
+        dob = request.form.get("dob", "").strip()
 
-        if not username or not password:
-            flash("Username and password cannot be empty!", "error")
+        if not username or not password or not phone or not dob:
+            flash("All fields are required!", "error")
+            return redirect(url_for("auth.register"))
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters!", "error")
             return redirect(url_for("auth.register"))
 
         conn = sqlite3.connect("database.db")
@@ -47,8 +52,8 @@ def register():
         # insert new user_id
         hashed_password = generate_password_hash(password)
         c.execute(
-            "INSERT INTO users (username, password, email, phone) VALUES (?, ?, ?, ?)",
-            (username, hashed_password, email, phone)
+            "INSERT INTO users (username, password, email, phone, dob) VALUES (?, ?, ?, ?, ?)",
+            (username, hashed_password, email, phone, dob)
         )
         conn.commit()
         conn.close()
@@ -172,8 +177,15 @@ def google_callback():
 
     if not user:
         c.execute(
-            "INSERT INTO users (username, email, password, phone) VALUES (?, ?, ?, ?)",
-            (username, email, "", "")
+            "INSERT INTO users (username, email, password, phone, dob, google_id) VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                username,
+                email,
+                "",
+                "",
+                "",
+                user_info["sub"]
+            )
         )
         conn.commit()
 

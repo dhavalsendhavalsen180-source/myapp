@@ -17,12 +17,19 @@ from routes.editor import editor_bp
 from routes.stories import stories_bp
 from routes.messages_socket import messages_bp
 from routes.call_socket import call_bp
+from routes.auth import oauth
 import auth_backend
 import routes.call_socket
 
 app = Flask(__name__)
-CORS(app)
+
 app.secret_key = "kuch_strong_secret_key"
+app.config["SECRET_KEY"] = "kuch_strong_secret_key"
+
+CORS(app, supports_credentials=True)
+
+from dotenv import load_dotenv
+load_dotenv()
 
 import os
 
@@ -37,7 +44,7 @@ auth_backend.init_posts_db()
 auth_backend.init_posts_extras()
 auth_backend.init_notifications_db()
 init_reels_db()
-
+oauth.init_app(app)
 
 # BLUEPRINTS
 app.register_blueprint(basic_bp)
