@@ -29,15 +29,20 @@ def register():
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        print("REGISTER VERIFY POST HIT")
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
 
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
 
-        # Sabse pehle ID + password fetch karo
-        c.execute("SELECT id, password FROM users WHERE username=?", (username,))
+        # Username se user fetch karo
+        c.execute(
+            "SELECT id, password FROM users WHERE username=?",
+            (username,)
+        )
         row = c.fetchone()
+
         conn.close()
 
         if not row:
@@ -47,9 +52,11 @@ def login():
         user_id = row[0]
         stored_pass = row[1]
 
-        # Plain text compare
+        # Password verify
         if check_password_hash(stored_pass, password):
             session["user_id"] = user_id
+            session.permanent = True
+
             flash("Login successful!", "success")
             return redirect(url_for("posts.feed"))
 
@@ -202,24 +209,28 @@ def register_verify():
         return redirect(url_for("auth.register_username"))
 
     if request.method == "POST":
+        print("REGISTER VERIFY POST HIT")
 
+        print("STEP 1")
+        import random
+        print("STEP 2")
         phone = request.form.get("phone", "").strip()
         email = request.form.get("email", "").strip()
-
+        print("STEP 3", phone, email)
+        print("Phone =", phone)
+        print("Email =", email)
         username = session["signup_username"]
-        password = session["signup_password"]
-        dob = session["signup_dob"]
+        print("STEP 4", username)
 
         # Google signup ho to Google email use karo
         final_email = email if email else session.get("google_email", "")
+        print("STEP 5", final_email)
         google_id = session.get("google_id", None)
-
-        hashed = generate_password_hash(password)
 
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
 
-        # Username ya Email pehle se exist karta hai?
+        # Username ya Email already exist?
         c.execute(
             "SELECT id FROM users WHERE username=? OR email=?",
             (username, final_email)
@@ -230,42 +241,26 @@ def register_verify():
             flash("Username or Email already exists.", "error")
             return redirect(url_for("auth.register_verify"))
 
-        # Account create karo
-        c.execute(
-            """
-            INSERT INTO users
-            (username, password, phone, email, dob, google_id)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                username,
-                hashed,
-                phone,
-                final_email,
-                dob,
-                google_id
-            )
-        )
-
-        conn.commit()
-
-        user_id = c.lastrowid
-
         conn.close()
 
-        # Signup session clear
-        session.pop("signup_username", None)
-        session.pop("signup_password", None)
-        session.pop("signup_dob", None)
-        session.pop("google_email", None)
-        session.pop("google_id", None)
+        # Session me save
+        session["signup_phone"] = phone
+        session["signup_email"] = final_email
+        session["google_id"] = google_id
 
-        flash("Account created successfully!", "success")
+        # 6 digit OTP
+        otp = str(random.randint(100000, 999999))
 
-        # Auto login
-        session["user_id"] = user_id
+        session["signup_otp"] = otp
 
-        return redirect(url_for("posts.feed"))
+        # Abhi SMS nahi bhejna
+        print("\n==============================")
+        print("InsChat OTP:", otp)
+        print("==============================\n")
+
+        flash("OTP generated. Check server terminal.", "success")
+        print("Redirecting to verify_phone...")
+        return redirect(url_for("auth.verify_phone"))
 
     return render_template("register_verify.html")
 
@@ -302,6 +297,7 @@ def google_callback():
     if user:
         conn.close()
         session["user_id"] = user[0]
+        session.permanent = True
         return redirect(url_for("posts.feed"))
 
     # Google info save
@@ -366,6 +362,7 @@ def google_callback():
 
         # Auto login
         session["user_id"] = user_id
+        session.permanent = True
 
         return redirect(url_for("posts.feed"))
 
@@ -373,3 +370,59 @@ def google_callback():
 
     # Naya Google signup
     return redirect(url_for("auth.register_username"))
+
+##################### otp werifaye ###################
+@auth_bp.route("/verify-phone", methods=["GET", "POST"])
+def verify_phone():
+
+    if "signup_otp" not in session:
+        return redirect(url_for("auth.register_verify"))
+
+    if request.method == "POST":
+
+        code = request.form.get("code", "").strip()
+
+        if code != session["signup_otp"]:
+            flash("Invalid OTP", "error")
+            return redirect(url_for("auth.verify_phone"))
+
+        username = session["signup_username"]
+        password = session["signup_password"]
+        dob = session["signup_dob"]
+
+        phone = session.get("signup_phone", "")
+        email = session.get("signup_email", "")
+        google_id = session.get("google_id")
+
+        hashed = generate_password_hash(password)
+
+        conn = sqlite3.connect("database.db")
+        c = conn.cursor()
+
+        c.execute("""
+        INSERT INTO users
+        (username, password, phone, email, dob, google_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            username,
+            hashed,
+            phone,
+            email,
+            dob,
+            google_id
+        ))
+
+        conn.commit()
+
+        user_id = c.lastrowid
+
+        conn.close()
+
+        session.clear()
+
+        session["user_id"] = user_id
+        session.permanent = True
+
+        return redirect(url_for("posts.feed"))
+
+    return render_template("verify_phone.html")

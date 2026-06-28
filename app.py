@@ -2,6 +2,7 @@ from flask import Flask, send_from_directory, render_template
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from socketio_init import socketio
+from datetime import timedelta
 
 from flask import Flask, send_from_directory, render_template
 
@@ -25,6 +26,9 @@ app = Flask(__name__)
 
 app.secret_key = "kuch_strong_secret_key"
 app.config["SECRET_KEY"] = "kuch_strong_secret_key"
+
+# Session 30 din tak login rakhega
+app.permanent_session_lifetime = timedelta(days=30)
 
 CORS(app, supports_credentials=True)
 
