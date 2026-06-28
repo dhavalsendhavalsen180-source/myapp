@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 import sqlite3
 
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from datetime import datetime, timedelta
 from authlib.integrations.flask_client import OAuth
 from flask import current_app
 import os
@@ -22,50 +22,9 @@ client_kwargs={
 )
 
 # ---------------- Register ----------------
-@auth_bp.route("/register", methods=["GET", "POST"])
+@auth_bp.route("/register")
 def register():
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "").strip()
-        email = request.form.get("email", "").strip()
-        phone = request.form.get("phone", "").strip()
-        dob = request.form.get("dob", "").strip()
-
-        if not username or not password or not phone or not dob:
-            flash("All fields are required!", "error")
-            return redirect(url_for("auth.register"))
-
-        if len(password) < 8:
-            flash("Password must be at least 8 characters!", "error")
-            return redirect(url_for("auth.register"))
-
-        conn = sqlite3.connect("database.db")
-        c = conn.cursor()
-
-        # duplicate check
-        c.execute("SELECT id FROM users WHERE username=?", (username,))
-        if c.fetchone():
-            conn.close()
-            flash("Username already exists!", "error")
-            return redirect(url_for("auth.register"))
-
-        # insert new user_id
-        hashed_password = generate_password_hash(password)
-        c.execute(
-            "INSERT INTO users (username, password, email, phone, dob) VALUES (?, ?, ?, ?, ?)",
-            (username, hashed_password, email, phone, dob)
-        )
-        conn.commit()
-        conn.close()
-
-        flash("Registration successful!", "success")
-        return redirect(url_for("auth.login"))
-
-    return render_template("register.html")
-
-
-# ---------------- Login ----------------
-
+    return redirect(url_for("auth.register_username"))
 # ---------------- Login ----------------
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -148,7 +107,167 @@ def verify():
     flash("Invalid code", "error")
 
   return render_template("verify.html")
+########################################
+# ==========================
+# Instagram Style Signup Flow
+# ==========================
 
+@auth_bp.route("/register/username", methods=["GET", "POST"])
+def register_username():
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+
+        if len(username) < 3:
+            flash("Username must be at least 3 characters", "error")
+            return redirect(url_for("auth.register_username"))
+
+        conn = sqlite3.connect("database.db")
+        c = conn.cursor()
+
+        c.execute("SELECT id FROM users WHERE lower(username)=lower(?)", (username,))
+        exists = c.fetchone()
+
+        conn.close()
+
+        if exists:
+            flash("Username already taken", "error")
+            return redirect(url_for("auth.register_username"))
+
+        session["signup_username"] = username
+
+        return redirect(url_for("auth.register_password"))
+
+    return render_template("register_username.html")
+
+
+@auth_bp.route("/register/password", methods=["GET", "POST"])
+def register_password():
+
+    if "signup_username" not in session:
+        return redirect(url_for("auth.register_username"))
+
+    if request.method == "POST":
+
+        password = request.form.get("password", "").strip()
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters", "error")
+            return redirect(url_for("auth.register_password"))
+
+        session["signup_password"] = password
+
+        return redirect(url_for("auth.register_dob"))
+
+    return render_template("register_password.html")
+
+
+@auth_bp.route("/register/dob", methods=["GET", "POST"])
+def register_dob():
+
+    if "signup_password" not in session:
+        return redirect(url_for("auth.register_username"))
+
+    if request.method == "POST":
+
+        day = int(request.form["day"])
+        month = int(request.form["month"])
+        year = int(request.form["year"])
+
+        try:
+            birth_date = datetime(year, month, day).date()
+
+            today = datetime.today().date()
+
+            # Minimum age = 1 year
+            if birth_date > today - timedelta(days=365):
+                flash("Age must be at least 1 year.", "error")
+                return redirect(url_for("auth.register_dob"))
+
+            session["signup_dob"] = birth_date.strftime("%Y-%m-%d")
+
+            return redirect(url_for("auth.register_verify"))
+
+        except ValueError:
+            flash("Invalid date.", "error")
+            return redirect(url_for("auth.register_dob"))
+
+    return render_template("register_dob.html")
+
+##########################################################
+@auth_bp.route("/register/verify", methods=["GET", "POST"])
+def register_verify():
+
+    if "signup_dob" not in session:
+        return redirect(url_for("auth.register_username"))
+
+    if request.method == "POST":
+
+        phone = request.form.get("phone", "").strip()
+        email = request.form.get("email", "").strip()
+
+        username = session["signup_username"]
+        password = session["signup_password"]
+        dob = session["signup_dob"]
+
+        # Google signup ho to Google email use karo
+        final_email = email if email else session.get("google_email", "")
+        google_id = session.get("google_id", None)
+
+        hashed = generate_password_hash(password)
+
+        conn = sqlite3.connect("database.db")
+        c = conn.cursor()
+
+        # Username ya Email pehle se exist karta hai?
+        c.execute(
+            "SELECT id FROM users WHERE username=? OR email=?",
+            (username, final_email)
+        )
+
+        if c.fetchone():
+            conn.close()
+            flash("Username or Email already exists.", "error")
+            return redirect(url_for("auth.register_verify"))
+
+        # Account create karo
+        c.execute(
+            """
+            INSERT INTO users
+            (username, password, phone, email, dob, google_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                username,
+                hashed,
+                phone,
+                final_email,
+                dob,
+                google_id
+            )
+        )
+
+        conn.commit()
+
+        user_id = c.lastrowid
+
+        conn.close()
+
+        # Signup session clear
+        session.pop("signup_username", None)
+        session.pop("signup_password", None)
+        session.pop("signup_dob", None)
+        session.pop("google_email", None)
+        session.pop("google_id", None)
+
+        flash("Account created successfully!", "success")
+
+        # Auto login
+        session["user_id"] = user_id
+
+        return redirect(url_for("posts.feed"))
+
+    return render_template("register_verify.html")
 
 ##########################################
 @auth_bp.route("/google")
@@ -159,6 +278,7 @@ def google_login():
 
 @auth_bp.route("/google/callback")
 def google_callback():
+
     token = google.authorize_access_token()
     user_info = token.get("userinfo")
 
@@ -167,33 +287,89 @@ def google_callback():
         return redirect(url_for("auth.login"))
 
     email = user_info["email"]
-    username = email.split("@")[0]
+    google_id = user_info["sub"]
 
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
 
-    c.execute("SELECT id FROM users WHERE email=?", (email,))
+    # Agar pehle se account bana hua hai
+    c.execute(
+        "SELECT id FROM users WHERE google_id=? OR email=?",
+        (google_id, email)
+    )
     user = c.fetchone()
 
-    if not user:
+    if user:
+        conn.close()
+        session["user_id"] = user[0]
+        return redirect(url_for("posts.feed"))
+
+    # Google info save
+    session["google_email"] = email
+    session["google_id"] = google_id
+
+    # Agar signup already complete ho chuka hai
+    if (
+        "signup_username" in session and
+        "signup_password" in session and
+        "signup_dob" in session
+    ):
+
+        username = session["signup_username"]
+        password = session["signup_password"]
+        dob = session["signup_dob"]
+
+        hashed = generate_password_hash(password)
+
+        # Username ya Email already exist?
         c.execute(
-            "INSERT INTO users (username, email, password, phone, dob, google_id) VALUES (?, ?, ?, ?, ?, ?)",
+            "SELECT id FROM users WHERE username=? OR email=?",
+            (username, email)
+        )
+
+        existing = c.fetchone()
+
+        if existing:
+            conn.close()
+            flash("Username or Email already exists.", "error")
+            return redirect(url_for("auth.register_verify"))
+
+        # Account create
+        c.execute(
+            """
+            INSERT INTO users
+            (username, password, phone, email, dob, google_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
             (
                 username,
+                hashed,
+                "",
                 email,
-                "",
-                "",
-                "",
-                user_info["sub"]
+                dob,
+                google_id
             )
         )
+
         conn.commit()
 
-        c.execute("SELECT id FROM users WHERE email=?", (email,))
-        user = c.fetchone()
+        user_id = c.lastrowid
+
+        conn.close()
+
+        # Signup session clear
+        session.pop("signup_username", None)
+        session.pop("signup_password", None)
+        session.pop("signup_dob", None)
+        session.pop("google_email", None)
+        session.pop("google_id", None)
+
+        # Auto login
+        session["user_id"] = user_id
+
+        return redirect(url_for("posts.feed"))
 
     conn.close()
 
-    session["user_id"] = user[0]
-
-    return redirect(url_for("posts.feed"))
+    # Naya Google signup
+    return redirect(url_for("auth.register_username"))

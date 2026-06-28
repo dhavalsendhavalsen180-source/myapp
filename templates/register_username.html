@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Create username • InsChat</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gradient-to-b from-pink-500 via-red-500 to-yellow-400 min-h-screen">
+
+<div class="min-h-screen flex items-center justify-center px-5">
+
+<div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8">
+
+<div class="text-center mb-8">
+
+<img
+src="{{ url_for('static', filename='inschat_logo.png') }}"
+class="w-20 h-20 mx-auto mb-4">
+
+<h1 class="text-2xl font-bold text-gray-900">
+Create username
+</h1>
+
+<p class="text-gray-500 mt-2 text-sm">
+Choose a unique username for your InsChat account.
+</p>
+
+</div>
+
+<form method="POST">
+
+<input
+id="username"
+name="username"
+type="text"
+required
+autocomplete="off"
+placeholder="Username"
+class="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-pink-500">
+
+<div
+id="usernameStatus"
+class="text-sm mt-2"></div>
+
+<button
+type="submit"
+class="w-full mt-6 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white rounded-xl py-3 font-semibold hover:opacity-90">
+
+Next
+
+</button>
+
+</form>
+
+<div class="mt-8">
+
+<a
+href="{{ url_for('auth.login') }}"
+class="block w-full text-center border border-gray-300 rounded-xl py-3 font-semibold hover:bg-gray-50">
+
+Log in
+
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const usernameInput = document.getElementById("username");
+const usernameStatus = document.getElementById("usernameStatus");
+
+let timer;
+
+usernameInput.addEventListener("input", () => {
+
+clearTimeout(timer);
+
+const username = usernameInput.value.trim();
+
+if (username.length < 3) {
+
+usernameStatus.innerHTML = "";
+return;
+
+}
+
+timer = setTimeout(() => {
+
+fetch(`/auth/check_username?username=${encodeURIComponent(username)}`)
+
+.then(r => r.json())
+
+.then(data => {
+
+if (data.available) {
+
+usernameStatus.innerHTML = "✅ Username available";
+usernameStatus.className = "text-green-600 text-sm mt-2";
+
+} else {
+
+usernameStatus.innerHTML = "❌ Username already taken";
+usernameStatus.className = "text-red-600 text-sm mt-2";
+
+}
+
+});
+
+}, 400);
+
+});
+
+</script>
+
+</body>
+</html>

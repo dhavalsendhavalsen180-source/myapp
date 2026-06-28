@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Date of Birth • InsChat</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+<body class="bg-gradient-to-b from-pink-500 via-red-500 to-yellow-400 min-h-screen flex items-center justify-center px-5">
+
+<div class="w-full max-w-sm">
+
+<div class="bg-white rounded-3xl shadow-2xl p-8">
+
+<div class="text-center mb-8">
+
+<img src="{{ url_for('static', filename='inschat_logo.png') }}"
+class="mx-auto h-16 mb-4">
+
+<h1 class="text-2xl font-bold text-gray-900">
+Add Your Birthday
+</h1>
+
+<p class="text-gray-500 text-sm mt-2">
+This won't be part of your public profile.
+</p>
+
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category,message in messages %}
+
+<div class="mb-4 text-center text-sm
+{% if category=='error' %}
+text-red-600
+{% else %}
+text-green-600
+{% endif %}">
+{{ message }}
+</div>
+
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<form method="POST" class="space-y-5">
+
+<div class="grid grid-cols-3 gap-3">
+
+<select
+name="day"
+required
+class="border border-gray-300 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-pink-500">
+
+<option value="">Day</option>
+
+{% for d in range(1,32) %}
+<option value="{{ d }}">{{ d }}</option>
+{% endfor %}
+
+</select>
+
+<select
+name="month"
+required
+class="border border-gray-300 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-pink-500">
+
+<option value="">Month</option>
+
+{% set months=[
+"January","February","March","April","May","June",
+"July","August","September","October","November","December"
+] %}
+
+{% for m in range(1,13) %}
+<option value="{{ m }}">
+{{ months[m-1] }}
+</option>
+{% endfor %}
+
+</select>
+
+<select
+name="year"
+required
+class="border border-gray-300 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-pink-500">
+
+<option value="">Year</option>
+
+{% for y in range(2025,1900,-1) %}
+<option value="{{ y }}">{{ y }}</option>
+{% endfor %}
+
+</select>
+
+</div>
+
+<p class="text-xs text-gray-500">
+Use your own birthday, even if this account is for a business, pet or something else.
+</p>
+
+<button
+type="submit"
+class="w-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white py-3 rounded-xl font-semibold hover:opacity-90">
+
+Next
+
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+</body>
+</html>
