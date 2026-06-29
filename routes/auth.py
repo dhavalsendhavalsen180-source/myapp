@@ -1,11 +1,15 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 import sqlite3
+import random
+import os
+import requests
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from authlib.integrations.flask_client import OAuth
 from flask import current_app
-import os
+
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -25,6 +29,45 @@ client_kwargs={
 @auth_bp.route("/register")
 def register():
     return redirect(url_for("auth.register_username"))
+######################################################
+def send_otp_email(to_email, otp):
+    url = "https://api.brevo.com/v3/smtp/email"
+
+    headers = {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json"
+    }
+
+    data = {
+        "sender": {
+            "name": "InsChat",
+            "email": "inschatofficial.in@gmail.com"
+        },
+        "to": [
+            {
+                "email": to_email
+            }
+        ],
+        "subject": "InsChat Password Reset OTP",
+        "htmlContent": f"""
+        <h2>InsChat</h2>
+
+        <p>Your password reset OTP is:</p>
+
+        <h1 style="letter-spacing:4px;">{otp}</h1>
+
+        <p>This OTP is valid for 10 minutes.</p>
+
+        <p>If you didn't request this, you can ignore this email.</p>
+        """
+    }
+
+    r = requests.post(url, json=data, headers=headers)
+
+    return r.status_code == 201
+
+
 # ---------------- Login ----------------
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -202,6 +245,7 @@ def register_dob():
     return render_template("register_dob.html")
 
 ##########################################################
+
 @auth_bp.route("/register/verify", methods=["GET", "POST"])
 def register_verify():
 
@@ -209,58 +253,72 @@ def register_verify():
         return redirect(url_for("auth.register_username"))
 
     if request.method == "POST":
-        print("REGISTER VERIFY POST HIT")
 
-        print("STEP 1")
-        import random
-        print("STEP 2")
-        phone = request.form.get("phone", "").strip()
-        email = request.form.get("email", "").strip()
-        print("STEP 3", phone, email)
-        print("Phone =", phone)
-        print("Email =", email)
-        username = session["signup_username"]
-        print("STEP 4", username)
+        try:
+            print("REGISTER VERIFY POST HIT")
 
-        # Google signup ho to Google email use karo
-        final_email = email if email else session.get("google_email", "")
-        print("STEP 5", final_email)
-        google_id = session.get("google_id", None)
+            import random
 
-        conn = sqlite3.connect("database.db")
-        c = conn.cursor()
+            print("STEP 1")
 
-        # Username ya Email already exist?
-        c.execute(
-            "SELECT id FROM users WHERE username=? OR email=?",
-            (username, final_email)
-        )
+            phone = request.form.get("phone", "").strip()
+            email = request.form.get("email", "").strip()
 
-        if c.fetchone():
+            print("STEP 2")
+            print("Phone =", phone)
+            print("Email =", email)
+
+            username = session["signup_username"]
+            print("STEP 3 =", username)
+
+            final_email = email if email else session.get("google_email", "")
+            google_id = session.get("google_id", None)
+
+            # ✅ Sirf username unique hoga
+            conn = sqlite3.connect("database.db")
+            c = conn.cursor()
+
+            c.execute(
+                "SELECT id FROM users WHERE username=?",
+                (username,)
+            )
+
+            if c.fetchone():
+                conn.close()
+                flash("Username already exists.", "error")
+                return redirect(url_for("auth.register_verify"))
+
             conn.close()
-            flash("Username or Email already exists.", "error")
+
+            print("STEP 4 =", final_email)
+            print("STEP 5")
+
+            # Session me save
+            session["signup_phone"] = phone
+            session["signup_email"] = final_email
+            session["google_id"] = google_id
+
+            # OTP generate
+            otp = str(random.randint(100000, 999999))
+            session["signup_otp"] = otp
+
+            print("==============================")
+            print("InsChat OTP =", otp)
+            print("==============================")
+
+            flash("OTP generated.", "success")
+
+            print("STEP 6 Redirecting to verify_phone")
+
+            return redirect(url_for("auth.verify_phone"))
+
+        except Exception as e:
+            import traceback
+            print("========== ERROR ==========")
+            traceback.print_exc()
+            print("===========================")
+            flash(str(e), "error")
             return redirect(url_for("auth.register_verify"))
-
-        conn.close()
-
-        # Session me save
-        session["signup_phone"] = phone
-        session["signup_email"] = final_email
-        session["google_id"] = google_id
-
-        # 6 digit OTP
-        otp = str(random.randint(100000, 999999))
-
-        session["signup_otp"] = otp
-
-        # Abhi SMS nahi bhejna
-        print("\n==============================")
-        print("InsChat OTP:", otp)
-        print("==============================\n")
-
-        flash("OTP generated. Check server terminal.", "success")
-        print("Redirecting to verify_phone...")
-        return redirect(url_for("auth.verify_phone"))
 
     return render_template("register_verify.html")
 
@@ -289,9 +347,9 @@ def google_callback():
 
     # Agar pehle se account bana hua hai
     c.execute(
-        "SELECT id FROM users WHERE google_id=? OR email=?",
-        (google_id, email)
-    )
+       "SELECT id FROM users WHERE google_id=?",
+       (google_id,)
+   )
     user = c.fetchone()
 
     if user:
@@ -317,17 +375,17 @@ def google_callback():
 
         hashed = generate_password_hash(password)
 
-        # Username ya Email already exist?
+         # Sirf username unique hoga
         c.execute(
-            "SELECT id FROM users WHERE username=? OR email=?",
-            (username, email)
+            "SELECT id FROM users WHERE username=?",
+            (username,)
         )
 
         existing = c.fetchone()
 
         if existing:
             conn.close()
-            flash("Username or Email already exists.", "error")
+            flash("Username already exists.", "error")
             return redirect(url_for("auth.register_verify"))
 
         # Account create
@@ -426,3 +484,121 @@ def verify_phone():
         return redirect(url_for("posts.feed"))
 
     return render_template("verify_phone.html")
+
+#################### forget ########################
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+
+    if request.method == "POST":
+
+        login = request.form.get("login", "").strip()
+
+        conn = sqlite3.connect("database.db")
+        c = conn.cursor()
+
+        c.execute("""
+            SELECT id, username, phone, email
+            FROM users
+            WHERE username=? OR email=? OR phone=?
+        """, (login, login, login))
+
+        user = c.fetchone()
+
+        conn.close()
+
+        if not user:
+            flash("No account found.", "error")
+            return redirect(url_for("auth.forgot_password"))
+
+        # user = (id, username, phone, email)
+
+        if not user[3]:
+            flash("This account doesn't have a recovery email.", "error")
+            return redirect(url_for("auth.forgot_password"))
+
+        otp = str(random.randint(100000, 999999))
+
+        # Email par OTP bhejo
+        if not send_otp_email(user[3], otp):
+            flash("Failed to send OTP email.", "error")
+            return redirect(url_for("auth.forgot_password"))
+
+        session["reset_user_id"] = user[0]
+        session["reset_otp"] = otp
+
+        # Email mask karke dikhana
+        email = user[3]
+
+        name, domain = email.split("@", 1)
+
+        if len(name) > 2:
+            masked = name[0] + "*" * (len(name) - 2) + name[-1]
+        else:
+            masked = name[0] + "*"
+
+        masked_email = f"{masked}@{domain}"
+
+        flash(f"OTP sent to {masked_email}", "success")
+
+        return redirect(url_for("auth.verify_reset_otp"))
+
+    return render_template("forgot_password.html")
+
+
+##################### forget veryfy #################
+@auth_bp.route("/forgot-password/verify", methods=["GET", "POST"])
+def verify_reset_otp():
+
+    if "reset_otp" not in session:
+        return redirect(url_for("auth.forgot_password"))
+
+    if request.method == "POST":
+
+        code = request.form.get("code", "").strip()
+
+        if code != session["reset_otp"]:
+            flash("Invalid OTP.", "error")
+            return redirect(url_for("auth.verify_reset_otp"))
+
+        return redirect(url_for("auth.new_password"))
+
+    return render_template("verify_reset_otp.html")
+######################## new password ###################
+@auth_bp.route("/forgot-password/new-password", methods=["GET", "POST"])
+def new_password():
+
+    if "reset_user_id" not in session:
+        return redirect(url_for("auth.forgot_password"))
+
+    if request.method == "POST":
+
+        password = request.form.get("password", "").strip()
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters.", "error")
+            return redirect(url_for("auth.new_password"))
+
+        hashed = generate_password_hash(password)
+
+        conn = sqlite3.connect("database.db")
+        c = conn.cursor()
+
+        c.execute(
+            "UPDATE users SET password=? WHERE id=?",
+            (
+                hashed,
+                session["reset_user_id"]
+            )
+        )
+
+        conn.commit()
+        conn.close()
+
+        session.pop("reset_user_id", None)
+        session.pop("reset_otp", None)
+
+        flash("Password updated successfully.", "success")
+
+        return redirect(url_for("auth.login"))
+
+    return render_template("new_password.html")

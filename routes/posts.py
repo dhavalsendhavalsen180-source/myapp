@@ -30,7 +30,23 @@ def feed():
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
 
-    current_user = session.get("user_id")
+    current_user = session["user_id"]
+
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+
+    c.execute(
+        "SELECT id FROM users WHERE id=?",
+        (current_user,)
+    )
+
+    user = c.fetchone()
+    conn.close()
+
+    if not user:
+        session.clear()
+        flash("Your session has expired. Please log in again.", "error")
+        return redirect(url_for("auth.login"))
 
     # ✅ USER DP LOAD (NEW FIX)
     photo = "/static/default_dp.png"
