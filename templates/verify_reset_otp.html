@@ -21,7 +21,7 @@
         </h1>
 
         <p class="text-gray-500 text-sm mt-2">
-            Enter the 6-digit OTP sent to your account.
+            Enter the 6-digit OTP sent to your email.
         </p>
 
     </div>
@@ -41,17 +41,21 @@
       {% endif %}
     {% endwith %}
 
-    <form method="POST" class="mt-6">
+    <form id="otpForm" method="POST" class="mt-6">
 
         <input
+            id="otpInput"
             type="text"
             name="code"
             maxlength="6"
+            inputmode="numeric"
+            autocomplete="one-time-code"
             placeholder="Enter OTP"
             required
             class="w-full border rounded-lg px-4 py-3 text-center tracking-[8px] text-xl focus:outline-none focus:ring-2 focus:ring-pink-500">
 
         <button
+            id="verifyBtn"
             type="submit"
             class="w-full mt-5 bg-pink-500 hover:bg-pink-600 text-white py-3 rounded-lg font-semibold">
 
@@ -61,7 +65,29 @@
 
     </form>
 
-    <div class="text-center mt-6">
+    <div class="text-center mt-5">
+
+        <p id="timer" class="text-gray-500 text-sm">
+            Resend code in 60s
+        </p>
+
+        <form action="{{ url_for('auth.resend_reset_otp') }}" method="POST">
+
+            <button
+                id="resendBtn"
+                type="submit"
+                disabled
+                class="mt-2 text-pink-600 font-semibold disabled:text-gray-400">
+
+                Resend Code
+
+            </button>
+
+        </form>
+
+    </div>
+
+    <div class="text-center mt-5">
 
         <a href="{{ url_for('auth.forgot_password') }}"
            class="text-pink-600 font-semibold">
@@ -73,6 +99,77 @@
     </div>
 
 </div>
+
+<script>
+
+let seconds = 60;
+
+const timer = document.getElementById("timer");
+const btn = document.getElementById("resendBtn");
+
+const otp = document.getElementById("otpInput");
+const form = document.getElementById("otpForm");
+
+otp.focus();
+
+// Only numbers
+otp.addEventListener("input", function () {
+
+    this.value = this.value.replace(/\D/g, "").slice(0,6);
+
+    // Instagram style auto submit
+    if(this.value.length === 6){
+        form.submit();
+    }
+
+});
+
+// Paste support
+otp.addEventListener("paste", function(e){
+
+    e.preventDefault();
+
+    let pasted = (e.clipboardData || window.clipboardData)
+        .getData("text")
+        .replace(/\D/g,"")
+        .slice(0,6);
+
+    this.value = pasted;
+
+    if(this.value.length === 6){
+        form.submit();
+    }
+
+});
+
+// Enter key support
+otp.addEventListener("keydown", function(e){
+
+    if(e.key === "Enter"){
+        form.submit();
+    }
+
+});
+
+const interval = setInterval(function(){
+
+    seconds--;
+
+    timer.innerText = "Resend code in " + seconds + "s";
+
+    if(seconds <= 0){
+
+        clearInterval(interval);
+
+        timer.innerText = "";
+
+        btn.disabled = false;
+
+    }
+
+},1000);
+
+</script>
 
 </body>
 </html>

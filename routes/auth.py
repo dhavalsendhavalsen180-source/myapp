@@ -49,18 +49,65 @@ def send_otp_email(to_email, otp):
                 "email": to_email
             }
         ],
-        "subject": "InsChat Password Reset OTP",
-        "htmlContent": f"""
-        <h2>InsChat</h2>
+"subject": "InsChat Password Reset OTP",
+"htmlContent": f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>InsChat Password Reset</title>
+</head>
 
-        <p>Your password reset OTP is:</p>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
 
-        <h1 style="letter-spacing:4px;">{otp}</h1>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 15px;">
+<tr>
+<td align="center">
 
-        <p>This OTP is valid for 10 minutes.</p>
+<table width="100%" cellpadding="0" cellspacing="0"
+style="max-width:520px;background:#ffffff;border-radius:18px;overflow:hidden;">
 
-        <p>If you didn't request this, you can ignore this email.</p>
-        """
+<tr>
+<td style="background:#E1306C;padding:35px;text-align:center;">
+
+<h1 style="margin:0;color:#fff;">
+InsChat
+</h1>
+
+</td>
+</tr>
+
+<tr>
+<td style="padding:35px;">
+
+<h2>Reset your password</h2>
+
+<p>Use the OTP below:</p>
+
+<div style="background:#fafafa;border:2px dashed #E1306C;padding:20px;text-align:center;">
+
+<h1 style="letter-spacing:8px;">
+{otp}
+</h1>
+
+</div>
+
+<p>This OTP is valid for <b>10 minutes</b>.</p>
+
+<p>If you didn't request this, ignore this email.</p>
+
+</td>
+</tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>
+"""
     }
 
     r = requests.post(url, json=data, headers=headers)
@@ -519,12 +566,17 @@ def forgot_password():
         otp = str(random.randint(100000, 999999))
 
         # Email par OTP bhejo
+
         if not send_otp_email(user[3], otp):
             flash("Failed to send OTP email.", "error")
             return redirect(url_for("auth.forgot_password"))
-
         session["reset_user_id"] = user[0]
         session["reset_otp"] = otp
+        session["reset_otp_expiry"] = (
+            datetime.now() + timedelta(minutes=10)
+        ).strftime("%Y-%m-%d %H:%M:%S")
+
+        session["reset_otp_attempts"] = 0
 
         # Email mask karke dikhana
         email = user[3]
@@ -552,17 +604,91 @@ def verify_reset_otp():
     if "reset_otp" not in session:
         return redirect(url_for("auth.forgot_password"))
 
+    # OTP expiry check
+    expiry = datetime.strptime(
+        session["reset_otp_expiry"],
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+    if datetime.now() > expiry:
+        session.pop("reset_user_id", None)
+        session.pop("reset_otp", None)
+        session.pop("reset_otp_expiry", None)
+
+        flash("OTP has expired. Please request a new one.", "error")
+        return redirect(url_for("auth.forgot_password"))
+
     if request.method == "POST":
 
         code = request.form.get("code", "").strip()
 
+        attempts = session.get("reset_otp_attempts", 0)
+
+        if attempts >= 5:
+            flash("Too many incorrect attempts. Please request a new OTP.", "error")
+            session.pop("reset_otp", None)
+            session.pop("reset_otp_expiry", None)
+            session.pop("reset_otp_attempts", None)
+            return redirect(url_for("auth.forgot_password"))
+
         if code != session["reset_otp"]:
-            flash("Invalid OTP.", "error")
+            session["reset_otp_attempts"] = attempts + 1
+
+            remaining = 5 - session["reset_otp_attempts"]
+
+            flash(f"Invalid OTP. {remaining} attempt(s) remaining.", "error")
             return redirect(url_for("auth.verify_reset_otp"))
+
+    # Correct OTP
+        session.pop("reset_otp_attempts", None)
 
         return redirect(url_for("auth.new_password"))
 
+
     return render_template("verify_reset_otp.html")
+
+############################ resend ###################
+@auth_bp.route("/forgot-password/resend", methods=["POST"])
+def resend_reset_otp():
+
+    if "reset_user_id" not in session:
+        return redirect(url_for("auth.forgot_password"))
+
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+
+    c.execute(
+        "SELECT email FROM users WHERE id=?",
+        (session["reset_user_id"],)
+    )
+
+    row = c.fetchone()
+
+    conn.close()
+
+    if not row or not row[0]:
+        flash("Recovery email not found.", "error")
+        return redirect(url_for("auth.forgot_password"))
+
+    email = row[0]
+
+    otp = str(random.randint(100000, 999999))
+
+    if not send_otp_email(email, otp):
+        flash("Failed to resend OTP.", "error")
+        return redirect(url_for("auth.verify_reset_otp"))
+
+    session["reset_otp"] = otp
+    session["reset_otp_expiry"] = (
+        datetime.now() + timedelta(minutes=10)
+    ).strftime("%Y-%m-%d %H:%M:%S")
+    session["reset_otp_attempts"] = 0
+
+    flash("A new OTP has been sent.", "success")
+
+    return redirect(url_for("auth.verify_reset_otp"))
+
+
 ######################## new password ###################
 @auth_bp.route("/forgot-password/new-password", methods=["GET", "POST"])
 def new_password():
@@ -596,6 +722,7 @@ def new_password():
 
         session.pop("reset_user_id", None)
         session.pop("reset_otp", None)
+        session.pop("reset_otp_expiry", None)
 
         flash("Password updated successfully.", "success")
 
