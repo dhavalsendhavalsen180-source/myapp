@@ -73,9 +73,10 @@ async function startOutgoing() {
 // ---------- ACCEPT INCOMING ----------
 acceptBtn.onclick = async () => {
   ring.pause();
+  overlay.style.display = "none";
 
   localStream = await navigator.mediaDevices.getUserMedia({
-    audio:true,
+    audio: true,
     video: callType === "video"
   });
 
@@ -95,8 +96,10 @@ function endCall() {
 endBtn.onclick = endCall;
 
 // ---------- JOIN ROOM ----------
-socket.emit("join", { chat_id: chatId });
-
+// NEW
+socket.emit("join_call_chat", {
+    chat_id: chatId
+});
 // ---------- SOCKET EVENTS ----------
 
 // incoming ringing event (receiver side)
@@ -115,18 +118,36 @@ socket.on("call_accepted", () => ring.pause());
 // offer received (receiver creates answer)
 socket.on("webrtc_offer", async d => {
   if (!pc) createPeer();
-  await pc.setRemoteDescription(d.offer);
+
+  if (!localStream) {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: d.type === "video"
+    });
+
+    localVideo.srcObject = localStream;
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  }
+
+  await pc.setRemoteDescription(new RTCSessionDescription(d.offer));
 
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
 
-  socket.emit("webrtc_answer", { chat_id: chatId, answer });
+  socket.emit("webrtc_answer", {
+    chat_id: chatId,
+    answer: pc.localDescription
+  });
+
+  overlay.style.display = "none";
 });
 
 // caller receives answer
-socket.on("webrtc_answer", d =>
-  pc && pc.setRemoteDescription(d.answer)
-);
+// caller receives answer
+socket.on("webrtc_answer", async d => {
+  if (!pc) return;
+  await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+});
 
 // ICE exchange
 socket.on("webrtc_ice", d =>

@@ -37,16 +37,18 @@ def clear_call(chat_id):
 # ================= JOIN CHAT ROOM ================
 @socketio.on("join_call_chat")
 def join_call_chat(data):
+    print("JOIN CALL:", data)
     chat_id = data.get("chat_id")
     if not chat_id:
         return
 
-    join_room(f"chat_{chat_id}")
+    join_room(f"call_{chat_id}")
     emit("joined_chat", {"chat_id": chat_id})
 
 # ================= CALL REQUEST =================
 @socketio.on("call_request")
 def call_request(data):
+    print("CALL REQUEST:", data)
     me = session.get("user_id")
     chat_id = data.get("chat_id")
     call_type = data.get("type")
@@ -69,7 +71,7 @@ def call_request(data):
     socketio.emit(
         "incoming_call",
         {"chat_id": chat_id, "from": me, "type": call_type},
-        room=f"chat_{chat_id}",
+        room=f"call_{chat_id}",
         include_self=False
     )
 
@@ -90,7 +92,7 @@ def call_accept(data):
     socketio.emit(
         "call_accepted",
         {"chat_id": chat_id, "by": me},
-        room=f"chat_{chat_id}"
+        room=f"call_{chat_id}"
     )
 
 
@@ -105,7 +107,7 @@ def call_reject(data):
     socketio.emit(
         "call_rejected",
         {"chat_id": chat_id, "by": me},
-        room=f"chat_{chat_id}"
+        room=f"call_{chat_id}"
     )
 
 
@@ -120,24 +122,27 @@ def call_ended(data):
     socketio.emit(
         "call_ended",
         {"chat_id": chat_id, "by": me},
-        room=f"chat_{chat_id}"
+        room=f"call_{chat_id}"
     )
 
 
 # ================= SIGNALING =================
 @socketio.on("webrtc_offer")
 def webrtc_offer(data):
+    print("WEBRTC OFFER:", data)
     chat_id = data.get("chat_id")
-    socketio.emit("webrtc_offer", data, room=f"chat_{chat_id}", include_self=False)
+    socketio.emit("webrtc_offer", data, room=f"call_{chat_id}", include_self=False)
 
 
 @socketio.on("webrtc_answer")
 def webrtc_answer(data):
+    print("WEBRTC ANSWER:", data)
     chat_id = data.get("chat_id")
-    socketio.emit("webrtc_answer", data, room=f"chat_{chat_id}", include_self=False)
+    socketio.emit("webrtc_answer", data, room=f"call_{chat_id}", include_self=False)
 
 
 @socketio.on("webrtc_ice")
 def webrtc_ice(data):
+    print("WEBRTC ICE:", data)
     chat_id = data.get("chat_id")
-    socketio.emit("webrtc_ice", data, room=f"chat_{chat_id}", include_self=False)
+    socketio.emit("webrtc_ice", data, room=f"call_{chat_id}", include_self=False)

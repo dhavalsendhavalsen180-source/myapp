@@ -4,29 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Date of Birth • InsChat</title>
+<title>Birthday • InsChat</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
 </head>
 
-<body class="bg-gradient-to-b from-pink-500 via-red-500 to-yellow-400 min-h-screen flex items-center justify-center px-5">
+<body class="min-h-screen flex items-center justify-center px-5 bg-gradient-to-br from-cyan-400 via-blue-600 via-purple-600 to-yellow-400">
 
 <div class="w-full max-w-sm">
 
-<div class="bg-white rounded-3xl shadow-2xl p-8">
+<div class="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-8 border border-white/40">
 
 <div class="text-center mb-8">
 
-<img src="{{ url_for('static', filename='inschat_logo.png') }}"
-class="mx-auto h-16 mb-4">
+<img
+src="{{ url_for('static', filename='inschat_logo.png') }}"
+class="mx-auto h-16 w-16 object-contain mb-4 drop-shadow-lg">
 
-<h1 class="text-2xl font-bold text-gray-900">
-Add Your Birthday
+<h1 class="text-4xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 bg-clip-text text-transparent">
+InsChat
 </h1>
 
+<h2 class="mt-4 text-xl font-bold text-gray-800">
+🎂 Add Your Birthday
+</h2>
+
 <p class="text-gray-500 text-sm mt-2">
-This won't be part of your public profile.
+Your birthday helps us personalize your InsChat experience.
 </p>
 
 </div>
@@ -35,7 +40,7 @@ This won't be part of your public profile.
 {% if messages %}
 {% for category,message in messages %}
 
-<div class="mb-4 text-center text-sm
+<div class="mb-4 text-center text-sm font-medium
 {% if category=='error' %}
 text-red-600
 {% else %}
@@ -55,7 +60,7 @@ text-green-600
 <select
 name="day"
 required
-class="border border-gray-300 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-pink-500">
+class="border border-gray-300 rounded-2xl px-3 py-3 bg-white focus:ring-2 focus:ring-cyan-400">
 
 <option value="">Day</option>
 
@@ -68,7 +73,7 @@ class="border border-gray-300 rounded-xl px-3 py-3 outline-none focus:ring-2 foc
 <select
 name="month"
 required
-class="border border-gray-300 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-pink-500">
+class="border border-gray-300 rounded-2xl px-3 py-3 bg-white focus:ring-2 focus:ring-blue-500">
 
 <option value="">Month</option>
 
@@ -78,9 +83,7 @@ class="border border-gray-300 rounded-xl px-3 py-3 outline-none focus:ring-2 foc
 ] %}
 
 {% for m in range(1,13) %}
-<option value="{{ m }}">
-{{ months[m-1] }}
-</option>
+<option value="{{ m }}">{{ months[m-1] }}</option>
 {% endfor %}
 
 </select>
@@ -88,7 +91,7 @@ class="border border-gray-300 rounded-xl px-3 py-3 outline-none focus:ring-2 foc
 <select
 name="year"
 required
-class="border border-gray-300 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-pink-500">
+class="border border-gray-300 rounded-2xl px-3 py-3 bg-white focus:ring-2 focus:ring-purple-500">
 
 <option value="">Year</option>
 
@@ -100,15 +103,15 @@ class="border border-gray-300 rounded-xl px-3 py-3 outline-none focus:ring-2 foc
 
 </div>
 
-<p class="text-xs text-gray-500">
-Use your own birthday, even if this account is for a business, pet or something else.
+<p class="text-xs text-gray-500 text-center leading-5">
+🔒 Your birthday is kept private and is only used to improve your InsChat experience.
 </p>
 
 <button
 type="submit"
-class="w-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white py-3 rounded-xl font-semibold hover:opacity-90">
+class="w-full bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 text-white py-3 rounded-2xl font-bold shadow-xl hover:scale-105 hover:shadow-2xl transition duration-300">
 
-Next
+Continue →
 
 </button>
 
