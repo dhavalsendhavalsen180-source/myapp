@@ -93,11 +93,18 @@
 
     .no-scrollbar::-webkit-scrollbar { display:none; }
 
-    .story-ring {
-      padding:3px;
-      background: linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);
-      border-radius:9999px;
-    }
+.story-ring{
+  padding:3px;
+  background:linear-gradient(
+  45deg,
+  #06b6d4,
+  #2563eb,
+  #7c3aed,
+  #facc15
+);
+  border-radius:9999px;
+  box-shadow:0 0 18px rgba(59,130,246,.35);
+}
 
     .story-bar {
       width: 100%;
@@ -216,35 +223,25 @@ async function uploadStoryInstant(event) {
 </script>
 </head>
 
-<body class="bg-gray-100">
+<body class="min-h-screen bg-gradient-to-br from-cyan-500 via-blue-600 via-purple-600 to-yellow-400">
 
 <input type="file" id="storyPicker" accept="image/*,video/*" style="display:none" onchange="uploadStoryInstant(event)">
 
 <!-- 💬NAVBAR🔔 -->
-<div class="flex items-center justify-between px-4 py-3 bg-white border-b sticky top-0 z-50">
+<div class="flex items-center justify-between px-4 py-3 bg-white/95 backdrop-blur-xl border-b border-white/30 shadow-lg sticky top-0 z-50">
 
-  <!-- LOGO -->
-  <h1 class="text-xl font-semibold">InsChat</h1>
+  <h1 class="text-2xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 bg-clip-text text-transparent">
+    InsChat
+  </h1>
 
-  <!-- RIGHT ICONS -->
   <div class="flex items-center gap-5">
 
-    <!-- NOTIFICATION -->
-    <a href="/social/notifications" class="relative flex items-center justify-center">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 01-6 0"/>
-      </svg>
-
-      <span id="notif-badge"></span>
+    <a href="/social/notifications" class="relative transition hover:scale-110">
+      ...
     </a>
 
-    <!-- MESSAGES (DM) -->
-    <a href="/messages" class="flex items-center justify-center">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/>
-      </svg>
+    <a href="/messages" class="transition hover:scale-110">
+      ...
     </a>
 
   </div>

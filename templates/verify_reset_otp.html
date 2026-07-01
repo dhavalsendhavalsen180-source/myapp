@@ -1,102 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify OTP - InsChat</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Verify OTP • InsChat</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
 </head>
 
-<body class="bg-gradient-to-b from-pink-500 via-red-500 to-yellow-400 min-h-screen flex items-center justify-center">
+<body class="min-h-screen flex items-center justify-center px-5 bg-gradient-to-br from-cyan-400 via-blue-500 via-purple-600 to-yellow-400">
 
-<div class="bg-white w-80 rounded-2xl shadow-xl p-8">
+<div class="w-full max-w-sm">
 
-    <div class="text-center">
+<div class="bg-white rounded-3xl shadow-2xl p-8">
 
-        <img src="{{ url_for('static', filename='inschat_logo.png') }}"
-             class="w-16 h-16 mx-auto mb-4">
+<div class="text-center mb-8">
 
-        <h1 class="text-2xl font-bold text-gray-800">
-            Verify OTP
-        </h1>
+<img
+src="{{ url_for('static', filename='inschat_logo.png') }}"
+class="mx-auto h-14 w-14 object-contain mb-4">
 
-        <p class="text-gray-500 text-sm mt-2">
-            Enter the 6-digit OTP sent to your email.
-        </p>
+<h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 bg-clip-text text-transparent">
+InsChat
+</h1>
 
-    </div>
+<p class="text-gray-500 text-sm mt-3">
+Enter the 6-digit verification code sent to your email.
+</p>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="mt-4 p-3 rounded-lg
-            {% if category == 'error' %}
-              bg-red-100 text-red-700
-            {% else %}
-              bg-green-100 text-green-700
-            {% endif %}">
-              {{ message }}
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+</div>
 
-    <form id="otpForm" method="POST" class="mt-6">
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category,message in messages %}
 
-        <input
-            id="otpInput"
-            type="text"
-            name="code"
-            maxlength="6"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            placeholder="Enter OTP"
-            required
-            class="w-full border rounded-lg px-4 py-3 text-center tracking-[8px] text-xl focus:outline-none focus:ring-2 focus:ring-pink-500">
+<div class="mb-4 text-center text-sm {% if category=='error' %}text-red-600{% else %}text-green-600{% endif %}">
+{{ message }}
+</div>
 
-        <button
-            id="verifyBtn"
-            type="submit"
-            class="w-full mt-5 bg-pink-500 hover:bg-pink-600 text-white py-3 rounded-lg font-semibold">
+{% endfor %}
+{% endif %}
+{% endwith %}
 
-            Verify OTP
+<form id="otpForm" method="POST" class="space-y-5">
 
-        </button>
+<input
+id="otpInput"
+type="text"
+name="code"
+maxlength="6"
+inputmode="numeric"
+autocomplete="one-time-code"
+placeholder="Enter OTP"
+required
+class="w-full border border-gray-300 rounded-xl px-4 py-3 text-center tracking-[8px] text-xl outline-none focus:ring-2 focus:ring-cyan-500">
 
-    </form>
+<button
+id="verifyBtn"
+type="submit"
+class="w-full bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 text-white py-3 rounded-xl font-semibold hover:opacity-90 transition">
 
-    <div class="text-center mt-5">
+Verify OTP
 
-        <p id="timer" class="text-gray-500 text-sm">
-            Resend code in 60s
-        </p>
+</button>
 
-        <form action="{{ url_for('auth.resend_reset_otp') }}" method="POST">
+</form>
 
-            <button
-                id="resendBtn"
-                type="submit"
-                disabled
-                class="mt-2 text-pink-600 font-semibold disabled:text-gray-400">
+<div class="text-center mt-6">
 
-                Resend Code
+<p id="timer" class="text-gray-500 text-sm">
+Resend code in 60s
+</p>
 
-            </button>
+<form action="{{ url_for('auth.resend_reset_otp') }}" method="POST">
 
-        </form>
+<button
+id="resendBtn"
+type="submit"
+disabled
+class="mt-3 font-semibold bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 bg-clip-text text-transparent disabled:text-gray-400 disabled:bg-none">
 
-    </div>
+Resend Code
 
-    <div class="text-center mt-5">
+</button>
 
-        <a href="{{ url_for('auth.forgot_password') }}"
-           class="text-pink-600 font-semibold">
+</form>
 
-            Back
+</div>
 
-        </a>
+<div class="text-center mt-6">
 
-    </div>
+<a
+href="{{ url_for('auth.forgot_password') }}"
+class="font-semibold bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 bg-clip-text text-transparent hover:underline">
+
+Back
+
+</a>
+
+</div>
+
+</div>
 
 </div>
 
@@ -112,60 +118,56 @@ const form = document.getElementById("otpForm");
 
 otp.focus();
 
-// Only numbers
-otp.addEventListener("input", function () {
+otp.addEventListener("input", function(){
 
-    this.value = this.value.replace(/\D/g, "").slice(0,6);
+this.value = this.value.replace(/\D/g,"").slice(0,6);
 
-    // Instagram style auto submit
-    if(this.value.length === 6){
-        form.submit();
-    }
+if(this.value.length===6){
+form.submit();
+}
 
 });
 
-// Paste support
 otp.addEventListener("paste", function(e){
 
-    e.preventDefault();
+e.preventDefault();
 
-    let pasted = (e.clipboardData || window.clipboardData)
-        .getData("text")
-        .replace(/\D/g,"")
-        .slice(0,6);
+let pasted=(e.clipboardData||window.clipboardData)
+.getData("text")
+.replace(/\D/g,"")
+.slice(0,6);
 
-    this.value = pasted;
+this.value=pasted;
 
-    if(this.value.length === 6){
-        form.submit();
-    }
+if(this.value.length===6){
+form.submit();
+}
 
 });
 
-// Enter key support
 otp.addEventListener("keydown", function(e){
 
-    if(e.key === "Enter"){
-        form.submit();
-    }
+if(e.key==="Enter"){
+form.submit();
+}
 
 });
 
-const interval = setInterval(function(){
+const interval=setInterval(function(){
 
-    seconds--;
+seconds--;
 
-    timer.innerText = "Resend code in " + seconds + "s";
+timer.innerText="Resend code in "+seconds+"s";
 
-    if(seconds <= 0){
+if(seconds<=0){
 
-        clearInterval(interval);
+clearInterval(interval);
 
-        timer.innerText = "";
+timer.innerText="";
 
-        btn.disabled = false;
+btn.disabled=false;
 
-    }
+}
 
 },1000);
 

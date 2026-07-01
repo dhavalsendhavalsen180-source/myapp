@@ -1,11 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>About</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>About • InsChat</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>About Page</h1>
-  <p>This is running on Python + HTML inside </p>
-  <a href="/">Back</a>
+
+<body class="min-h-screen flex items-center justify-center px-5 bg-gradient-to-br from-cyan-500 via-blue-600 via-purple-600 to-yellow-400">
+
+<div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md text-center">
+
+<img src="{{ url_for('static', filename='inschat_logo.png') }}"
+class="mx-auto h-16 w-16 mb-4">
+
+<h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 bg-clip-text text-transparent">
+InsChat
+</h1>
+
+<p class="mt-4 text-gray-600">
+InsChat is a modern social messaging platform built for sharing posts, chatting, calling, and connecting with friends.
+</p>
+
+<p class="mt-6 text-sm text-gray-500">
+Version 1.0
+</p>
+
+<a href="/"
+class="block mt-6 bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 text-white py-3 rounded-xl font-semibold">
+Back
+</a>
+
+</div>
+
 </body>
 </html>
