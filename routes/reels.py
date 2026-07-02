@@ -130,7 +130,7 @@ def get_user_id():
 
 
 # ===============================
-# 🎬 REELS FEED PAGE (INSTAGRAM STYLE)
+# 🎬 REELS FEED PAGE (INS STYLE)
 # ===============================
 @reels_bp.route("/")
 def reels_page():

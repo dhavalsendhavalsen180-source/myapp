@@ -127,7 +127,7 @@ def add_story():
     return redirect("/")
 
 
-# ---------------- GROUPED STORIES (INSTAGRAM CORE) ----------------
+# ---------------- GROUPED STORIES (INS CORE) ----------------
 @stories_bp.route("/api/groups")
 def groups():
     cleanup_expired()

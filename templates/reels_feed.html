@@ -401,7 +401,7 @@ filter:blur(2px);
   </span>
 </div>
 
-<!-- REEL USER BAR (INSTAGRAM FIXED) -->
+<!-- REEL USER BAR (INS FIXED) -->
 <div class="reel-userbar">
 
   <a href="/profile/{{ reel.user_id }}" class="user-left">
@@ -570,7 +570,7 @@ h-14 text-white">
 
 <script>
 
-/* 🎯 FINAL REELS CONTROL (Instagram style) */
+/* 🎯 FINAL REELS CONTROL (Ins style) */
 
 const wrapper = document.getElementById("wrapper");
 const videos = document.querySelectorAll("video");
@@ -635,7 +635,7 @@ document.querySelectorAll("video").forEach(v=>{
 
 });
 
-/* INSTAGRAM LIKE */
+/* INS LIKE */
 function like(id){
 
   fetch(`/reels/like_toggle/${id}`,{
@@ -734,7 +734,7 @@ async function followUser(userId){
   }
 }
 
-/* SHARE - Instagram style fix */
+/* SHARE - Ins style fix */
 function share(id){
 
   const reelUrl = `${window.location.origin}/reels?open=${id}`;
@@ -753,7 +753,7 @@ function share(id){
     method: "POST"
   });
 
-  // optional: share sheet (mobile Instagram style)
+  // optional: share sheet (mobile Ins style)
   if (navigator.share) {
     navigator.share({
       title: "Check this Reel",
@@ -780,7 +780,7 @@ function closeComments(){
   document.getElementById("commentModal").style.display="none";
 }
 
-/* LOAD COMMENTS UI (Instagram style) */
+/* LOAD COMMENTS UI (Ins style) */
 async function loadComments(id){
   const box=document.getElementById("commentList");
   box.innerHTML="Loading...";

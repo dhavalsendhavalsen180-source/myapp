@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <link rel="manifest" href="/manifest.json?v=1">
-  <meta name="theme-color" content="#ff0066">
+  <meta name="theme-color" content="#2563eb">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title> InsChat </title>
+  <title>inschat</title>
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
@@ -95,15 +95,8 @@
 
 .story-ring{
   padding:3px;
-  background:linear-gradient(
-  45deg,
-  #06b6d4,
-  #2563eb,
-  #7c3aed,
-  #facc15
-);
+  background: linear-gradient(135deg,#00b4d8,#0077b6,#023e8a);
   border-radius:9999px;
-  box-shadow:0 0 18px rgba(59,130,246,.35);
 }
 
     .story-bar {
@@ -151,16 +144,14 @@
       border-radius: 50%;
     }
 
-.my-story {
-  background: linear-gradient(45deg,#f99,#f63,#f36,#c3f,#63f)!important;
+.my-story{
+  background:linear-gradient(135deg,#22c55e,#16a34a,#15803d)!important;
 }
-
 
     .story-ring2.seen {
       background: #ccc;
     }
 
-.my-story{background:linear-gradient(45deg,#f99,#f63,#f36,#c3f,#63f)!important;}
 
     .story-label {
       font-size: 12px;
@@ -172,23 +163,37 @@
       color:#555;
     }
 
-    .add-story-btn {
-      position: absolute;
-      bottom: 0px;
-      right: 0px;
-      background: #0095f6;
-      color: white;
-      font-size: 16px;
-      border-radius: 50%;
-      width: 22px;
-      height: 22px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border: 2px solid white;
-    }
+.bottom-nav svg{
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: .25s ease;
+}
 
-.my-story{background:linear-gradient(45deg,#f99,#f63,#f36,#c3f,#63f)!important;}
+.bottom-nav a:hover svg{
+    transform: scale(1.12);
+}
+
+.bottom-nav .active svg{
+    color:#3b82f6;
+}
+
+.add-story-btn{
+    position:absolute;
+    bottom:0;
+    right:0;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:#2563eb;
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    border:2px solid #fff;
+    font-size:13px;
+    font-weight:bold;
+}
+
   </style>
 
 <script>
@@ -224,24 +229,35 @@ async function uploadStoryInstant(event) {
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-cyan-500 via-blue-600 via-purple-600 to-yellow-400">
+<div class="pb-24">
 
 <input type="file" id="storyPicker" accept="image/*,video/*" style="display:none" onchange="uploadStoryInstant(event)">
 
 <!-- 💬NAVBAR🔔 -->
-<div class="flex items-center justify-between px-4 py-3 bg-white/95 backdrop-blur-xl border-b border-white/30 shadow-lg sticky top-0 z-50">
+<div class="flex items-center justify-between px-4 py-3 bg-white border-b sticky top-0 z-50">
 
-  <h1 class="text-2xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 bg-clip-text text-transparent">
-    InsChat
-  </h1>
+  <!-- LOGO -->
+  <h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 bg-clip-text text-transparent">inschat</h1>
 
+  <!-- RIGHT ICONS -->
   <div class="flex items-center gap-5">
 
-    <a href="/social/notifications" class="relative transition hover:scale-110">
-      ...
+    <!-- NOTIFICATION -->
+    <a href="/social/notifications" class="relative flex items-center justify-center">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 01-6 0"/>
+      </svg>
+
+      <span id="notif-badge"></span>
     </a>
 
-    <a href="/messages" class="transition hover:scale-110">
-      ...
+    <!-- MESSAGES (DM) -->
+    <a href="/messages" class="flex items-center justify-center">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/>
+      </svg>
     </a>
 
   </div>
@@ -265,7 +281,7 @@ async function uploadStoryInstant(event) {
     <!-- PLUS BUTTON ONLY UPLOAD -->
     <div class="add-story-btn"
          onclick="document.getElementById('storyPicker').click()">
-      +
+      ✦
     </div>
 
     <div class="story-label">Your Story</div>
@@ -289,7 +305,7 @@ async function uploadStoryInstant(event) {
   <div class="max-w-xl mx-auto mt-4 space-y-6 pb-24">
 
     {% for post in posts %}
-    <div class="bg-white rounded-xl shadow overflow-hidden">
+    <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/30">
 
       <!-- HEADER -->
       <div class="flex items-center justify-between px-4 py-3">
@@ -314,7 +330,7 @@ async function uploadStoryInstant(event) {
 
           <div id="menu-{{ post.id }}"
                class="hidden absolute right-0 top-8 bg-white border rounded-lg shadow-lg w-32 z-50">
-  
+
             <a href="/posts/{{ post.id }}"
                class="block px-4 py-2 hover:bg-gray-100">
               View
@@ -379,7 +395,7 @@ async function uploadStoryInstant(event) {
       <button id="like-btn-{{ post.id }}"
               onclick="toggleLike({{ post.id }}, this)">
 
-        <svg class="w-7 h-7 {% if post.liked_by_me %}text-red-500{% endif %}"
+        <svg class="w-7 h-7 transition duration-300 hover:scale-125 {% if post.liked_by_me %}text-red-500{% endif %}"
              viewBox="0 0 24 24"
              fill="{% if post.liked_by_me %}currentColor{% else %}none{% endif %}"
              stroke="currentColor"
@@ -447,41 +463,50 @@ async function uploadStoryInstant(event) {
 
   </div>
 
-  <!-- LIKE COUNT -->
-  <div id="likes-count-{{ post.id }}"
-       class="mt-2 font-semibold text-sm">
+<!-- LIKE COUNT -->
+<div id="likes-count-{{ post.id }}"
+     class="mt-2 font-semibold text-sm">
     {{ post.likes }} likes
-  </div>
+</div>
 
-    </div>
-    {% endfor %}
+</div> <!-- END flex items-center justify-between -->
 
-  </div>
+</div> <!-- END ACTION ROW -->
+
+</div> <!-- END POST CARD -->
+
+{% endfor %}
+
+</div> <!-- END FEED -->
 
 <!-- 🏠🔍➕🎬BOTTOM NAV -->
-<div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-inner flex justify-around py-2 text-2xl">
+<div class="bottom-nav fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-white/30 shadow-2xl flex justify-around py-3 text-2xl">
   <a href="/posts/feed" class="flex items-center justify-center">
-  <svg class="w-6 h-6 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-    <path stroke-linecap="round" stroke-linejoin="round"
-      d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1V10.5z"/>
-  </svg>
+<svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+  <path d="M4 11.5L12 4l8 7.5"/>
+  <path d="M6 10.5V20h12v-9.5"/>
+  <path d="M10 20v-5h4v5"/>
+</svg>
 </a>
   <a href="/explore" class="flex items-center justify-center">
-  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-    <circle cx="11" cy="11" r="7"></circle>
-    <path d="M21 21l-4.3-4.3"></path>
+<svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+  <circle cx="12" cy="12" r="9"/>
+  <path d="M15.8 8.2L13.6 13.6L8.2 15.8L10.4 10.4L15.8 8.2Z"/>
   </svg>
 </a>
   <a href="/create" class="flex items-center justify-center">
-  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path>
-  </svg>
+<svg class="w-7 h-7" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+  <rect x="4" y="4" width="16" height="16" rx="4"/>
+  <path d="M12 8v8M8 12h8"/>
+</svg>
 </a>
   <a href="/reels" class="flex items-center justify-center">
-  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-
-    <!-- reel frame -->
-    <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+<svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+  <rect x="4" y="4" width="16" height="16" rx="4"/>
+  <path d="M8 4l3 4"/>
+  <path d="M13 4l3 4"/>
+  <path d="M10 10l5 3-5 3z" fill="currentColor" stroke="none"/>
+</svg>
 
     <!-- play triangle -->
     <path d="M10 9l6 3-6 3V9z" fill="currentColor"></path>

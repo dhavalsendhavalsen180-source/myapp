@@ -30,7 +30,7 @@ const PRESETS = {
   cinematic: { smooth:0.28, clarity:0.65, detail:0.2, hdr:0.22, lut:'/static/luts/cinematic.png' },
   vintage: { smooth:0.2, clarity:0.2, detail:0.08, hdr:0.06, lut:'/static/luts/vintage.png' },
   neon: { smooth:0.25, clarity:0.75, detail:0.3, hdr:0.22, lut:'/static/luts/neon.png' },
-  instagram: { smooth:0.5, clarity:0.55, detail:0.2, hdr:0.15, lut:'/static/luts/insta.png' },
+  ins: { smooth:0.5, clarity:0.55, detail:0.2, hdr:0.15, lut:'/static/luts/insta.png' },
   tiktok: { smooth:0.7, clarity:0.7, detail:0.25, hdr:0.2, lut:'/static/luts/tiktok.png' },
   hdr: { smooth:0.2, clarity:0.8, detail:0.3, hdr:0.35, lut:null },
   nightVision: { smooth:0.4, clarity:0.6, detail:0.18, hdr:0.05, lut:'/static/luts/night.png' },

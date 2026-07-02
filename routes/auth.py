@@ -206,7 +206,7 @@ def verify():
   return render_template("verify.html")
 ########################################
 # ==========================
-# Instagram Style Signup Flow
+# Ins Style Signup Flow
 # ==========================
 
 @auth_bp.route("/register/username", methods=["GET", "POST"])
