@@ -1,11 +1,14 @@
 {
-  "name": "Inschat",
+  "name": "Inschat - Real Connections",
   "short_name": "Inschat",
-  "start_url": "/",
+  "id": "https://myapp-h2eh.onrender.com",
+  "start_url": "https://myapp-h2eh.onrender.com",
   "display": "standalone",
-  "background_color": "#000000",
+  "background_color": "#000",
   "theme_color": "#0f172a",
   "orientation": "portrait",
+  "scope": "/",
+  "description": "Chat, Stories, Reels aur Posts. Distance khatam, privacy first. Made in India.",
   "icons": [
     {
       "src": "/static/inschat_logo.png",

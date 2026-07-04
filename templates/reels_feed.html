@@ -15,17 +15,13 @@ body {
 }
 
 .reels-wrapper{
-  height:100%;
-  overflow-y:scroll;
+  height:100vh;
+  overflow-y:auto;
   scroll-snap-type:y mandatory;
+  scroll-snap-stop:always;
   -webkit-overflow-scrolling:touch;
   scroll-behavior:smooth;
-}
-
-.reel{
-  height:100%;
-  position:relative;
-  scroll-snap-align:start;
+  overscroll-behavior-y:contain;
 }
 
 video{
@@ -97,44 +93,82 @@ video{
 .actions div{cursor:pointer}
 .actions span{font-size:12px;display:block}
 
-/* HEART ANIMATION */
-.heart{
-position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%) scale(0);
-opacity:0;
-pointer-events:none;
-transition:all .35s cubic-bezier(.175,.885,.32,1.275);
-filter:drop-shadow(0 0 25px rgba(255,0,90,.7));
-z-index:999;
-}
-
-.heart svg{
-width:120px;
-height:120px;
-fill:#ff004f;
-stroke:#fff;
-stroke-width:1.5;
-}
 
 .heart.show{
-opacity:1;
-transform:translate(-50%,-50%) scale(1);
-animation:heartPop .7s ease;
+    opacity:1;
 }
 
-.heart.break{
-opacity:0;
-transform:translate(-50%,-50%) scale(1.8) rotate(-12deg);
-filter:blur(2px);
+.heart .h{
+    position:absolute;
+    left:50%;
+    top:50%;
+    opacity:0;
+    transform:translate(-50%,-50%) scale(.2);
+    filter:drop-shadow(0 0 16px rgba(255,255,255,.45));
 }
 
-@keyframes heartPop{
-0%{transform:translate(-50%,-50%) scale(.2)}
-40%{transform:translate(-50%,-50%) scale(1.25)}
-60%{transform:translate(-50%,-50%) scale(.95)}
-100%{transform:translate(-50%,-50%) scale(1)}
+.heart.show .h1{
+    font-size:96px;
+    animation:centerHeart .8s ease forwards;
+}
+
+.heart.show .h2{
+    font-size:52px;
+    animation:leftHeart .8s ease forwards;
+}
+
+.heart.show .h3{
+    font-size:52px;
+    animation:rightHeart .8s ease forwards;
+}
+
+.heart.show .h4{
+    font-size:48px;
+    animation:topHeart .8s ease forwards;
+}
+
+.heart.show .h5{
+    font-size:48px;
+    animation:bottomHeart .8s ease forwards;
+}
+
+@keyframes centerHeart{
+0%{transform:translate(-50%,-50%) scale(.2) rotate(-25deg);opacity:0;}
+40%{transform:translate(-50%,-50%) scale(1.35) rotate(8deg);opacity:1;}
+100%{transform:translate(-50%,-50%) scale(1);opacity:0;}
+}
+
+@keyframes leftHeart{
+0%{transform:translate(-50%,-50%) scale(.2);opacity:0;}
+100%{transform:translate(calc(-50% - 55px),calc(-50% + 18px)) rotate(-25deg) scale(.9);opacity:0;}
+}
+
+@keyframes rightHeart{
+0%{transform:translate(-50%,-50%) scale(.2);opacity:0;}
+100%{transform:translate(calc(-50% + 55px),calc(-50% + 18px)) rotate(25deg) scale(.9);opacity:0;}
+}
+
+@keyframes topHeart{
+0%{transform:translate(-50%,-50%) scale(.2);opacity:0;}
+100%{transform:translate(-50%,calc(-50% - 60px)) scale(.8);opacity:0;}
+}
+
+@keyframes bottomHeart{
+0%{transform:translate(-50%,-50%) scale(.2);opacity:0;}
+100%{transform:translate(-50%,calc(-50% + 60px)) scale(.8);opacity:0;}
+}
+
+.heart{
+    position:absolute;
+    top:50%;
+    left:50%;
+    width:140px;
+    height:140px;
+    transform:translate(-50%,-50%);
+    pointer-events:none;
+    opacity:0;
+    z-index:999;
+    will-change:transform,opacity;
 }
 
 /* COMMENT SHEET */
@@ -169,33 +203,39 @@ filter:blur(2px);
   margin-bottom:3px;
 }
 
-.followBtn{
-  background:#0095f6;
-  color:white;
-  padding:3px 8px;
-  border-radius:6px;
-  font-size:11px;
+.liked{
+    transform:scale(1.18);
+    filter:
+      drop-shadow(0 0 6px #ff5ca8)
+      drop-shadow(0 0 14px #ff8ec5);
+    animation:loveBeat .35s ease;
 }
-.liked{fill:#ff3040!important;stroke:#ff3040!important;transform:scale(1.12);}
-.heart{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:90px;opacity:0;transition:.25s;pointer-events:none;}
-.heart.show{opacity:1;transform:translate(-50%,-50%) scale(1.25);}
 
+@keyframes loveBeat{
+    0%{
+        transform:scale(.7);
+    }
+    60%{
+        transform:scale(1.28);
+    }
+    100%{
+        transform:scale(1.18);
+    }
+}
 
-.reel-userbar{position:absolute;bottom:110px;left:15px;right:80px;display:flex;justify-content:space-between;align-items:center;color:white}
 .reel-userbar .left{display:flex;align-items:center;gap:10px}
 .avatar{width:38px;height:38px;border-radius:50%;border:2px solid white;object-fit:cover}
 .username{font-weight:600;font-size:14px}
 .fire{color:orange}
 .age{font-size:12px;opacity:0.8}
 .follow-btn{background:#0095f6;color:white;border:none;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600}
-.follow-btn.following{background:transparent;border:1px solid white}
 .reel-userbar a:active {
   transform: scale(0.97);
 }
 
 .reel-userbar{
   position:absolute;
-  bottom:95px;   /* niche le jane ke liye */
+  bottom:90px;
 
   left:12px;
   right:70px;
@@ -219,20 +259,37 @@ filter:blur(2px);
 }
 
 .follow-btn{
-  background:#0095f6;
-  color:white;
+  background:linear-gradient(135deg,#3b82f6,#8b5cf6,#facc15);
+  background-size:200% 200%;
+  color:#fff;
   border:none;
-
-  padding:7px 18px;
-
-  border-radius:10px;
-
+  padding:8px 18px;
+  border-radius:999px;
   font-size:14px;
   font-weight:700;
-
   cursor:pointer;
+  margin-left:10px;
+  transition:.3s;
+  animation:allyGlow 4s linear infinite;
+  box-shadow:0 0 18px rgba(139,92,246,.45);
+}
 
-  margin-left:10px;   /* 🔥 username ke pass */
+.follow-btn:hover{
+  transform:scale(1.05);
+}
+
+.follow-btn.following{
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.45);
+  color:#fff;
+  box-shadow:none;
+  animation:none;
+}
+
+@keyframes allyGlow{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
 }
 
 .reel-menu-wrap{
@@ -285,32 +342,47 @@ filter:blur(2px);
   margin-left:4px;
 }
 
-.caption.open{
-  -webkit-line-clamp:unset;
-  overflow:visible;
-}
-
-.reels-wrapper{
-  height:100vh;
-  overflow-y:auto;
-
-  scroll-snap-type:y mandatory;
-  scroll-snap-stop:always;   /* 🔥 important */
-
-  overscroll-behavior-y:contain;
-}
-
 .reel{
-  height:100vh;
-  min-height:100vh;
-
-  scroll-snap-align:start;
-  scroll-snap-stop:always;   /* 🔥 important */
+position:relative;
+height:100vh;
+min-height:100vh;
+scroll-snap-align:start;
+scroll-snap-stop:always;
 }
 
 .saved-icon{
     fill:black;
     stroke:black;
+}
+
+.like-pop{
+    position:absolute;
+    top:2px;
+    left:50%;
+    transform:translateX(-50%) scale(.2);
+    font-size:22px;
+    opacity:0;
+    pointer-events:none;
+    z-index:20;
+}
+
+.like-pop.show{
+    animation:lovePop .75s ease forwards;
+}
+
+@keyframes lovePop{
+    0%{
+        opacity:0;
+        transform:translateX(-50%) scale(.2);
+    }
+    45%{
+        opacity:1;
+        transform:translateX(-50%) scale(1.4);
+    }
+    100%{
+        opacity:0;
+        transform:translateX(-50%) scale(1);
+    }
 }
 
 </style>
@@ -330,13 +402,13 @@ filter:blur(2px);
 <img
   id="video-{{ reel.id }}"
   src="/static/uploads/reels/{{ reel.video_path }}"
-  style="width:100%;height:100%;object-fit:cover;">
+  class="w-full h-full object-cover">
 
 {% else %}
 
 <video
-  style="width:100%;height:100%;object-fit:cover;"
   id="video-{{ reel.id }}"
+  class="w-full h-full object-cover"
   src="/static/uploads/reels/{{ reel.video_path }}"
   autoplay
   playsinline
@@ -346,136 +418,196 @@ filter:blur(2px);
 
 {% endif %}
 
-<!-- 🔥 3 DOT MENU -->
-
+<!-- OWNER MENU -->
 {% if reel.user_id == session.user_id %}
-<div class="reel-menu-wrap">
+<div class="absolute top-5 right-4 z-50">
 
-  <button class="reel-menu-btn" onclick="toggleMenu({{ reel.id }})">
+  <button onclick="toggleMenu({{ reel.id }})"
+          class="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white">
+
     <svg xmlns="http://www.w3.org/2000/svg"
-         width="24"
-         height="24"
-         viewBox="0 0 24 24"
-         fill="white">
-      <circle cx="12" cy="5" r="2"></circle>
-      <circle cx="12" cy="12" r="2"></circle>
-      <circle cx="12" cy="19" r="2"></circle>
+         width="22"
+         height="22"
+         fill="currentColor"
+         viewBox="0 0 24 24">
+      <circle cx="12" cy="5" r="2"/>
+      <circle cx="12" cy="12" r="2"/>
+      <circle cx="12" cy="19" r="2"/>
     </svg>
+
   </button>
 
-  <div class="reel-menu" id="menu-{{ reel.id }}">
+  <div id="menu-{{ reel.id }}"
+       class="reel-menu">
+
     <form action="/reels/delete/{{ reel.id }}" method="POST">
-      <button type="submit" onclick="return confirm('Delete this reel?')">
+      <button type="submit"
+              onclick="return confirm('Delete this reel?')">
 
-        <svg xmlns="http://www.w3.org/2000/svg"
-             width="18"
-             height="18"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="red"
-             stroke-width="2">
-          <path d="M3 6h18"/>
-          <path d="M8 6V4h8v2"/>
-          <path d="M19 6l-1 14H6L5 6"/>
-          <path d="M10 11v6"/>
-          <path d="M14 11v6"/>
-        </svg>
+        🗑 Remove Reel
 
-        Delete Reel
       </button>
     </form>
+
   </div>
 
 </div>
 {% endif %}
 
-   <div class="topbar">Reels</div>
+<!-- APP HEADER -->
+<div class="absolute top-5 left-4 right-16 flex items-center justify-between z-40">
 
-<div class="caption">
-  <b>@{{ reel.username }}</b>
-  <span class="captionText">{{ reel.caption }}</span>
+  <div class="px-4 py-2 rounded-full bg-black/40 backdrop-blur text-white font-bold tracking-wide">
 
-  <span class="moreBtn"
-        onclick="expandCaption(this)">
-        more
-  </span>
+    Sory Shorts
+
+  </div>
+
 </div>
 
-<!-- REEL USER BAR (INS FIXED) -->
+<!-- GLASS INFO CARD -->
+<!-- GLASS INFO CARD -->
+<div class="absolute bottom-10 left-4 right-10 bg-black/15 backdrop-blur-md rounded-2xl p-4 text-white">
+
+  <div class="text-sm leading-5">
+
+    <span class="captionText">
+      {{ reel.caption }}
+    </span>
+
+    <span class="moreBtn ml-1 text-cyan-300 font-semibold cursor-pointer"
+          onclick="expandCaption(this)">
+      Read
+    </span>
+
+  </div>
+
+</div>
+
+<!-- CREATOR BAR -->
 <div class="reel-userbar">
 
   <a href="/profile/{{ reel.user_id }}" class="user-left">
 
-<img class="avatar"
-src="{{ reel.profile_photo if reel.profile_photo else '/static/default_dp.png' }}">
+    <img class="avatar"
+         src="{{ reel.profile_photo if reel.profile_photo else '/static/default_dp.png' }}">
 
     <div class="user-info">
+
       <div class="username-row">
+
         <span class="username">@{{ reel.username }}</span>
-        <span class="fire">🔥</span>
-        <span class="age">• 18+</span>
+
+        <!-- UNIQUE BADGE -->
+        <span class="ml-2 text-cyan-300 text-sm">✦</span>
+
       </div>
+
+      <div class="text-[11px] text-gray-300">
+        Creator
+      </div>
+
     </div>
 
   </a>
 
-{% if reel.user_id != session.user_id %}
-<button
-  class="follow-btn {% if reel.following %}following{% endif %}"
-  id="follow-{{ reel.user_id }}"
-  onclick="followUser({{ reel.user_id }})">
+  {% if reel.user_id != session.user_id %}
+  <button
+    class="follow-btn {% if reel.following %}following{% endif %}"
+    id="follow-{{ reel.user_id }}"
+    onclick="followUser({{ reel.user_id }})">
 
-  {% if reel.following %}
-      Following
-  {% else %}
-      Follow
+    {% if reel.following %}
+      🤝 Allied
+    {% else %}
+      ✨ Ally
+    {% endif %}
+
+  </button>
   {% endif %}
-</button>
-{% endif %}
 
 </div>
 
-  <!-- ACTIONS -->
-<div class="absolute right-3 bottom-16 flex flex-col items-center gap-4 text-white">
+<!-- ACTIONS -->
+<div class="absolute right-3 bottom-16 flex flex-col items-center gap-5 text-white">
 
-  <!-- LIKE -->
-<div onclick="like({{ reel.id }})" class="flex flex-col items-center cursor-pointer">
+<!-- LIKE -->
+<div onclick="like({{ reel.id }})"
+     class="relative flex flex-col items-center cursor-pointer">
 
-  <svg id="likeIcon-{{ reel.id }}"
-    class="w-7 h-7 transition-all duration-200 {% if reel.liked %}liked{% endif %}"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.8">
+<svg id="likeIcon-{{ reel.id }}"
+     class="w-8 h-8 transition-all duration-300"
+     viewBox="0 0 24 24"
+     fill="{% if reel.liked %}#ff4f9a{% else %}none{% endif %}"
+     stroke="{% if reel.liked %}#ff4f9a{% else %}white{% endif %}"
+     stroke-width="1.8"
+     stroke-linecap="round"
+     stroke-linejoin="round">
 
-    <path stroke-linecap="round" stroke-linejoin="round"
-      d="M20.8 4.6c-1.8-1.8-4.7-1.8-6.5 0L12 6.9 9.7 4.6c-1.8-1.8-4.7-1.8-6.5 0s-1.8 4.7 0 6.5L12 20l8.8-8.9c1.8-1.8 1.8-4.7 0-6.5z"/>
-  </svg>
+  <path d="
+    M12 21
+    C11.2 20.4 3.5 15.4 3.5 9
+    C3.5 5.8 5.8 3.5 8.8 3.5
+    C10.7 3.5 11.8 4.4 12 5.7
+    C12.2 4.4 13.3 3.5 15.2 3.5
+    C18.2 3.5 20.5 5.8 20.5 9
+    C20.5 15.4 12.8 20.4 12 21Z"/>
+</svg>
 
-  <span id="likeCount-{{ reel.id }}" class="text-xs mt-1">{{ reel.likes }}</span>
+<span id="likePop-{{ reel.id }}" class="like-pop">💞</span>
+
+<span id="likeCount-{{ reel.id }}"
+      class="text-xs mt-1 font-bold text-cyan-300">
+{{ reel.likes }}
+</span>
+
 </div>
 
-  <!-- COMMENT -->
-  <div onclick="openCommentsPage({{ reel.id }})" class="flex flex-col items-center">
-    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-      <path stroke-linecap="round" stroke-linejoin="round"
-        d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/>
-    </svg>
-    <span class="text-xs mt-1">{{ reel.comments_count }}</span>
-  </div>
+<!-- COMMENT -->
+<div onclick="openCommentsPage({{ reel.id }})" class="flex flex-col items-center">
 
-  <!-- SHARE -->
-  <div onclick="openShare({{ reel.id }})" class="flex flex-col items-center">
-    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-      <path stroke-linecap="round" stroke-linejoin="round"
-        d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
-      <path stroke-linecap="round" stroke-linejoin="round"
-        d="M16 6l-4-4-4 4M12 2v14"/>
-    </svg>
-    <span class="text-xs mt-1">{{ reel.shares }}</span>
-  </div>
+<svg class="w-7 h-7"
+     viewBox="0 0 24 24"
+     fill="none"
+     stroke="currentColor"
+     stroke-width="2">
 
-  <!-- SAVE -->
+  <path d="M4 5h16a2 2 0 012 2v8a2 2 0 01-2 2H9l-5 4V7a2 2 0 012-2z"/>
+
+</svg>
+
+<span class="text-[11px] mt-1">
+{{ reel.comments_count }}
+</span>
+
+</div>
+
+<!-- SHARE -->
+<!-- SHARE -->
+<div onclick="openShare({{ reel.id }})" class="flex flex-col items-center">
+
+<svg class="w-7 h-7"
+     viewBox="0 0 24 24"
+     fill="none"
+     stroke="currentColor"
+     stroke-width="2">
+
+  <circle cx="18" cy="5" r="2"/>
+  <circle cx="6" cy="12" r="2"/>
+  <circle cx="18" cy="19" r="2"/>
+
+  <path d="M8 12L16 6"/>
+  <path d="M8 12L16 18"/>
+
+</svg>
+
+<span class="text-[11px] mt-1">
+{{ reel.shares }}
+</span>
+
+</div>
+
+<!-- SAVE -->
 <div onclick="save({{ reel.id }})" class="flex flex-col items-center">
 
 <svg id="saveIcon-{{ reel.id }}"
@@ -483,23 +615,30 @@ src="{{ reel.profile_photo if reel.profile_photo else '/static/default_dp.png' }
      viewBox="0 0 24 24"
      fill="{% if reel.saved %}currentColor{% else %}none{% endif %}"
      stroke="currentColor"
-     stroke-width="1.8">
+     stroke-width="2">
 
-    <path stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M5 5v16l7-5 7 5V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"/>
+<path d="M7 3h10v18l-5-3-5 3z"/>
+
 </svg>
 
-  <span id="saveCount-{{ reel.id }}">
-    {{ reel.saves }}
-  </span>
+<span id="saveCount-{{ reel.id }}" class="text-[11px]">
+{{ reel.saves }}
+</span>
+
 </div>
 
 </div>
+
+<!-- DOUBLE TAP HEART -->
 <!-- DOUBLE TAP HEART -->
 <div class="heart" id="heart-{{ reel.id }}">
-  ❤️
+    <span class="h h1">💞</span>
+    <span class="h h2">💖</span>
+    <span class="h h3">💜</span>
+    <span class="h h4">💙</span>
+    <span class="h h5">💛</span>
 </div>
+
 {% endfor %}
 
 </div>
@@ -641,9 +780,7 @@ function like(id){
   fetch(`/reels/like_toggle/${id}`,{
     method:"POST"
   })
-
   .then(r=>r.json())
-
   .then(d=>{
 
     if(!d.ok) return;
@@ -654,20 +791,38 @@ function like(id){
     const heart = document.getElementById(`heart-${id}`);
 
     if(d.liked){
+
+      const pop = document.getElementById(`likePop-${id}`);
+
+      pop.classList.add("show");
+
+      setTimeout(()=>{
+      pop.classList.remove("show");
+},750);
+
       icon.classList.add("liked");
+      icon.setAttribute("fill","#ff4f9a");
+      icon.setAttribute("stroke","none");
+
+      heart.classList.add("show");
+
+      setTimeout(()=>{
+        heart.classList.remove("show");
+      },800);
+
     }else{
+
       icon.classList.remove("liked");
+      icon.setAttribute("fill","none");
+      icon.setAttribute("stroke","white");
+
     }
 
-    heart.classList.add("show");
-
-    setTimeout(()=>{
-      heart.classList.remove("show");
-    },500);
-
   });
+
 }
 
+/* DOUBLE TAP */
 function dblLike(id){
 
   const icon = document.getElementById(`likeIcon-${id}`);
@@ -680,7 +835,7 @@ function dblLike(id){
 
     setTimeout(()=>{
       heart.classList.remove("show");
-    },500);
+    },800);
 
     return;
   }
@@ -724,14 +879,15 @@ async function followUser(userId){
   if(d.ok){
 
     if(d.following){
-      btn.innerText = "Following";
+      btn.innerText = "🤝 Allied";
       btn.classList.add("following");
     }else{
-      btn.innerText = "Follow";
+      btn.innerText = "✨ Ally";
       btn.classList.remove("following");
     }
 
   }
+
 }
 
 /* SHARE - Ins style fix */
@@ -798,11 +954,11 @@ async function loadComments(id){
             <b>@${c.username}</b>
             <div>${c.text}</div>
           </div>
-          <button class="followBtn">Follow</button>
+          <button class="followBtn">✨ Ally</button>
         </div>
 
         <div style="font-size:11px;color:gray">
-          ❤️ ${c.likes || 0} • Reply
+          💞 ${c.likes || 0} • Reply
         </div>
       </div>
     `;
