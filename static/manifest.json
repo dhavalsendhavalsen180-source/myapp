@@ -1,5 +1,5 @@
 {
-  "name": "InsChat",
+  "name": "InsChat - Real Connections",
   "short_name": "InsChat",
   "id": "/",
   "start_url": "/",
@@ -7,6 +7,8 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ff0066",
+  "orientation": "portrait",
+  "description": "Chat, Stories, Reels aur Posts. Distance khatam, privacy first. Made in India.",
   "icons": [
     {
       "src": "/static/icons/inschat_icon_192x192.png",
