@@ -78,6 +78,10 @@
       window.location.href = "/home";
     }, 3000);
   </script>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#ff0066">
+<link rel="apple-touch-icon" href="/static/icons/inschat_icon_180x180.png">
+
 </head>
 <body>
   <!-- Logo -->
@@ -92,5 +96,14 @@
     <div class="dot"></div>
     <div class="dot"></div>
   </div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js');
+  });
+}
+</script>
+
 </body>
 </html>
