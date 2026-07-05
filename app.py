@@ -74,6 +74,9 @@ def home():
 def manifest():
     return send_from_directory("static", "manifest.json", mimetype="application/manifest+json")
 
+@app.route('/sw.js')
+def service_worker():
+    return send_from_directory('static', 'sw.js', mimetype='application/javascript')
 
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)
