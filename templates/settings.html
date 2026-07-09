@@ -1,52 +1,111 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Settings • InsChat</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Settings • InsChat</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 min-h-screen">
+<body class="min-h-screen bg-gradient-to-br from-cyan-50 via-white to-purple-50">
 
-  <!-- TOP BAR -->
-  <div class="flex items-center justify-between p-4 bg-white shadow">
-    <a href="javascript:history.back()" class="text-xl font-bold">⬅ Back</a>
-    <h2 class="font-bold text-lg">Settings</h2>
-    <div></div>
-  </div>
+<!-- HEADER -->
+<div class="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b">
 
-  <!-- MAIN BOX -->
-  <div class="max-w-xl mx-auto mt-6 bg-white rounded-xl shadow overflow-hidden">
+  <div class="max-w-xl mx-auto flex items-center justify-between px-4 py-4">
 
-    <!-- ACCOUNT -->
-    <a href="/profile/account_center" class="block px-5 py-4 border-b hover:bg-gray-50">
-      <div class="font-semibold text-gray-900">Account Center</div>
-      <div class="text-sm text-gray-500">Password, personal details, security</div>
+    <a href="javascript:history.back()"
+       class="text-xl font-bold text-gray-700">
+      ←
     </a>
 
-    <!-- ACCOUNT PRIVACY -->
-<a href="/profile/privacy" class="block px-5 py-4 border-b hover:bg-gray-50">
-  <div class="font-semibold text-gray-900">
-    Account privacy
+    <h2 class="text-xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 bg-clip-text text-transparent">
+      Settings
+    </h2>
+
+    <div class="w-6"></div>
+
   </div>
 
-  <div class="text-sm text-gray-500">
-    Private account, followers visibility
-  </div>
+</div>
+
+<!-- MAIN -->
+<div class="max-w-xl mx-auto p-4 space-y-4">
+
+<div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+
+<!-- Account Center -->
+<a href="/profile/account_center"
+class="flex items-center justify-between px-5 py-5 hover:bg-gray-50 transition">
+
+<div>
+<div class="font-bold text-gray-900">
+👤 Account Center
+</div>
+
+<div class="text-sm text-gray-500">
+Password, personal details & security
+</div>
+</div>
+
+<span class="text-gray-400 text-xl">›</span>
+
 </a>
 
-    <!-- SAVED (ONLY ONE ENTRY) -->
-    <a href="/profile/saved" class="block px-5 py-4 border-b hover:bg-gray-50">
-      <div class="font-semibold text-gray-900">Saved</div>
-      <div class="text-sm text-gray-500">Posts, reels, audio</div>
-    </a>
+<hr>
 
-    <!-- LOGOUT -->
-    <a href="/auth/login" class="block px-5 py-4 hover:bg-blue-50">
-      <div class="font-semibold text-red-600">logout</div>
-   </a>
-  
+<!-- Privacy -->
+<a href="/profile/privacy"
+class="flex items-center justify-between px-5 py-5 hover:bg-gray-50 transition">
+
+<div>
+<div class="font-bold text-gray-900">
+🔒 Account Privacy
+</div>
+
+<div class="text-sm text-gray-500">
+Private account & followers visibility
+</div>
+</div>
+
+<span class="text-gray-400 text-xl">›</span>
+
+</a>
+
+<hr>
+
+<!-- Saved -->
+<a href="/profile/saved"
+class="flex items-center justify-between px-5 py-5 hover:bg-gray-50 transition">
+
+<div>
+<div class="font-bold text-gray-900">
+📑 Saved
+</div>
+
+<div class="text-sm text-gray-500">
+Posts, reels & audio
+</div>
+</div>
+
+<span class="text-gray-400 text-xl">›</span>
+
+</a>
+
+</div>
+
+<!-- LOGOUT -->
+
+<a href="/auth/login"
+class="block mt-6 text-center py-4 rounded-2xl font-bold text-white shadow-xl
+bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500
+hover:scale-[1.02] transition">
+
+Logout
+
+</a>
+
 </div>
 
 </body>

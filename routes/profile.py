@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, session
 import sqlite3, os
 from werkzeug.utils import secure_filename
+from routes.stories import load_stories_for_feed
 
 profile_bp = Blueprint("profile_bp", __name__, url_prefix="/profile")
 
@@ -54,6 +55,20 @@ def profile(user_id):
 
     # CURRENT USER
     current = session.get("user_id")
+# -------- STORY STATUS --------
+    stories = load_stories_for_feed()
+
+    has_story = False
+    story_seen = False
+
+    for s in stories:
+        if str(s["user_id"]) == str(user_id):
+            has_story = True
+
+            if current and str(current) in [str(v) for v in s.get("viewers", [])]:
+                story_seen = True
+
+            break
 
     # FOLLOW CHECK
     is_following = False
@@ -150,7 +165,10 @@ def profile(user_id):
         following=following,
         is_following=is_following,
         current_user=current,
-        can_view=can_view
+        can_view=can_view,
+        has_story=has_story,
+        story_seen=story_seen
+
     )
 
 # ------------------ EDIT PROFILE ------------------ #

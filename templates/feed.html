@@ -41,7 +41,7 @@
     .carousel-btn.left { left:10px; }
     .carousel-btn.right { right:10px; }
 
-.like-heart{
+.heart{
     position:absolute;
     top:50%;
     left:50%;
@@ -55,7 +55,7 @@
             drop-shadow(0 0 35px rgba(255,0,80,.5));
 }
 
-.like-heart.show{
+.heart.show{
     animation: heartPop 0.9s ease forwards;
 }
 
@@ -194,38 +194,76 @@
     font-weight:bold;
 }
 
+.story-active{
+    border-radius:50%;
+    animation:storyGlow 1.7s infinite ease-in-out;
+}
+
+.story-seen{
+    border-radius:50%;
+    animation:none;          /* Animation band */
+    filter:none;
+    opacity:.7;              /* Thoda grey/seen look */
+}
+
+@keyframes storyGlow{
+
+    0%{
+        transform:scale(1);
+        filter:drop-shadow(0 0 0px #22c55e);
+    }
+
+    50%{
+        transform:scale(1.08);
+        filter:
+            drop-shadow(0 0 8px #22c55e)
+            drop-shadow(0 0 16px #22c55e);
+    }
+
+    100%{
+        transform:scale(1);
+        filter:drop-shadow(0 0 0px #22c55e);
+    }
+}
   </style>
 
 <script>
-</script>
-
 <script>
 async function uploadStoryInstant(event) {
     try {
-        let file = event.target.files[0];
+        const file = event.target.files[0];
         if (!file) return;
 
-        let form = new FormData();
+        const form = new FormData();
         form.append("story", file);
 
-        let res = await fetch("/stories/add", {
+        const res = await fetch("/stories/add", {
             method: "POST",
             body: form
         });
 
+        if (res.redirected) {
+            window.location.href = res.url;
+            return;
+        }
+
         if (res.ok) {
             window.location.reload();
         } else {
-            alert("Upload failed");
+            const text = await res.text();
+            console.error("Upload failed:", res.status, text);
+            alert("Upload failed (" + res.status + ")");
         }
 
-    } catch(e) {
-        console.log(e);
-        alert("JS ERROR");
+    } catch (e) {
+        console.error("Story Upload Error:", e);
+        alert("JS ERROR:\n" + (e.message || e));
+    } finally {
+        event.target.value = "";
     }
 }
-
 </script>
+
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-cyan-500 via-blue-600 via-purple-600 to-yellow-400">
@@ -307,18 +345,31 @@ async function uploadStoryInstant(event) {
     {% for post in posts %}
     <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/30">
 
-      <!-- HEADER -->
-      <div class="flex items-center justify-between px-4 py-3">
 
-        <div class="flex items-center space-x-3">
-          <div class="story-ring w-10 h-10 rounded-full flex items-center justify-center">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-r from-pink-500 to-yellow-500">
-              <img src="{{ post.photo }}" class="w-8 h-8 rounded-full object-cover" onerror="this.src='/static/default_dp.png'">
-            </div>
-          </div>
+<!-- HEADER -->
+<div class="flex items-center justify-between px-4 py-3">
 
-          <div class="font-semibold">@{{ post.username }}</div>
+    <!-- USER -->
+    <a href="/profile/{{ post.owner_id }}"
+       class="flex items-center space-x-3">
+
+    <div class="
+    {% if post.has_story and not post.story_seen %}
+    story-active
+    {% elif post.story_seen %}
+    story-seen
+    {% endif %}
+    ">
+    <img src="{{ post.photo }}"
+         class="w-10 h-10 rounded-full object-cover"
+         onerror="this.src='/static/default_dp.png'">
+</div>
+
+        <div class="font-semibold hover:text-cyan-400 transition">
+            @{{ post.username }}
         </div>
+
+    </a>
 
         <!-- DELETE ONLY OWN POST -->
         {% if post.owner_id == current_user %}
@@ -360,7 +411,7 @@ async function uploadStoryInstant(event) {
 
             {% for img in post.images %}
             <img src="{{ img }}"
-                 ondblclick="toggleLike({{ post.id }}, document.querySelector('#like-btn-{{ post.id }}'))"
+                 ondblclick="doubleTapLike({{ post.id }})"
                  ontouchend="onImageTap({{ post.id }})">
             {% endfor %}
 
@@ -373,15 +424,16 @@ async function uploadStoryInstant(event) {
 {% elif post.images and post.images|length == 1 %}
 <img src="{{ post.images[0] }}"
      class="w-full h-auto block"
-     ondblclick="toggleLike({{ post.id }}, document.querySelector('#like-btn-{{ post.id }}'))"
+     ondblclick="doubleTapLike({{ post.id }})"
      ontouchend="onImageTap({{ post.id }})">
 {% else %}
 <div class="p-12 text-center text-gray-400">No Image</div>
 {% endif %}
 
         <!-- HEART ANIMATION -->
-        <div id="heart-{{ post.id }}" class="like-heart">❤️</div>
-      </div>
+<div class="heart" id="heart-{{ post.id }}">
+    <span class="h h1">💞</span>
+</div>
 
 <!-- ACTION ROW -->
 <div class="px-4 pt-3">
@@ -392,21 +444,28 @@ async function uploadStoryInstant(event) {
     <div class="flex items-center gap-4">
 
       <!-- LIKE -->
-      <button id="like-btn-{{ post.id }}"
-              onclick="toggleLike({{ post.id }}, this)">
+<button id="like-btn-{{ post.id }}"
+        onclick="toggleLike({{ post.id }}, this)">
 
-        <svg class="w-7 h-7 transition duration-300 hover:scale-125 {% if post.liked_by_me %}text-red-500{% endif %}"
-             viewBox="0 0 24 24"
-             fill="{% if post.liked_by_me %}currentColor{% else %}none{% endif %}"
-             stroke="currentColor"
-             stroke-width="1.8">
+  <svg class="w-8 h-8 transition-all duration-300 hover:scale-125 {% if post.liked_by_me %}text-pink-500{% endif %}"
+       viewBox="0 0 24 24"
+       fill="{% if post.liked_by_me %}currentColor{% else %}none{% endif %}"
+       stroke="currentColor"
+       stroke-width="1.8"
+       stroke-linecap="round"
+       stroke-linejoin="round">
 
-          <path stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M20.8 4.6c-1.8-1.8-4.7-1.8-6.5 0L12 6.9 9.7 4.6c-1.8-1.8-4.7-1.8-6.5 0s-1.8 4.7 0 6.5L12 21l8.8-9.9c1.8-1.8 1.8-4.7 0-6.5z"/>
-        </svg>
+    <path d="
+      M12 21
+      C11.2 20.4 3.5 15.4 3.5 9
+      C3.5 5.8 5.8 3.5 8.8 3.5
+      C10.7 3.5 11.8 4.4 12 5.7
+      C12.2 4.4 13.3 3.5 15.2 3.5
+      C18.2 3.5 20.5 5.8 20.5 9
+      C20.5 15.4 12.8 20.4 12 21Z"/>
+  </svg>
 
-      </button>
+</button>
 
         <!-- COMMENT BUTTON -->
 <button onclick="openComment({{ post.id }})" class="icon-btn">
@@ -444,6 +503,7 @@ async function uploadStoryInstant(event) {
 
 </button>
 
+</div> <!-
     <!-- RIGHT SIDE SAVE -->
     <button id="save-btn-{{ post.id }}"
             onclick="toggleSave({{ post.id }}, this)">
@@ -579,6 +639,29 @@ try{
 }
 
 }
+
+function doubleTapLike(postId){
+
+    const heart = document.getElementById("heart-" + postId);
+
+    if (heart){
+        heart.classList.remove("show");
+        void heart.offsetWidth;
+        heart.classList.add("show");
+
+        setTimeout(() => {
+            heart.classList.remove("show");
+        }, 900);
+    }
+
+    const btn = document.getElementById("like-btn-" + postId);
+    const svg = btn.querySelector("svg");
+
+    if (svg.getAttribute("fill") !== "currentColor"){
+        toggleLike(postId, btn);
+    }
+}
+
 </script>
 
 <script>

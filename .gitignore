@@ -1,3 +1,9 @@
 .env
 __pycache__/
 *.pyc
+
+static/editor_temp/
+static/reels/
+static/uploads/reels/
+database.db
+data/stories.json

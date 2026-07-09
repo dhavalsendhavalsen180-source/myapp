@@ -141,6 +141,11 @@ def feed():
         """, (post_id,))
         comments = [{"username": r[0], "comment": r[1]} for r in c.fetchall()]
 
+        owner_stories = [
+            s for s in stories
+            if str(s.get("user_id")) == str(owner_id)
+        ]
+
         posts.append({
             "id": post_id,
             "owner_id": owner_id,
@@ -151,7 +156,18 @@ def feed():
             "likes": likes,
             "liked_by_me": liked_by_me,
             "saved_by_me": saved_by_me,
-            "comments": comments
+            "comments": comments,
+
+            "has_story": len(owner_stories) > 0,
+
+    # True sirf tab hoga jab owner's HAR story dekh li ho
+            "story_seen": (
+                len(owner_stories) > 0 and
+                all(
+                    str(current_user) in [str(v) for v in s.get("viewers", [])]
+                    for s in owner_stories
+                )
+            )
         })
 
     conn.close()

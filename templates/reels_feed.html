@@ -495,12 +495,10 @@ scroll-snap-stop:always;
     <div class="user-info">
 
       <div class="username-row">
-
         <span class="username">@{{ reel.username }}</span>
 
         <!-- UNIQUE BADGE -->
         <span class="ml-2 text-cyan-300 text-sm">✦</span>
-
       </div>
 
       <div class="text-[11px] text-gray-300">
@@ -514,7 +512,7 @@ scroll-snap-stop:always;
   {% if reel.user_id != session.user_id %}
   <button
     class="follow-btn {% if reel.following %}following{% endif %}"
-    id="follow-{{ reel.user_id }}"
+    data-user="{{ reel.user_id }}"
     onclick="followUser({{ reel.user_id }})">
 
     {% if reel.following %}
@@ -665,78 +663,81 @@ scroll-snap-stop:always;
 
 <!-- REELS BOTTOM NAV -->
 <div class="fixed bottom-0 left-0 right-0 z-[9999]
-bg-black
-flex justify-around items-center
-h-14 text-white">
+            bg-black border-t border-gray-800
+            flex justify-around items-center
+            h-16 text-white px-2">
 
-  <a href="/posts/feed">
-    <!-- Home -->
-<svg class="w-10 h-10 text-white"
-     viewBox="0 0 20 20"
-     fill="none"
-     stroke="currentColor"
-     stroke-width="2"
-     stroke-linecap="round"
-     stroke-linejoin="round">
-  <path d="M4 11.5L10 6l6 5.5"/>
-  <path d="M6 10.5V18h8v-7.5"/>
-  <path d="M9 18v-4h2v4"/>
-</svg>
-
-  <a href="/explore">
-    <!-- Search -->
-<svg class="w-8 h-8 text-white"
-     viewBox="0 0 20 20"
-     fill="none"
-     stroke="currentColor"
-     stroke-width="2"
-     stroke-linecap="round"
-     stroke-linejoin="round">
-  <circle cx="12" cy="12" r="9"/>
-  <path d="M15.8 8.2L13.6 13.6L8.2 15.8L10.4 10.4L15.8 8.2Z"/>
-</svg>
-</a>
-</a>
-
-  <a href="/create">
-    <!-- Plus -->
-<svg class="w-9 h-9 text-white"
-     viewBox="0 0 20 20"
-     fill="none"
-     stroke="currentColor"
-     stroke-width="2"
-     stroke-linecap="round"
-     stroke-linejoin="round">
-  <rect x="4" y="4" width="12" height="12" rx="3"/>
-  <path d="M10 7v6M7 10h6"/>
-</svg>
+  <!-- Home -->
+  <a href="/posts/feed" class="flex items-center justify-center w-12 h-12">
+    <svg class="w-8 h-8 text-white"
+         viewBox="0 0 20 20"
+         fill="none"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         stroke-linejoin="round">
+      <path d="M4 11.5L10 6l6 5.5"/>
+      <path d="M6 10.5V18h8v-7.5"/>
+      <path d="M9 18v-4h2v4"/>
+    </svg>
   </a>
 
-  <a href="/reels">
-    <!-- Reels -->
-<svg class="w-9 h-9 text-white"
-     viewBox="0 0 20 20"
-     fill="none"
-     stroke="currentColor"
-     stroke-width="2"
-     stroke-linecap="round"
-     stroke-linejoin="round">
-  <rect x="4" y="4" width="12" height="12" rx="3"/>
-  <path d="M8 4l2 3"/>
-  <path d="M12 4l2 3"/>
-  <path d="M9 9l4 2.5-4 2.5z"
-        fill="currentColor"
-        stroke="none"/>
-</svg>
+  <!-- Explore -->
+  <a href="/explore" class="flex items-center justify-center w-12 h-12">
+    <svg class="w-8 h-8 text-white"
+         viewBox="0 0 20 20"
+         fill="none"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         stroke-linejoin="round">
+      <circle cx="10" cy="10" r="7"/>
+      <path d="M13.8 6.2L12.2 11.2L7.2 12.8L8.8 7.8L13.8 6.2Z"/>
+    </svg>
   </a>
 
-  <a href="/profile/{{ current_user }}">
+  <!-- Create -->
+  <a href="/create" class="flex items-center justify-center w-12 h-12">
+    <svg class="w-8 h-8 text-white"
+         viewBox="0 0 20 20"
+         fill="none"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         stroke-linejoin="round">
+      <rect x="4" y="4" width="12" height="12" rx="3"/>
+      <path d="M10 7v6"/>
+      <path d="M7 10h6"/>
+    </svg>
+  </a>
+
+  <!-- Reels -->
+  <a href="/reels" class="flex items-center justify-center w-12 h-12">
+    <svg class="w-8 h-8 text-white"
+         viewBox="0 0 20 20"
+         fill="none"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         stroke-linejoin="round">
+      <rect x="4" y="4" width="12" height="12" rx="3"/>
+      <path d="M8 4l2 3"/>
+      <path d="M12 4l2 3"/>
+      <path d="M9 9l4 2.5-4 2.5z"
+            fill="currentColor"
+            stroke="none"/>
+    </svg>
+  </a>
+
+  <!-- Profile -->
+  <a href="/profile/{{ current_user }}" class="flex items-center justify-center w-12 h-12">
     <img src="{{ current_user_photo }}"
-         class="w-7 h-7 rounded-full border border-white"
+         class="w-8 h-8 rounded-full border border-white object-cover"
          onerror="this.src='/static/default_dp.png'">
   </a>
 
 </div>
+
 
 <script>
 
@@ -856,22 +857,25 @@ function like(id){
 /* DOUBLE TAP */
 function dblLike(id){
 
-  const icon = document.getElementById(`likeIcon-${id}`);
-
-  if(icon.classList.contains("liked")){
-
+    const icon = document.getElementById(`likeIcon-${id}`);
     const heart = document.getElementById(`heart-${id}`);
 
+    // ❤️ Heart animation hamesha chale
+    heart.classList.remove("show");
+    void heart.offsetWidth;
     heart.classList.add("show");
 
     setTimeout(()=>{
-      heart.classList.remove("show");
+        heart.classList.remove("show");
     },800);
 
-    return;
-  }
+    // Agar pehle se liked hai to unlike mat karo
+    if(icon.classList.contains("liked")){
+        return;
+    }
 
-  like(id);
+    // Sirf pehli baar like karo
+    like(id);
 }
 
 /* SAVE FIX */
@@ -899,15 +903,15 @@ async function save(id){
 /* FOLLOW BUTTON */
 async function followUser(userId){
 
-  const btn = document.getElementById(`follow-${userId}`);
-
   const res = await fetch(`/reels/follow/${userId}`,{
     method:"POST"
   });
 
   const d = await res.json();
 
-  if(d.ok){
+  if(!d.ok) return;
+
+  document.querySelectorAll(`button[data-user="${userId}"]`).forEach(btn => {
 
     if(d.following){
       btn.innerText = "🤝 Allied";
@@ -917,7 +921,7 @@ async function followUser(userId){
       btn.classList.remove("following");
     }
 
-  }
+  });
 
 }
 
