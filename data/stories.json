@@ -1,1 +1,24 @@
-[]
+[
+  {
+    "id": 1,
+    "user_id": "1",
+    "filename": "1_1783575920_1000563633.jpg",
+    "timestamp": 1783575920,
+    "viewers": [
+      1
+    ],
+    "likes": [],
+    "reactions": {}
+  },
+  {
+    "id": 2,
+    "user_id": "1",
+    "filename": "1_1783575960_1000563633.jpg",
+    "timestamp": 1783575960,
+    "viewers": [
+      1
+    ],
+    "likes": [],
+    "reactions": {}
+  }
+]
