@@ -203,7 +203,7 @@
     border-radius:50%;
     animation:none;          /* Animation band */
     filter:none;
-    opacity:.7;              /* Thoda grey/seen look */
+    opacity: 1;              /* Thoda grey/seen look */
 }
 
 @keyframes storyGlow{
@@ -247,18 +247,18 @@ async function uploadStoryInstant(event) {
         }
 
         if (res.ok) {
-            window.location.reload();
-        } else {
-            const text = await res.text();
-            console.error("Upload failed:", res.status, text);
-            alert("Upload failed (" + res.status + ")");
-        }
+                    window.location.href = "/stories/view/{{ session.get('user_id') }}";
+                } else {
+                    const text = await res.text();
+                    console.error("Upload failed:", res.status, text);
+                    alert("Upload failed (" + res.status + ")");
+                }
 
-    } catch (e) {
-        console.error("Story Upload Error:", e);
-        alert("JS ERROR:\n" + (e.message || e));
-    } finally {
-        event.target.value = "";
+            } catch (e) {
+                console.error("Story Upload Error:", e);
+                alert("JS ERROR:\n" + (e.message || e));
+            } finally {
+              event.target.value = "";
     }
 }
 </script>

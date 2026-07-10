@@ -90,6 +90,7 @@ def cleanup_expired():
 
 
 # ---------------- STORY UPLOAD ----------------
+# ---------------- STORY UPLOAD ----------------
 @stories_bp.route("/add", methods=["POST"])
 def add_story():
     if "user_id" not in session:
@@ -97,7 +98,7 @@ def add_story():
 
     file = request.files.get("story")
     if not file or file.filename == "":
-        return redirect("/")
+        return jsonify({"ok": True})
 
     ext = file.filename.rsplit(".", 1)[-1].lower()
     if ext not in ALLOWED:
@@ -109,8 +110,11 @@ def add_story():
 
     stories = load_stories()
 
+    # Unique Story ID
+    new_id = max([s.get("id", 0) for s in stories], default=0) + 1
+
     stories.append({
-        "id": len(stories) + 1,
+        "id": new_id,
         "user_id": str(session["user_id"]),
         "filename": filename,
         "timestamp": now_ts(),
@@ -122,10 +126,9 @@ def add_story():
     save_stories(stories)
 
     print("STORY SAVED:", filename)
-
     print("STORY SAVED:", stories)
-    return redirect("/")
 
+    return redirect("/posts/feed")
 
 # ---------------- GROUPED STORIES (INS CORE) ----------------
 @stories_bp.route("/api/groups")

@@ -58,13 +58,20 @@ async function upload(event){
     let form = new FormData();
     form.append("story", file);
 
-    let res = await fetch("/stories/add",{
-        method:"POST",
-        body:form
-    });
+    try{
 
-    if(res.ok){
-        location.href="/posts/feed";
+        let res = await fetch("/stories/add",{
+            method:"POST",
+            body:form,
+            redirect:"manual"
+        });
+
+        // upload complete
+        window.location.replace("/posts/feed");
+
+    }catch(e){
+        console.error(e);
+        alert("Story upload failed");
     }
 }
 </script>

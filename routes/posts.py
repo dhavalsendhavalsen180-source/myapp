@@ -146,6 +146,7 @@ def feed():
             if str(s.get("user_id")) == str(owner_id)
         ]
 
+        print(owner_id, current_user, len(owner_stories), [s.get("viewers", []) for s in owner_stories])
         posts.append({
             "id": post_id,
             "owner_id": owner_id,

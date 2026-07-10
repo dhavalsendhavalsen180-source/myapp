@@ -53,22 +53,30 @@ def profile(user_id):
         "is_private": u["is_private"] if "is_private" in u.keys() else 0,
     }
 
-    # CURRENT USER
+# CURRENT USER
     current = session.get("user_id")
-# -------- STORY STATUS --------
+
+    # -------- STORY STATUS --------
     stories = load_stories_for_feed()
 
     has_story = False
-    story_seen = False
+    story_seen = True
 
     for s in stories:
-        if str(s["user_id"]) == str(user_id):
-            has_story = True
 
-            if current and str(current) in [str(v) for v in s.get("viewers", [])]:
-                story_seen = True
+        if str(s["user_id"]) != str(user_id):
+            continue
 
+        has_story = True
+
+        viewers = [str(v) for v in s.get("viewers", [])]
+
+        if not current or str(current) not in viewers:
+            story_seen = False
             break
+
+    if not has_story:
+        story_seen = False
 
     # FOLLOW CHECK
     is_following = False
