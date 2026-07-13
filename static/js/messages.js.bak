@@ -11,7 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 /* ================= SOCKET ================= */
-window.socket = window.socket || io({
+
+window.socket = io({
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000
@@ -31,6 +32,7 @@ socket.on("connect", () => {
         });
     }
 });
+const socket = window.socket;
 
 socket.on("reconnect", () => {
 
@@ -42,6 +44,7 @@ socket.on("reconnect", () => {
         });
     }
 });
+const socket = window.socket;
 
     /* ================= ELEMENTS ================= */
     const msgInput = document.getElementById("msgInput");
@@ -163,10 +166,12 @@ bubble.addEventListener("touchstart", () => {
     }, 700);
 
 });
+const socket = window.socket;
 
 bubble.addEventListener("touchend", () => {
     clearTimeout(pressTimer);
 });
+const socket = window.socket;
 
     bubble.appendChild(meta);
     row.appendChild(bubble);
@@ -302,6 +307,7 @@ socket.on("deleted_for_me", d=>{
         row.remove();
     }
 });
+const socket = window.socket;
 
     /* ================= TYPING ================= */
     let typingTimer;
@@ -426,5 +432,7 @@ msgMenu.classList.remove("show");
 window.addEventListener("beforeunload", ()=>{
 socket.emit("leave", { chat_id });
 });
+const socket = window.socket;
 
 });
+const socket = window.socket;

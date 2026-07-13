@@ -154,13 +154,28 @@ def chat_page(other_id):
         return redirect("/auth/login")
 
     me = session["user_id"]
+
+    # 🚫 Khud ke saath chat open na ho
+    if int(me) == int(other_id):
+        return redirect("/messages")
+
     chat_id = find_or_create_chat(me, other_id)
+
+    # Agar kisi wajah se chat create na ho
+    if chat_id is None:
+        return redirect("/messages")
 
     conn = get_db()
     c = conn.cursor()
 
     c.execute("SELECT id, username, photo FROM users WHERE id=?", (other_id,))
     u = c.fetchone()
+
+    # User exist na kare
+    if not u:
+        conn.close()
+        return redirect("/messages")
+
     other = {
         "id": u["id"],
         "username": u["username"],
@@ -170,7 +185,7 @@ def chat_page(other_id):
     remove_expired_messages_for_chat(chat_id)
 
     c.execute("""
-SELECT 
+SELECT
     m.id,
     m.sender_id,
     m.msg,
@@ -201,6 +216,7 @@ AND (
 )
 ORDER BY m.id ASC
 """, (me, chat_id, str(me)))
+
     msgs = [dict(x) for x in c.fetchall()]
     conn.close()
 
@@ -211,12 +227,15 @@ ORDER BY m.id ASC
         chat_id=chat_id,
         messages=msgs
     )
-
 # ----------------- SOCKET EVENTS -----------------
 @socketio.on("connect")
 def on_connect():
     me = session.get("user_id")
     print("SOCKET CONNECTED:", me)
+
+    if me:
+        join_room(f"user_{me}")
+        print("JOIN USER ROOM:", me)
 
 @socketio.on("join_chat")
 def join_chat(data):
@@ -384,7 +403,7 @@ def edit_message(data):
     if not new_text: emit("error", {"error":"empty"}); return
     conn=get_db(); c=conn.cursor()
     c.execute("SELECT sender_id FROM messages WHERE id=?", (mid,))
-    r=c.fetchone(); 
+    r=c.fetchone();
     if not r or r["sender_id"]!=me: conn.close(); return
     c.execute("UPDATE messages SET msg=?, edited=1 WHERE id=?", (new_text, mid))
     conn.commit()
@@ -453,7 +472,7 @@ def unlock_chat(data):
 #--------------------------- ghost_mode -----------------------#
 @socketio.on("set_ghost_mode")
 def set_ghost(data):
-    me=session.get("user_id"); 
+    me=session.get("user_id");
     if not me: return
     val=1 if int(data.get("ghost",0))==1 else 0
     conn=get_db(); c=conn.cursor(); c.execute("UPDATE users SET ghost_mode=? WHERE id=?", (val, me)); conn.commit(); conn.close()
@@ -513,4 +532,3 @@ def disconnect_handler():
                     room=room,
                     include_self=False
                 )
-

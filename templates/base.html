@@ -20,6 +20,12 @@
 
 <body class="min-h-screen bg-gradient-to-br from-cyan-500 via-blue-600 via-purple-600 to-yellow-400 text-gray-900">
 
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+window.me = {{ session.get("user_id")|tojson }};
+</script>
+
 {% block content %}{% endblock %}
 
 <script>
@@ -29,6 +35,18 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<script>
+if (typeof io !== "undefined") {
+    window.socket = window.socket || io({
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000
+    });
+}
+</script>
+
+<script src="/static/js/global_call.js"></script>
 
 </body>
 </html>

@@ -1,40 +1,281 @@
-{% extends "base.html" %}
-{% block content %}
+<style> 
+/* ===== FULL SCREEN ===== */
+
+html,
+body{
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    font-family:Inter,sans-serif;
+    background:#0b0f1a;
+}
+
+/* ===== CALL SCREEN ===== */
+
+#callOverlay{
+    background:
+    radial-gradient(circle at top left,#2563eb55,transparent 35%),
+    radial-gradient(circle at top right,#7c3aed55,transparent 40%),
+    radial-gradient(circle at bottom,#06b6d455,transparent 35%),
+    linear-gradient(180deg,#0b1020,#05070f);
+}
+
+/* ===== Remote Video ===== */
+
+#remoteVideo{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    filter:brightness(.75) blur(2px);
+    transform:scale(1.05);
+}
+
+/* ===== Dark Overlay ===== */
+
+#callOverlay::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.35);
+    backdrop-filter:blur(6px);
+}
+
+/* ===== Caller Info ===== */
+
+#callerAvatar{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+#callerName{
+    color:#fff;
+    font-size:34px;
+    font-weight:700;
+    text-shadow:0 0 20px rgba(255,255,255,.4);
+}
+
+#callStatus{
+    color:#d1d5db;
+    font-size:18px;
+    margin-top:8px;
+}
+
+/* ===== Avatar Ring ===== */
+
+#callerAvatar{
+    animation:float 4s ease-in-out infinite;
+}
+
+.w-36.h-36{
+    border-radius:50%;
+    overflow:hidden;
+    background:rgba(255,255,255,.08);
+    backdrop-filter:blur(15px);
+    border:4px solid rgba(255,255,255,.25);
+    box-shadow:
+    0 0 40px rgba(59,130,246,.45),
+    inset 0 0 20px rgba(255,255,255,.15);
+}
+
+/* ===== Local Video ===== */
+
+#localVideo{
+    border-radius:24px;
+    border:3px solid rgba(255,255,255,.2);
+    box-shadow:
+    0 20px 40px rgba(0,0,0,.5);
+    overflow:hidden;
+}
+
+/* ===== Buttons ===== */
+
+#acceptCall,
+#endCall{
+    transition:.25s;
+    box-shadow:0 15px 40px rgba(0,0,0,.4);
+}
+
+#acceptCall{
+    background:linear-gradient(135deg,#22c55e,#16a34a);
+}
+
+#endCall{
+    background:linear-gradient(135deg,#ef4444,#b91c1c);
+}
+
+#acceptCall:hover,
+#endCall:hover{
+    transform:scale(1.08);
+}
+
+#acceptCall:active,
+#endCall:active{
+    transform:scale(.95);
+}
+
+/* ===== Floating Animation ===== */
+
+@keyframes float{
+
+0%,100%{
+transform:translateY(0px);
+}
+
+50%{
+transform:translateY(-10px);
+}
+
+}
+
+/* ===== Calling Dot ===== */
+
+#callStatus::after{
+
+content:"";
+
+display:inline-block;
+
+width:10px;
+
+height:10px;
+
+margin-left:10px;
+
+border-radius:50%;
+
+background:#22c55e;
+
+animation:blink 1s infinite;
+
+}
+
+@keyframes blink{
+
+50%{
+opacity:.2;
+}
+
+}
+
+/* ===== Background Glow ===== */
+
+#callOverlay::before{
+    content:"";
+    position:absolute;
+    width:500px;
+    height:500px;
+    background:#3b82f655;
+    filter:blur(140px);
+    border-radius:50%;
+    top:-150px;
+    left:-120px;
+    animation:moveGlow 10s linear infinite alternate;
+}
+
+@keyframes moveGlow{
+
+from{
+transform:translate(0,0);
+}
+
+to{
+transform:translate(250px,180px);
+}
+
+}
+</style>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<div id="callOverlay"
+class="fixed inset-0 flex flex-col items-center justify-center overflow-hidden
+bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500">
+ 
+    <!-- Animated background -->
+    <div class="absolute w-96 h-96 rounded-full bg-white/10 blur-3xl animate-pulse"></div>
+    <div class="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-pink-500/20 blur-3xl animate-pulse"></div>
+
+    <!-- Remote Video -->
+    <video id="remoteVideo"
+        autoplay
+        playsinline
+        class="absolute inset-0 w-full h-full object-cover">
+    </video>
+
+    <!-- Dark Overlay -->
+    <div class="absolute inset-0 bg-black/30"></div>
+
+    <!-- Caller Info -->
+    <div class="relative z-10 flex flex-col items-center">
+
+        <div
+        class="w-36 h-36 rounded-full bg-white/20 backdrop-blur-xl
+        border-4 border-white/40 overflow-hidden shadow-2xl">
+
+            <img id="callerAvatar"
+                 src="{{ caller_photo }}"
+                 class="w-full h-full object-cover">
+        </div>
+
+        <h1 id="callerName"
+            class="mt-6 text-3xl font-bold text-white">
+            {{ caller_name }}
+        </h1>
+
+        <p id="callStatus"
+           class="mt-2 text-white/90 text-lg">
+            Calling...
+        </p>
+
+    </div>
+
+    <!-- Local Video -->
+    <video id="localVideo"
+        autoplay
+        muted
+        playsinline
+        class="absolute top-5 right-5 w-32 h-44 rounded-3xl
+        object-cover border-4 border-white shadow-2xl">
+    </video>
+
+    <!-- Bottom Buttons -->
+    <div
+    class="absolute bottom-12 flex gap-8 z-20">
+
+        <button id="acceptCall"
+        class="w-20 h-20 rounded-full bg-green-500
+        text-white text-3xl shadow-2xl active:scale-95
+        transition">
+            📞
+        </button>
+
+        <button id="endCall"
+        class="w-20 h-20 rounded-full bg-red-600
+        text-white text-3xl shadow-2xl active:scale-95
+        transition">
+            ✖
+        </button>
+
+    </div>
+
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 
-<div id="callOverlay"
-     style="position:fixed;top:0;left:0;width:100%;height:100%;
-            background:#000;display:flex;flex-direction:column;
-            justify-content:center;align-items:center;z-index:9999">
-
-  <video id="remoteVideo" autoplay playsinline
-         style="width:80%;max-width:420px;border-radius:12px;"></video>
-
-  <video id="localVideo" autoplay muted playsinline
-         style="width:140px;height:140px;border-radius:12px;
-                position:absolute;top:20px;right:20px;
-                border:2px solid #fff;"></video>
-
-  <div style="margin-top:22px;">
-    <button id="acceptCall"
-            style="padding:10px 22px;margin-right:10px;background:green;color:#fff;border:0;border-radius:6px;">
-      Accept
-    </button>
-
-    <button id="endCall"
-            style="padding:10px 22px;background:red;color:#fff;border:0;border-radius:6px;">
-      End
-    </button>
-  </div>
-</div>
+<script>
+window.CALL_CHAT_ID = {{ chat_id }};
+window.CALL_TYPE = "{{ call_type }}";
+window.IS_CALLER = {{ 1 if caller else 0 }};
+</script>
 
 <script>
-  window.CALL_CHAT_ID = {{ chat_id }};
-  window.CALL_TYPE = "{{ call_type }}";
-  window.IS_CALLER = {{ 1 if caller else 0 }};
+console.log("CALLER VALUE:", window.IS_CALLER);
+console.log("CHAT:", window.CALL_CHAT_ID);
+console.log("TYPE:", window.CALL_TYPE);
 </script>
 
 <script src="/static/js/call.js"></script>
 
-{% endblock %}
