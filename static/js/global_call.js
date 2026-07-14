@@ -14,6 +14,9 @@ if (typeof io !== "undefined" && window.me) {
 
     globalSocket.on("connect", () => {
         console.log("GLOBAL SOCKET:", globalSocket.id);
+
+        // Join personal room
+        globalSocket.emit("join_user_room");
     });
 
     globalSocket.on("incoming_call", (d) => {

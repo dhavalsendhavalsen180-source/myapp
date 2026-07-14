@@ -55,6 +55,9 @@ const overlay = document.getElementById("callOverlay");
 const localVideo = document.getElementById("localVideo");
 const remoteVideo = document.getElementById("remoteVideo");
 const acceptBtn = document.getElementById("acceptCall");
+
+console.log("acceptBtn =", acceptBtn);
+
 const endBtn = document.getElementById("endCall");
 const callerName = document.getElementById("callerName");
 const callStatus = document.getElementById("callStatus");
@@ -112,39 +115,25 @@ async function startOutgoing() {
   socket.emit("call_request", { chat_id: chatId, type: callType });
 }
 // ---------- ACCEPT INCOMING ----------
-acceptBtn.onclick = async () => {
-  try {
+// ---------- ACCEPT INCOMING ----------
+if (acceptBtn) {
+  acceptBtn.onclick = () => {
     console.log("ACCEPT BUTTON CLICKED");
-    alert("Accept button clicked");
-
-    console.log("chatId =", chatId);
-    console.log("socket connected =", socket.connected);
 
     ring.pause();
     overlay.style.display = "none";
+    callStatus.innerText = "Connecting...";
 
-    localStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: callType === "video"
+    // Backend ko batao ki call accept ho gayi
+    socket.emit("call_accept", {
+      chat_id: chatId
     });
 
-    alert("getUserMedia OK");
+    // ❌ Yahan page reload mat karo.
+    // Isi page par WebRTC offer receive hoga aur answer send hoga.
+  };
+}
 
-    createPeer();
-
-    localVideo.srcObject = localStream;
-    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-
-    console.log("EMITTING CALL ACCEPT");
-    alert("Sending call_accept");
-
-    socket.emit("call_accept", { chat_id: chatId });
-
-  } catch (e) {
-    console.error(e);
-    alert("ERROR: " + e.message);
-  }
-};
 // ---------- END ----------
 function endCall() {
   socket.emit("call_ended", { chat_id: chatId });
@@ -166,11 +155,31 @@ socket.on("incoming_call", d => {
   overlay.style.display = "flex";   // show popup
   ring.play().catch(()=>{});
 });
-socket.on("call_accepted", async () => {
+
+socket.on("call_accepted", async (d) => {
+  console.log("CALL ACCEPTED EVENT:", d);
+
+  // Caller abhi call page par nahi hai to video page kholo
+  if (!window.location.pathname.startsWith("/call/")) {
+    window.location.href = `/call/${d.chat_id}?caller=1&type=${d.type}`;
+    return;
+  }
+
   ring.pause();
   callStatus.innerText = "Connected";
 
-  if (!pc) return;
+  // Agar peer abhi create nahi hua to create karo
+  if (!pc) {
+    createPeer();
+
+    localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: d.type === "video"
+    });
+
+    localVideo.srcObject = localStream;
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  }
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
@@ -178,9 +187,10 @@ socket.on("call_accepted", async () => {
   socket.emit("webrtc_offer", {
     chat_id: chatId,
     offer: pc.localDescription,
-    type: callType
+    type: d.type
   });
 });
+
 // caller side — stop ring after accept
 
 // offer received (receiver creates answer)

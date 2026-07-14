@@ -84,12 +84,24 @@ def call_timeout(chat_id):
     clear_call(chat_id)
 
     socketio.emit(
-        "call_timeout",
+        "call_accepted",
         {
-            "chat_id": chat_id
+            "chat_id": chat_id,
+
+            "type": call["type"]
         },
         room=f"call_{chat_id}"
     )
+
+# ================== USER ROOM ===================
+@socketio.on("join_user_room")
+def join_user_room():
+    user_id = session.get("user_id")
+    if not user_id:
+        return
+
+    join_room(f"user_{user_id}")
+    print("JOIN USER ROOM:", user_id)
 
 # ================= JOIN CHAT ROOM ================
 @socketio.on("join_call_chat")
@@ -161,6 +173,7 @@ def call_request(data):
 @socketio.on("call_accept")
 def call_accept(data):
     print("CALL ACCEPT:", data)
+
     me = session.get("user_id")
     chat_id = data.get("chat_id")
 
@@ -176,15 +189,18 @@ def call_accept(data):
     conn = sqlite3.connect("database.db")
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    me = session.get("user_id")
+
     c.execute("SELECT user1,user2 FROM chats WHERE id=?", (chat_id,))
     chat = c.fetchone()
+
     other = chat["user2"] if chat["user1"] == me else chat["user1"]
+
     c.execute("SELECT username, photo FROM users WHERE id=?", (other,))
     u = c.fetchone()
-    username = u["username"] if u else "Unknown"
-    photo = u["photo"] if u and u["photo"] else "/static/default_dp.png"
+
     conn.close()
+
+    print("EMITTING call_accepted TO:", f"call_{chat_id}")
 
     socketio.emit(
         "call_accepted",
@@ -195,6 +211,7 @@ def call_accept(data):
         room=f"call_{chat_id}"
     )
 
+    print("call_accepted SENT")
 # ================= REJECT =================
 @socketio.on("call_reject")
 def call_reject(data):

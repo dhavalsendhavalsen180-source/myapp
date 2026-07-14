@@ -136,6 +136,14 @@ Try another username.
 
 </div>
 
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+window.me = {{ session.get("user_id")|tojson }};
+</script>
+
+<script src="/static/js/global_call.js"></script>
+
 </body>
 
 </html>
