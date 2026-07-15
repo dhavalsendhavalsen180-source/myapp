@@ -1,3 +1,5 @@
+import eventlet
+eventlet.monkey_patch()
 from dotenv import load_dotenv
 load_dotenv()
 from flask import Flask, send_from_directory, render_template

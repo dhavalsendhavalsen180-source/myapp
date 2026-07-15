@@ -44,6 +44,7 @@ def init_reels_db():
             saves INTEGER DEFAULT 0,
             shares INTEGER DEFAULT 0,
             comments_count INTEGER DEFAULT 0,
+            views INTEGER DEFAULT 0,
             created_at TEXT
         )
     """)
@@ -57,6 +58,17 @@ def init_reels_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(reel_id, user_id)
         )
+    """)
+
+    # views table
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS reel_views (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        reel_id INTEGER,
+        user_id INTEGER,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(reel_id, user_id)
+    )
     """)
 
     # comments table
@@ -108,6 +120,8 @@ def init_reels_db():
         c.execute("ALTER TABLE reels ADD COLUMN shares INTEGER DEFAULT 0")
     if "comments_count" not in cols:
         c.execute("ALTER TABLE reels ADD COLUMN comments_count INTEGER DEFAULT 0")
+    if "views" not in cols:
+        c.execute("ALTER TABLE reels ADD COLUMN views INTEGER DEFAULT 0")
     if "audio_name" not in cols:
         c.execute("ALTER TABLE reels ADD COLUMN audio_name TEXT DEFAULT 'Original Audio'")
 
@@ -142,7 +156,7 @@ def reels_page():
     c.execute("""
         SELECT reels.id, reels.user_id, reels.caption, reels.video_path,
        reels.thumbnail,
-               reels.likes, reels.saves, reels.shares, reels.comments_count,
+               reels.likes, reels.saves, reels.shares, reels.comments_count,reels.views,
                reels.created_at, reels.audio_name,
                users.username, users.photo
         FROM reels
@@ -193,6 +207,7 @@ def reels_page():
             "saved": saved,
             "shares": r["shares"],
             "comments_count": r["comments_count"],
+            "views": r["views"],
             "created_at": created_at, "audio_name": r["audio_name"]
         })
 
@@ -711,3 +726,42 @@ def share_to_user(reel_id, user_id):
     conn.close()
 
     return jsonify({"ok": True})
+############### reels view ##################
+@reels_bp.route("/view/<int:reel_id>", methods=["POST"])
+def add_view(reel_id):
+
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"ok": False})
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute(
+        "SELECT 1 FROM reel_views WHERE reel_id=? AND user_id=?",
+        (reel_id, uid)
+    )
+
+    if not c.fetchone():
+
+        c.execute(
+            "INSERT INTO reel_views (reel_id, user_id) VALUES (?, ?)",
+            (reel_id, uid)
+        )
+
+        c.execute(
+            "UPDATE reels SET views = views + 1 WHERE id=?",
+            (reel_id,)
+        )
+
+        conn.commit()
+
+    c.execute("SELECT views FROM reels WHERE id=?", (reel_id,))
+    views = c.fetchone()["views"]
+
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "views": views
+    })

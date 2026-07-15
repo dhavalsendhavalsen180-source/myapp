@@ -84,11 +84,9 @@ def call_timeout(chat_id):
     clear_call(chat_id)
 
     socketio.emit(
-        "call_accepted",
+        "call_timeout",
         {
-            "chat_id": chat_id,
-
-            "type": call["type"]
+            "chat_id": chat_id
         },
         room=f"call_{chat_id}"
     )
@@ -206,11 +204,11 @@ def call_accept(data):
         "call_accepted",
         {
             "chat_id": chat_id,
-            "by": me
+            "by": me,
+            "type": call["type"]
         },
         room=f"call_{chat_id}"
     )
-
     print("call_accepted SENT")
 # ================= REJECT =================
 @socketio.on("call_reject")

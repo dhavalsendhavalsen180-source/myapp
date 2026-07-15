@@ -75,19 +75,47 @@ function reset() {
 }
 
 function createPeer() {
+
   pc = new RTCPeerConnection(ice);
 
-  pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
+  pc.ontrack = (e) => {
 
-  pc.onicecandidate = e => {
-    if (e.candidate)
-      socket.emit("webrtc_ice", { chat_id: chatId, candidate: e.candidate });
+    console.log("REMOTE STREAM RECEIVED");
+
+    remoteVideo.srcObject = e.streams[0];
+
+    remoteVideo.play().catch(err => {
+      console.log("Remote video play error:", err);
+    });
+
+  };
+
+  pc.onicecandidate = (e) => {
+
+    if (e.candidate) {
+
+      socket.emit("webrtc_ice", {
+        chat_id: chatId,
+        candidate: e.candidate
+      });
+
+    }
+
   };
 
   pc.onconnectionstatechange = () => {
+
     console.log("STATE:", pc.connectionState);
-    if (pc.connectionState === "failed" || pc.connectionState === "closed") endCall();
+
+    if (
+      pc.connectionState === "failed" ||
+      pc.connectionState === "closed"
+    ) {
+      endCall();
+    }
+
   };
+
 }
 
 // ---------- OUTGOING CALL ----------
@@ -115,22 +143,39 @@ async function startOutgoing() {
   socket.emit("call_request", { chat_id: chatId, type: callType });
 }
 // ---------- ACCEPT INCOMING ----------
-// ---------- ACCEPT INCOMING ----------
 if (acceptBtn) {
-  acceptBtn.onclick = () => {
+  acceptBtn.onclick = async () => {
+
     console.log("ACCEPT BUTTON CLICKED");
 
     ring.pause();
     overlay.style.display = "none";
     callStatus.innerText = "Connecting...";
 
-    // Backend ko batao ki call accept ho gayi
-    socket.emit("call_accept", {
-      chat_id: chatId
-    });
+    try {
 
-    // ❌ Yahan page reload mat karo.
-    // Isi page par WebRTC offer receive hoga aur answer send hoga.
+      localStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: callType === "video"
+      });
+
+      createPeer();
+
+      localVideo.srcObject = localStream;
+
+      localStream.getTracks().forEach(track => {
+        pc.addTrack(track, localStream);
+      });
+
+      socket.emit("call_accept", {
+        chat_id: chatId
+      });
+
+    } catch (e) {
+      console.error(e);
+      alert("Camera / Microphone permission required.");
+    }
+
   };
 }
 
@@ -167,6 +212,7 @@ socket.on("call_accepted", async (d) => {
 
   ring.pause();
   callStatus.innerText = "Connected";
+  callType = d.type;
 
   // Agar peer abhi create nahi hua to create karo
   if (!pc) {
@@ -191,36 +237,42 @@ socket.on("call_accepted", async (d) => {
   });
 });
 
-// caller side — stop ring after accept
-
 // offer received (receiver creates answer)
 socket.on("webrtc_offer", async d => {
-  if (!pc) createPeer();
+
+  console.log("WEBRTC OFFER RECEIVED");
+
+  if (!pc)
+    createPeer();
 
   if (!localStream) {
+
     localStream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: d.type === "video"
     });
 
     localVideo.srcObject = localStream;
-    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+    localStream.getTracks().forEach(track => {
+      pc.addTrack(track, localStream);
+    });
   }
 
-  await pc.setRemoteDescription(new RTCSessionDescription(d.offer));
+  await pc.setRemoteDescription(
+    new RTCSessionDescription(d.offer)
+  );
 
   const answer = await pc.createAnswer();
+
   await pc.setLocalDescription(answer);
 
   socket.emit("webrtc_answer", {
     chat_id: chatId,
     answer: pc.localDescription
   });
-
-  overlay.style.display = "none";
 });
 
-// caller receives answer
 // caller receives answer
 socket.on("webrtc_answer", async d => {
   if (!pc) return;
@@ -228,9 +280,19 @@ socket.on("webrtc_answer", async d => {
 });
 
 // ICE exchange
-socket.on("webrtc_ice", d =>
-  pc && d.candidate && pc.addIceCandidate(d.candidate)
-);
+socket.on("webrtc_ice", async d => {
+
+    if (!pc || !d.candidate) return;
+
+    try {
+        await pc.addIceCandidate(
+            new RTCIceCandidate(d.candidate)
+        );
+    } catch (e) {
+        console.log(e);
+    }
+
+});
 
 socket.on("connect", () => {
     console.log("Socket Connected");

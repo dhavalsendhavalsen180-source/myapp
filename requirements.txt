@@ -67,3 +67,4 @@ wrapt==1.17.3
 wsproto==1.2.0
 WTForms==3.2.1
 Authlib==1.7.2
+eventlet==0.40.3
