@@ -345,7 +345,7 @@ class="cursor-pointer p-1 rounded-full shadow-xl
           </div>
 
           <div class="text-xs text-slate-500">
-            Followers
+            🤝 Allies
           </div>
 
         </a>
@@ -358,7 +358,7 @@ class="cursor-pointer p-1 rounded-full shadow-xl
           </div>
 
           <div class="text-xs text-slate-500">
-            Following
+            ✨ Allied
           </div>
 
         </a>
@@ -379,9 +379,9 @@ class="cursor-pointer p-1 rounded-full shadow-xl
                shadow-lg">
 
 {% if is_following %}
-Following
+🤝 Allied
 {% else %}
-Follow
+✨ Ally
 {% endif %}
 
 </button>
@@ -775,14 +775,20 @@ Edit Profile
         return;
       }
 
-      if(j.action === 'followed'){
-        btn.innerText = 'Following';
-        btn.classList.remove('btn-primary');
-        btn.classList.add('btn-outline');
-      } else {
-        btn.innerText = 'Follow';
-        btn.classList.remove('btn-outline');
-        btn.classList.add('btn-primary');
+      if (j.action === 'followed') {
+          btn.innerText = '🤝 Allied';
+          btn.classList.remove('btn-primary');
+          btn.classList.add('btn-outline');
+
+      } else if (j.action === 'requested') {
+          btn.innerText = '⏳ Requested';
+          btn.classList.remove('btn-primary');
+          btn.classList.add('btn-outline');
+
+      } else if (j.action === 'unfollowed') {
+          btn.innerText = '✨ Ally';
+          btn.classList.remove('btn-outline');
+          btn.classList.add('btn-primary');
       }
     }catch(e){
       console.error(e);

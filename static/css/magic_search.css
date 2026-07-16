@@ -1,0 +1,1019 @@
+/* =====================================================
+        INSCHAT MAGIC SEARCH V4
+        PART 1 - BASE GLASS UI
+===================================================== */
+
+.search-wrap{
+
+    position:relative;
+
+    width:100%;
+
+    height:64px;
+
+    border-radius:26px;
+
+    overflow:hidden;
+
+    isolation:isolate;
+
+    margin:auto;
+
+}
+
+/* =========================
+      OUTER RAINBOW BORDER
+========================= */
+
+.search-wrap::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:0;
+
+    border-radius:26px;
+
+    background:linear-gradient(
+        90deg,
+        #00f7ff,
+        #00ff88,
+        #ffe600,
+        #ff7b00,
+        #ff00e6,
+        #7a5cff,
+        #00f7ff
+    );
+
+    background-size:400% 100%;
+
+    animation:borderFlow 8s linear infinite;
+
+    z-index:0;
+
+}
+
+/* =========================
+      INNER GLASS PANEL
+========================= */
+
+.search-wrap::after{
+
+    content:"";
+
+    position:absolute;
+
+    inset:2px;
+
+    border-radius:24px;
+
+    background:
+    linear-gradient(
+        135deg,
+        rgba(10,18,45,.96),
+        rgba(5,10,25,.92)
+    );
+
+    backdrop-filter:blur(18px);
+
+    -webkit-backdrop-filter:blur(18px);
+
+    box-shadow:
+
+        inset 0 1px 0 rgba(255,255,255,.08),
+
+        inset 0 -8px 20px rgba(0,0,0,.35),
+
+        0 0 25px rgba(0,255,255,.10);
+
+    z-index:1;
+
+}
+
+/* =========================
+      SEARCH INPUT
+========================= */
+
+.magic-search{
+
+    position:absolute;
+
+    inset:2px;
+
+    z-index:5;
+
+    width:calc(100% - 4px);
+
+    height:calc(100% - 4px);
+
+    border:none;
+
+    outline:none;
+
+    border-radius:24px;
+
+    background:transparent;
+
+    color:#ffffff;
+
+    font-size:17px;
+
+    font-weight:600;
+
+    padding:0 22px;
+
+    letter-spacing:.3px;
+
+    caret-color:#00ffff;
+
+}
+
+.magic-search::placeholder{
+
+    color:#d5e8ff;
+
+    opacity:.9;
+
+    transition:.35s;
+
+}
+
+.magic-search:focus::placeholder{
+
+    opacity:.55;
+
+}
+
+/* =========================
+      BASE GLOW
+========================= */
+
+.search-wrap{
+
+    box-shadow:
+
+        0 8px 28px rgba(0,0,0,.25),
+
+        0 0 18px rgba(0,255,255,.10);
+
+}
+
+/* =========================
+      BORDER ANIMATION
+========================= */
+
+@keyframes borderFlow{
+
+0%{
+
+background-position:0% 50%;
+
+}
+
+100%{
+
+background-position:400% 50%;
+
+}
+
+}
+/* =====================================================
+            PART 2 — REAL ELECTRIC CURRENT
+===================================================== */
+
+.electric-flow{
+    position:absolute;
+    inset:0;
+    overflow:hidden;
+    pointer-events:none;
+    z-index:8;
+    border-radius:28px;
+}
+
+/* Moving Current Line */
+
+.e-current{
+
+    position:absolute;
+
+    width:180px;
+    height:2px;
+
+    border-radius:50px;
+
+    background:
+    linear-gradient(
+        90deg,
+        transparent,
+        #00ffff,
+        #ffffff,
+        #ffee00,
+        #ff00ff,
+        transparent
+    );
+
+    filter:
+        blur(.4px)
+        drop-shadow(0 0 8px cyan)
+        drop-shadow(0 0 16px #00ffff)
+        drop-shadow(0 0 30px #00e5ff);
+
+    animation:electricRun linear forwards;
+}
+
+/* Small Sparks */
+
+.spark{
+
+    position:absolute;
+
+    width:4px;
+    height:4px;
+
+    border-radius:50%;
+
+    background:#fff;
+
+    box-shadow:
+        0 0 10px #00ffff,
+        0 0 18px cyan,
+        0 0 28px #ffee00;
+
+    animation:sparkMove linear forwards;
+}
+
+/* Blue Energy Pulse */
+
+.energy-pulse{
+
+    position:absolute;
+
+    width:40px;
+    height:40px;
+
+    border-radius:50%;
+
+    background:
+    radial-gradient(
+        circle,
+        rgba(255,255,255,.9),
+        rgba(0,255,255,.45),
+        transparent
+    );
+
+    filter:blur(2px);
+
+    animation:pulseGlow 1s ease-out forwards;
+}
+
+/* Animations */
+
+@keyframes electricRun{
+
+0%{
+transform:translateX(-220px);
+opacity:0;
+}
+
+8%{
+opacity:1;
+}
+
+92%{
+opacity:1;
+}
+
+100%{
+transform:translateX(800px);
+opacity:0;
+}
+
+}
+
+@keyframes sparkMove{
+
+0%{
+transform:translateY(0) scale(.3);
+opacity:0;
+}
+
+20%{
+opacity:1;
+}
+
+100%{
+transform:
+translateY(-25px)
+translateX(15px)
+scale(1.6);
+
+opacity:0;
+}
+
+}
+
+@keyframes pulseGlow{
+
+0%{
+transform:scale(.2);
+opacity:1;
+}
+
+100%{
+transform:scale(2.6);
+opacity:0;
+}
+
+}
+/* =====================================================
+            PART 3 — RAINBOW ENERGY WAVE
+===================================================== */
+
+.rainbow-wave{
+
+    position:absolute;
+
+    inset:-60%;
+
+    pointer-events:none;
+
+    z-index:2;
+
+    background:
+    conic-gradient(
+        from 0deg,
+        #00f7ff,
+        #00ff88,
+        #ffee00,
+        #ff8800,
+        #ff00ea,
+        #7c4dff,
+        #00f7ff
+    );
+
+    filter:
+        blur(45px)
+        saturate(180%);
+
+    opacity:.55;
+
+    animation:
+        rainbowSpin 10s linear infinite,
+        rainbowPulse 5s ease-in-out infinite;
+}
+
+/* Second Layer */
+
+.rainbow-wave::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:12%;
+
+    border-radius:50%;
+
+    background:
+    radial-gradient(
+        circle,
+        rgba(255,255,255,.18),
+        rgba(0,255,255,.12),
+        rgba(255,0,255,.10),
+        transparent 70%
+    );
+
+    filter:blur(30px);
+
+    animation:
+        rainbowFloat 8s ease-in-out infinite alternate;
+}
+
+/* Third Layer */
+
+.rainbow-wave::after{
+
+    content:"";
+
+    position:absolute;
+
+    inset:20%;
+
+    border-radius:50%;
+
+    background:
+    conic-gradient(
+        transparent,
+        rgba(255,255,255,.25),
+        transparent,
+        rgba(0,255,255,.20),
+        transparent,
+        rgba(255,255,0,.18),
+        transparent
+    );
+
+    filter:blur(18px);
+
+    animation:
+        rainbowReverse 16s linear infinite;
+}
+
+/* ===========================
+        Animations
+=========================== */
+
+@keyframes rainbowSpin{
+
+0%{
+transform:rotate(0deg) scale(1);
+}
+
+100%{
+transform:rotate(360deg) scale(1.15);
+}
+
+}
+
+@keyframes rainbowReverse{
+
+0%{
+transform:rotate(360deg);
+}
+
+100%{
+transform:rotate(0deg);
+}
+
+}
+
+@keyframes rainbowPulse{
+
+0%,100%{
+opacity:.35;
+filter:blur(45px) saturate(160%);
+}
+
+50%{
+opacity:.75;
+filter:blur(60px) saturate(240%);
+}
+
+}
+
+@keyframes rainbowFloat{
+
+0%{
+transform:
+translate(-12px,-10px)
+scale(.95);
+}
+
+100%{
+transform:
+translate(18px,14px)
+scale(1.08);
+}
+
+}
+
+/* =====================================================
+          PART 4 — CRYSTAL GLASS REFLECTION
+===================================================== */
+
+.crystal-glass{
+
+    position:absolute;
+    inset:0;
+
+    overflow:hidden;
+
+    border-radius:28px;
+
+    pointer-events:none;
+
+    z-index:5;
+
+}
+
+/* Main Shine */
+
+.crystal-glass::before{
+
+    content:"";
+
+    position:absolute;
+
+    top:-160%;
+    left:-45%;
+
+    width:65%;
+    height:420%;
+
+    transform:rotate(24deg);
+
+    background:
+    linear-gradient(
+        transparent,
+        rgba(255,255,255,.08),
+        rgba(255,255,255,.55),
+        rgba(255,255,255,.10),
+        transparent
+    );
+
+    filter:blur(1px);
+
+    animation:glassSweep 5s linear infinite;
+
+}
+
+/* Soft Reflection */
+
+.crystal-glass::after{
+
+    content:"";
+
+    position:absolute;
+
+    inset:0;
+
+    border-radius:28px;
+
+    background:
+
+        radial-gradient(
+            circle at 18% 22%,
+            rgba(255,255,255,.22),
+            transparent 26%
+        ),
+
+        radial-gradient(
+            circle at 82% 18%,
+            rgba(255,255,255,.15),
+            transparent 22%
+        ),
+
+        radial-gradient(
+            circle at 50% 110%,
+            rgba(0,255,255,.08),
+            transparent 55%
+        );
+
+    mix-blend-mode:screen;
+
+    animation:glassGlow 4s ease-in-out infinite;
+
+}
+
+/* Tiny Crystal Sparkles */
+
+.crystal-star{
+
+    position:absolute;
+
+    width:3px;
+    height:3px;
+
+    border-radius:50%;
+
+    background:#fff;
+
+    box-shadow:
+        0 0 6px #ffffff,
+        0 0 14px cyan,
+        0 0 22px #ffee00;
+
+    animation:crystalBlink linear forwards;
+
+}
+
+/* ===========================
+        Animations
+=========================== */
+
+@keyframes glassSweep{
+
+0%{
+
+left:-60%;
+opacity:0;
+
+}
+
+15%{
+
+opacity:1;
+
+}
+
+50%{
+
+opacity:.95;
+
+}
+
+85%{
+
+opacity:1;
+
+}
+
+100%{
+
+left:150%;
+opacity:0;
+
+}
+
+}
+
+@keyframes glassGlow{
+
+0%,100%{
+
+opacity:.55;
+
+}
+
+50%{
+
+opacity:1;
+
+filter:brightness(1.18);
+
+}
+
+}
+
+@keyframes crystalBlink{
+
+0%{
+
+opacity:0;
+transform:scale(.2);
+
+}
+
+25%{
+
+opacity:1;
+
+}
+
+100%{
+
+opacity:0;
+transform:scale(2);
+
+}
+
+}
+/* =====================================================
+            PART 5 — FLOATING MAGIC PARTICLES
+===================================================== */
+
+.magic-particles{
+
+    position:absolute;
+    inset:0;
+
+    overflow:hidden;
+
+    pointer-events:none;
+
+    border-radius:28px;
+
+    z-index:6;
+
+}
+
+/* Single Particle */
+
+.magic-particle{
+
+    position:absolute;
+
+    width:6px;
+    height:6px;
+
+    border-radius:50%;
+
+    background:#ffffff;
+
+    opacity:.9;
+
+    box-shadow:
+        0 0 8px #ffffff,
+        0 0 14px #00ffff,
+        0 0 24px #7c4dff,
+        0 0 36px #ffee00;
+
+    animation:
+        particleFloat linear forwards,
+        particleColor 4s linear infinite;
+
+    will-change:
+        transform,
+        opacity;
+
+}
+
+/* Small Particle */
+
+.magic-particle.small{
+
+    width:3px;
+    height:3px;
+
+    opacity:.75;
+
+}
+
+/* Medium Particle */
+
+.magic-particle.medium{
+
+    width:5px;
+    height:5px;
+
+}
+
+/* Large Particle */
+
+.magic-particle.large{
+
+    width:8px;
+    height:8px;
+
+    box-shadow:
+        0 0 12px cyan,
+        0 0 24px #00ffff,
+        0 0 40px gold;
+
+}
+
+/* ==========================
+        Animations
+========================== */
+
+@keyframes particleFloat{
+
+0%{
+
+transform:
+translateY(70px)
+translateX(0)
+scale(.2);
+
+opacity:0;
+
+}
+
+10%{
+
+opacity:1;
+
+}
+
+50%{
+
+transform:
+translateY(20px)
+translateX(18px)
+scale(1);
+
+}
+
+100%{
+
+transform:
+translateY(-80px)
+translateX(-20px)
+scale(1.8);
+
+opacity:0;
+
+}
+
+}
+
+@keyframes particleColor{
+
+0%{
+
+background:#00ffff;
+
+}
+
+20%{
+
+background:#00ff99;
+
+}
+
+40%{
+
+background:#ffee00;
+
+}
+
+60%{
+
+background:#ff8800;
+
+}
+
+80%{
+
+background:#ff00ff;
+
+}
+
+100%{
+
+background:#00ffff;
+
+}
+
+}
+/* ==========================================
+   PART 6 — NEON GLOW + SCI-FI AURA
+========================================== */
+
+.search-wrap{
+
+    animation:
+        auraPulse 4s ease-in-out infinite;
+}
+
+/* Outer Aura */
+
+
+.magic-search:focus{
+
+    box-shadow:
+        inset 0 0 20px rgba(255,255,255,.08),
+        0 0 18px #00ffff,
+        0 0 35px #00bfff,
+        0 0 70px #8a2be2,
+        0 0 110px rgba(255,215,0,.35);
+
+    transition:.25s;
+}
+
+/* Animations */
+
+@keyframes auraPulse{
+
+    0%,100%{
+        transform:translateZ(0) scale(1);
+    }
+
+    50%{
+        transform:translateZ(0) scale(1.01);
+    }
+}
+
+@keyframes auraRotate{
+
+    from{
+        transform:rotate(0deg);
+    }
+
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+@keyframes auraBreath{
+
+    0%,100%{
+        opacity:.45;
+    }
+
+    50%{
+        opacity:.9;
+    }
+}
+
+@keyframes neonHue{
+
+    from{
+        filter:hue-rotate(0deg);
+    }
+
+    to{
+        filter:hue-rotate(360deg);
+    }
+}
+/* ==========================================
+   PART 7 — 3D PARALLAX + FINAL POLISH
+========================================== */
+
+.search-wrap{
+    perspective:900px;
+    transform-style:preserve-3d;
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease;
+}
+
+.magic-search{
+    transform:translateZ(22px);
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease;
+}
+
+/* Hover 3D */
+
+.search-wrap:hover{
+
+    transform:
+        rotateX(4deg)
+        rotateY(-4deg)
+        scale(1.02);
+
+    box-shadow:
+        0 15px 40px rgba(0,255,255,.18),
+        0 30px 80px rgba(138,43,226,.15);
+}
+
+.search-wrap:hover .magic-search{
+
+    transform:
+        translateZ(28px);
+
+}
+
+/* Soft Floating Motion */
+
+.search-wrap{
+
+    animation:
+        floatingMagic 6s ease-in-out infinite;
+}
+
+@keyframes floatingMagic{
+
+    0%,100%{
+
+        transform:
+            translateY(0px);
+
+    }
+
+    50%{
+
+        transform:
+            translateY(-3px);
+
+    }
+}
+
+/* Premium Placeholder */
+
+.magic-search::placeholder{
+
+    letter-spacing:.8px;
+
+    font-weight:600;
+
+    opacity:.95;
+
+    transition:.3s;
+}
+
+.magic-search:focus::placeholder{
+
+    opacity:.35;
+
+    letter-spacing:1.5px;
+}
+
+/* Smooth Caret */
+
+.magic-search{
+
+    caret-color:#00ffff;
+
+}
+
+/* Smooth Text Selection */
+
+.magic-search::selection{
+
+    background:#00ffff;
+
+    color:#001018;
+
+}
+
+/* Glass Border Glow */
+
+.search-wrap{
+
+    border:1px solid rgba(255,255,255,.08);
+
+    overflow:hidden;
+}

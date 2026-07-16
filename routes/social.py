@@ -126,6 +126,13 @@ def follow_toggle(target_id):
     if row:
         # Unfollow
         c.execute("DELETE FROM follows WHERE id=?", (row[0],))
+
+        # Remove old follow request if it exists
+        c.execute("""
+            DELETE FROM follow_requests
+            WHERE sender_id=? AND receiver_id=?
+        """, (me, target_id))
+
         conn.commit()
         conn.close()
         return jsonify({"ok": True, "action": "unfollowed"})

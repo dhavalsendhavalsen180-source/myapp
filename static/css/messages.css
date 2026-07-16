@@ -1,10 +1,11 @@
 /* MAIN */
-.dm-container, .chat-container {
-    width: 100%;
-    max-width: 600px;
-    margin: auto;
-    background: #fff;
-    font-family: Arial, sans-serif;
+.dm-container,
+.chat-container{
+    width:100%;
+    max-width:600px;
+    margin:auto;
+    background:transparent;
+    font-family:Arial,sans-serif;
 }
 
 /* Add padding so bottom-nav content hide na kare */
@@ -206,26 +207,6 @@ body {
 /* dilet */ 
 
 /* BOTTOM NAV - FIXED LIKE INSCHAT */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 58px;
-    background: #fff;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    border-top: 1px solid #e5e5e5;
-    z-index: 9999;
-}
-.bottom-nav a {
-    font-size: 24px;
-    text-decoration: none;
-    color: #000;
-}
-.bottom-nav .active { color: #3797f0; }
-
 .preview-grid {
     display: flex;
     gap: 8px;
@@ -283,3 +264,4 @@ body {
 #cancelMenuBtn{
     color: #666;
 }
+/* =========================

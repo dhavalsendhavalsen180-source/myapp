@@ -1,97 +1,254 @@
 {% extends "base.html" %}
 {% block content %}
 <link rel="stylesheet" href="/static/css/messages.css">
+<link rel="stylesheet" href="/static/css/magic_search.css">
 
-<div class="dm-container">
+<div class="dm-container bg-slate-50 min-h-screen">
 
-    <!-- Top Bar -->
-    <div class="dm-top">
-        <div class="dm-top-icons">
-        </div>
+    <!-- Top Header -->
+<div class="sticky top-0 z-20 bg-transparent backdrop-blur-xl border-b border-slate-200">
+
+    <div class="px-5 pt-5 pb-3">
+        <h2 class="text-3xl font-extrabold text-slate-800">
+            Chats
+        </h2>
+    </div>
+</div>
+
+<div class="px-4 pb-4">
+
+    <div class="search-wrap">
+
+        <div class="rainbow-wave"></div>
+
+        <div class="crystal-glass"></div>
+
+        <div class="magic-particles"></div>
+
+        <div class="electric-flow"></div>
+
+        <input
+            type="text"
+            class="magic-search"
+            placeholder="Search Allies...">
+
     </div>
 
-    <!-- Search -->
-    <div class="dm-search-box">
-        <input type="text" placeholder="Search">
-    </div>
+</div>
 
     <!-- Stories -->
-    <div class="dm-stories">
+    <div class="flex gap-4 overflow-x-auto px-4 py-4 no-scrollbar">
 
-        <div class="story">
-            <div class="story-ring">
-                <img src="{{ url_for('static', filename='profile/user_' ~ session['user_id'] ~ '.jpg') }}">
+        <div class="flex flex-col items-center flex-shrink-0">
+
+            <div class="w-16 h-16 rounded-full p-[2px] bg-gradient-to-r from-cyan-500 to-purple-500">
+
+                <img
+                    src="{{ url_for('static', filename='profile/user_' ~ session['user_id'] ~ '.jpg') }}"
+                    class="w-full h-full rounded-full object-cover border-2 border-white">
+
             </div>
-            <span class="story-name">Your story</span>
+
+            <span class="text-xs mt-2 font-medium">
+                Your Story
+            </span>
+
         </div>
 
         {% for c in chats %}
-        <div class="story">
-            <div class="story-ring">
-                <img src="{{ c.photo }}">
+
+        <div class="flex flex-col items-center flex-shrink-0">
+
+            <div class="w-16 h-16 rounded-full p-[2px] bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500">
+
+                <img
+                    src="{{ c.photo }}"
+                    class="w-full h-full rounded-full object-cover border-2 border-white">
+
             </div>
-            <span class="story-name">{{ c.username }}</span>
+
+            <span class="text-xs mt-2 max-w-[70px] truncate">
+                {{ c.username }}
+            </span>
+
         </div>
+
         {% endfor %}
+
     </div>
+
 
     <!-- Chat List -->
-    <div class="dm-chat-list">
-        {% for c in chats %}
-        <a href="/messages/chat/{{ c.other_id }}" class="dm-chat-item">
-            <img src="{{ c.photo }}" class="dm-chat-dp">
+    <div class="px-4 pb-24 space-y-3">
 
-            <div class="dm-chat-info">
-                <span class="name">{{ c.username }}</span>
-                <span class="last">{{ c.last_msg }}</span>
+        {% for c in chats %}
+
+        <a href="/messages/chat/{{ c.other_id }}"
+
+           class="flex items-center gap-4 bg-white rounded-3xl shadow-sm border border-slate-100 p-4 hover:scale-[0.98] transition">
+
+            <img
+                src="{{ c.photo }}"
+                class="w-14 h-14 rounded-full object-cover border border-cyan-200">
+
+            <div class="flex-1 min-w-0">
+
+                <div class="flex justify-between items-center">
+
+                    <h3 class="font-semibold truncate">
+                        {{ c.username }}
+                    </h3>
+
+                    {% if c.unread > 0 %}
+                    <span class="bg-cyan-500 text-white text-[11px] px-2 py-1 rounded-full">
+                        {{ c.unread }}
+                    </span>
+                    {% endif %}
+
+                </div>
+
+                <p class="text-sm text-slate-500 truncate mt-1">
+                    {{ c.last_msg }}
+                </p>
+
             </div>
 
-            {% if c.unread > 0 %}
-            <span class="dm-unread">{{ c.unread }}</span>
-            {% endif %}
         </a>
+
         {% endfor %}
+
     </div>
 
-    <!-- Bottom Nav -->
-    <div class="bottom-nav">
-  <!-- 🏠🔍➕🎬BOTTOM NAV -->
-<div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-inner flex justify-around py>
-  <a href="/posts/feed" class="flex items-center justify-center">
-  <svg class="w-6 h-6 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke->
-    <path stroke-linecap="round" stroke-linejoin="round"
-      d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1V10.5z"/>
-  </svg>
-</a>
-  <a href="/explore" class="flex items-center justify-center">
-  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-    <circle cx="11" cy="11" r="7"></circle>
-    <path d="M21 21l-4.3-4.3"></path>
-  </svg>
-</a>
-  <a href="/create" class="flex items-center justify-center">
-  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"></path>
-  </svg>
-</a>
-  <a href="/reels" class="flex items-center justify-center">
-  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-
-    <!-- reel frame -->
-    <rect x="3" y="3" width="18" height="18" rx="3"></rect>
-
-    <!-- play triangle -->
-    <path d="M10 9l6 3-6 3V9z" fill="currentColor"></path>
-
-  </svg>
-</a>
-  <a href="/profile/{{ current_user }}">
-  <img src="{{ current_user_photo }}"
-       class="w-7 h-7 rounded-full object-cover border"
-       onerror="this.src='/static/default_dp.png'">
-</a>
 </div>
 
+<!-- ================= BOTTOM NAV ================= -->
+
+<div class="fixed bottom-0 left-0 right-0 z-50">
+
+  <div class="mx-3 mb-3 rounded-3xl
+              bg-white/90 backdrop-blur-xl
+              border border-cyan-100
+              shadow-2xl">
+
+    <div class="grid grid-cols-5 items-center py-3">
+
+      <!-- Home -->
+      <a href="/posts/feed"
+         class="flex flex-col items-center justify-center text-slate-600 hover:text-cyan-600 transition">
+
+        <svg class="w-6 h-6"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2">
+
+          <path stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10.5z"/>
+
+        </svg>
+
+      </a>
+
+      <!-- Explore -->
+      <a href="/explore"
+         class="flex flex-col items-center justify-center text-slate-600 hover:text-cyan-600 transition">
+
+        <svg class="w-6 h-6"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2">
+
+          <circle cx="11" cy="11" r="7"/>
+          <path d="M21 21l-4.3-4.3"/>
+
+        </svg>
+
+      </a>
+
+      <!-- Create -->
+      <a href="/create"
+         class="flex items-center justify-center">
+
+        <div class="w-14 h-14 rounded-full
+                    bg-gradient-to-r
+                    from-cyan-500
+                    via-blue-600
+                    via-purple-600
+                    to-yellow-500
+                    text-white
+                    shadow-xl
+                    flex items-center justify-center">
+
+          <svg class="w-7 h-7"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2">
+
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 5v14M5 12h14"/>
+
+          </svg>
+
+        </div>
+
+      </a>
+
+      <!-- Reels -->
+      <a href="/reels"
+         class="flex flex-col items-center justify-center text-slate-600 hover:text-purple-600 transition">
+
+        <svg class="w-6 h-6"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2">
+
+          <rect x="3" y="3" width="18" height="18" rx="3"/>
+          <path d="M10 9l6 3-6 3V9z" fill="currentColor"/>
+
+        </svg>
+
+      </a>
+
+      <!-- Profile -->
+      <a href="/profile/{{ current_user }}"
+         class="flex items-center justify-center">
+
+        <img src="{{ current_user_photo }}"
+             class="w-9 h-9 rounded-full object-cover border-2 border-cyan-400 shadow"
+             onerror="this.src='/static/default_dp.png'">
+
+      </a>
+
+    </div>
+
+  </div>
+
 </div>
+
+<script>
+const search = document.querySelector(".magic-search");
+const chats = document.querySelectorAll(".dm-container .px-4.pb-24 a");
+
+search.addEventListener("input", function () {
+    const value = this.value.toLowerCase();
+
+    chats.forEach(chat => {
+        const name = chat.querySelector("h3").textContent.toLowerCase();
+
+        if (name.includes(value)) {
+            chat.style.display = "";
+        } else {
+            chat.style.display = "none";
+        }
+    });
+});
+</script>
+
+<script src="/static/js/magic_search.js"></script>
 
 {% endblock %}
