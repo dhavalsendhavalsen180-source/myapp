@@ -4,6 +4,7 @@ import json
 import time
 from flask import Blueprint, render_template, request, redirect, session, url_for, jsonify, flash, send_from_directory
 from werkzeug.utils import secure_filename
+from socketio_init import socketio
 
 stories_bp = Blueprint("stories", __name__, url_prefix="/stories")
 
@@ -67,6 +68,19 @@ def load_replies():
 def save_replies(data):
     write_json(REPLIES_FILE, data)
 
+# ---------------- DATABASE ----------------
+
+def get_db():
+    db = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "database.db"
+    )
+
+    conn = sqlite3.connect(db)
+    conn.row_factory = sqlite3.Row
+
+    return conn
 
 # ---------------- CLEANUP ----------------
 def cleanup_expired():
@@ -273,28 +287,155 @@ def react():
 
     return jsonify({"ok": False}), 404
 
-# ---------------- REPLY ----------------
+# ================= STORY REPLY → NORMAL DM =================
+
 @stories_bp.route("/api/reply", methods=["POST"])
 def reply():
+
     if "user_id" not in session:
-        return jsonify({"ok": False}), 401
+        return jsonify({
+            "ok": False,
+            "error": "Login required"
+        }), 401
 
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
 
-    replies = load_replies()
+    me = session.get("user_id")
+    to_user = data.get("to_user")
+    story_id = data.get("story_id")
+    text = (data.get("text") or "").strip()
 
-    replies.append({
-        "from": session["user_id"],
-        "to_user": data.get("to_user"),
-        "story_id": data.get("story_id"),
-        "text": data.get("text"),
-        "timestamp": now_ts()
+    print("STORY REPLY REQUEST:")
+    print("FROM:", me)
+    print("TO:", to_user)
+    print("STORY:", story_id)
+    print("TEXT:", text)
+
+    if not to_user or not story_id or not text:
+        return jsonify({
+            "ok": False,
+            "error": "Missing reply data"
+        }), 400
+
+    if str(me) == str(to_user):
+        return jsonify({
+            "ok": False,
+            "error": "Cannot reply to your own story"
+        }), 400
+
+    conn = get_db()
+    c = conn.cursor()
+
+    # ================= FIND CHAT =================
+
+    c.execute("""
+        SELECT id
+        FROM chats
+        WHERE
+            (user1=? AND user2=?)
+            OR
+            (user1=? AND user2=?)
+        LIMIT 1
+    """, (
+        me,
+        to_user,
+        to_user,
+        me
+    ))
+
+    chat = c.fetchone()
+
+    # ================= CREATE CHAT =================
+
+    if chat:
+
+        chat_id = chat["id"]
+
+    else:
+
+        c.execute("""
+            INSERT INTO chats
+            (user1, user2)
+            VALUES (?, ?)
+        """, (
+            me,
+            to_user
+        ))
+
+        chat_id = c.lastrowid
+
+    # ================= MESSAGE =================
+
+    msg = f"__STORY_REPLY__:{int(story_id)}:{text}"
+
+    c.execute("""
+        INSERT INTO messages
+        (
+            chat_id,
+            sender_id,
+            msg,
+            attachment,
+            created_at
+        )
+        VALUES (?, ?, ?, NULL, datetime('now'))
+    """, (
+        chat_id,
+        me,
+        msg
+    ))
+
+    message_id = c.lastrowid
+
+    conn.commit()
+
+    # Message ko database se confirm karke read karo
+    c.execute("""
+        SELECT
+            id,
+            sender_id,
+            msg,
+            attachment,
+            created_at
+        FROM messages
+        WHERE id=?
+    """, (message_id,))
+
+    row = c.fetchone()
+
+    conn.close()
+
+    # ================= REAL TIME =================
+
+    message = {
+        "id": row["id"],
+        "sender_id": row["sender_id"],
+        "msg": row["msg"],
+        "attachment": row["attachment"],
+        "deleted": 0,
+        "seen": 0,
+        "created_at": row["created_at"]
+    }
+
+    socketio.emit(
+        "new_message",
+        {
+            "chat_id": chat_id,
+            "message": message
+        },
+        room=f"chat_{chat_id}"
+    )
+
+    print(
+        "STORY REPLY SAVED:",
+        "message_id =", message_id,
+        "chat_id =", chat_id
+    )
+
+    return jsonify({
+        "ok": True,
+        "chat_id": chat_id,
+        "message_id": message_id
     })
-
-    save_replies(replies)
-
-    return jsonify({"ok": True})
-
 
 # ---------------- MEDIA ----------------
 @stories_bp.route("/media/<filename>")
@@ -503,29 +644,6 @@ def story_activity(story_id):
         likes=likes
     )
 
-###################################
-@stories_bp.route("/api/reply", methods=["POST"])
-def reply_story():
-    if "user_id" not in session:
-        return jsonify({"ok": False}), 401
-
-    data = request.get_json()
-
-    replies = load_replies()
-
-    replies.append({
-        "from": session["user_id"],
-        "to_user": data.get("to_user"),
-        "story_id": data.get("story_id"),
-        "text": data.get("text"),
-        "timestamp": now_ts()
-    })
-
-    save_replies(replies)
-
-    return jsonify({"ok": True})
-
-
 ##################################
 @stories_bp.route("/create")
 def create_story_page():
@@ -545,3 +663,329 @@ def activity_count(story_id):
             })
 
     return jsonify({"likes":0,"views":0})
+# ================================
+# 📤 SHARE STORY TO DM
+# ================================
+@stories_bp.route("/share_to_user/<int:story_id>/<int:user_id>", methods=["POST"])
+def share_story_to_user(story_id, user_id):
+
+    if "user_id" not in session:
+        return jsonify({
+            "ok": False,
+            "error": "login required"
+        }), 401
+
+    from_user = session["user_id"]
+
+    # Khud ko share nahi
+    if str(from_user) == str(user_id):
+        return jsonify({
+            "ok": False,
+            "error": "cannot share to yourself"
+        }), 400
+
+    # ---------------- STORY CHECK ----------------
+    stories = load_stories()
+
+    story = None
+
+    for s in stories:
+        if int(s.get("id", 0)) == int(story_id):
+            story = s
+            break
+
+    if not story:
+        return jsonify({
+            "ok": False,
+            "error": "story not found"
+        }), 404
+
+    # Story expired hai ya nahi
+    if now_ts() - int(story.get("timestamp", 0)) >= EXPIRE_SECONDS:
+        return jsonify({
+            "ok": False,
+            "error": "story expired"
+        }), 410
+
+    # ---------------- USER CHECK ----------------
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    c.execute(
+        "SELECT id FROM users WHERE id=?",
+        (user_id,)
+    )
+
+    receiver = c.fetchone()
+
+    if not receiver:
+        conn.close()
+
+        return jsonify({
+            "ok": False,
+            "error": "user not found"
+        }), 404
+
+    # ---------------- FIND CHAT ----------------
+    c.execute("""
+        SELECT id
+        FROM chats
+        WHERE (user1=? AND user2=?)
+           OR (user1=? AND user2=?)
+        LIMIT 1
+    """, (
+        from_user,
+        user_id,
+        user_id,
+        from_user
+    ))
+
+    chat = c.fetchone()
+
+    if chat:
+
+        chat_id = chat["id"]
+
+    else:
+
+        c.execute("""
+            INSERT INTO chats(user1, user2)
+            VALUES (?, ?)
+        """, (
+            from_user,
+            user_id
+        ))
+
+        chat_id = c.lastrowid
+
+    # ---------------- SPECIAL MESSAGE ----------------
+    msg = f"__SHARED_STORY__:{int(story_id)}"
+
+    c.execute("""
+        INSERT INTO messages
+        (chat_id, sender_id, msg, attachment, created_at)
+        VALUES (?, ?, ?, NULL, datetime('now'))
+    """, (
+        chat_id,
+        from_user,
+        msg
+    ))
+
+    message_id = c.lastrowid
+
+    conn.commit()
+    conn.close()
+
+    print(
+        "STORY SHARED:",
+        story_id,
+        "FROM:",
+        from_user,
+        "TO:",
+        user_id,
+        "CHAT:",
+        chat_id
+    )
+
+    return jsonify({
+        "ok": True,
+        "chat_id": chat_id,
+        "message_id": message_id
+    })
+
+# ================================
+# 📖 SHARED STORY PREVIEW
+# ================================
+@stories_bp.route("/shared_story/<int:story_id>")
+def shared_story_preview(story_id):
+
+    stories = load_stories()
+
+    story = None
+
+    for s in stories:
+
+        if int(s.get("id", 0)) == int(story_id):
+            story = s
+            break
+
+    if not story:
+        return jsonify({
+            "ok": False,
+            "error": "story not found"
+        }), 404
+
+    # Story expired
+    if now_ts() - int(story.get("timestamp", 0)) >= EXPIRE_SECONDS:
+
+        return jsonify({
+            "ok": False,
+            "error": "story expired"
+        }), 410
+
+    filename = story.get("filename")
+
+    if not filename:
+        return jsonify({
+            "ok": False,
+            "error": "media missing"
+        }), 404
+
+    ext = filename.rsplit(".", 1)[-1].lower()
+
+    image_exts = {
+        "jpg", "jpeg", "png", "gif",
+        "webp", "bmp", "tiff", "tif",
+        "heic", "heif", "avif"
+    }
+
+    # Image story
+    if ext in image_exts:
+
+        return jsonify({
+            "ok": True,
+            "type": "image",
+            "image": "/stories/media/" + filename
+        })
+
+    # Video story
+    return jsonify({
+        "ok": True,
+        "type": "video",
+        "image": "/static/default_post.png"
+    })
+
+
+# ================================
+# 📖 OPEN SHARED STORY
+# ================================
+@stories_bp.route("/shared/<int:story_id>")
+def open_shared_story(story_id):
+
+    cleanup_expired()
+
+    stories = load_stories()
+
+    story = None
+
+    for s in stories:
+
+        if int(s.get("id", 0)) == int(story_id):
+            story = s
+            break
+
+    if not story:
+        return redirect("/posts/feed")
+
+    owner_id = str(story.get("user_id"))
+
+    # Story ke owner ki saari active stories
+    user_stories = [
+        s for s in stories
+        if str(s.get("user_id")) == owner_id
+    ]
+
+    user_stories.sort(
+        key=lambda x: x.get("timestamp", 0)
+    )
+
+    if not user_stories:
+        return redirect("/posts/feed")
+
+    # Shared story ko first/current story banana
+    story_index = 0
+
+    for index, s in enumerate(user_stories):
+
+        if int(s.get("id", 0)) == int(story_id):
+            story_index = index
+            break
+
+    # Current story ko first position par le aao
+    user_stories = (
+        user_stories[story_index:] +
+        user_stories[:story_index]
+    )
+
+    # Viewer mark
+    if "user_id" in session:
+
+        viewer_id = str(session["user_id"])
+
+        for s in user_stories:
+
+            if viewer_id not in [
+                str(x) for x in s.get("viewers", [])
+            ]:
+
+                s.setdefault("viewers", []).append(
+                    viewer_id
+                )
+
+        save_stories(stories)
+
+    # User information
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
+
+    c = conn.cursor()
+
+    c.execute(
+        """
+        SELECT id, username, photo
+        FROM users
+        WHERE id=?
+        """,
+        (owner_id,)
+    )
+
+    user = c.fetchone()
+
+    conn.close()
+
+    display_name = owner_id
+    profile_photo = "/static/default_dp.png"
+
+    if user:
+
+        display_name = user["username"]
+
+        if user["photo"]:
+            profile_photo = user["photo"]
+
+    # Story bar
+    story_users = []
+
+    for item in get_storybar_for_user(
+        session.get("user_id")
+    ):
+
+        story_users.append(
+            str(item["user_id"])
+        )
+
+    if owner_id not in story_users:
+
+        story_users.insert(
+            0,
+            owner_id
+        )
+
+    return render_template(
+        "story_view.html",
+
+        stories=user_stories,
+
+        owner=display_name,
+
+        owner_id=owner_id,
+
+        replies=[],
+
+        profile_photo=profile_photo,
+
+        current_user=session.get("user_id"),
+
+        story_users=story_users
+    )

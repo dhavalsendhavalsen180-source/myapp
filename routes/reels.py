@@ -81,6 +81,34 @@ def init_reels_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # ===============================
+    # 💬 COMMENT REPLY SUPPORT
+    # ===============================
+    c.execute("PRAGMA table_info(reel_comments)")
+    comment_cols = [r["name"] for r in c.fetchall()]
+
+    if "parent_id" not in comment_cols:
+        c.execute("""
+            ALTER TABLE reel_comments
+            ADD COLUMN parent_id INTEGER DEFAULT NULL
+        """)
+
+    conn.commit()
+
+    # ===============================
+    # ❤️ REEL COMMENT LIKES TABLE
+    # ===============================
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS reel_comment_likes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            comment_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(comment_id, user_id)
+        )
+    """)
+
     # =========================
 # FOLLOW SYSTEM TABLE
 # =========================
@@ -124,6 +152,12 @@ def init_reels_db():
         c.execute("ALTER TABLE reels ADD COLUMN views INTEGER DEFAULT 0")
     if "audio_name" not in cols:
         c.execute("ALTER TABLE reels ADD COLUMN audio_name TEXT DEFAULT 'Original Audio'")
+    if "music_id" not in cols:
+        c.execute("ALTER TABLE reels ADD COLUMN music_id INTEGER")
+    if "music_start" not in cols:
+        c.execute("ALTER TABLE reels ADD COLUMN music_start REAL DEFAULT 0")
+    if "music_end" not in cols:
+        c.execute("ALTER TABLE reels ADD COLUMN music_end REAL DEFAULT 0")
 
     conn.commit()
     conn.close()
@@ -154,13 +188,40 @@ def reels_page():
     c = conn.cursor()
 
     c.execute("""
-        SELECT reels.id, reels.user_id, reels.caption, reels.video_path,
-       reels.thumbnail,
-               reels.likes, reels.saves, reels.shares, reels.comments_count,reels.views,
-               reels.created_at, reels.audio_name,
-               users.username, users.photo
+        SELECT
+            reels.id,
+            reels.user_id,
+            reels.caption,
+            reels.video_path,
+            reels.thumbnail,
+            reels.likes,
+            reels.saves,
+            reels.shares,
+            reels.comments_count,
+            reels.views,
+            reels.created_at,
+            reels.audio_name,
+
+            reels.music_id,
+            reels.music_start,
+            reels.music_end,
+
+            music.title AS music_title,
+            music.artist AS music_artist,
+            music.filename AS music_file,
+            music.cover AS music_cover,
+
+            users.username,
+            users.photo
+
         FROM reels
-        JOIN users ON reels.user_id = users.id
+
+        JOIN users
+        ON reels.user_id = users.id
+
+        LEFT JOIN music
+        ON reels.music_id = music.id
+
         ORDER BY reels.id DESC
     """)
 
@@ -193,23 +254,34 @@ def reels_page():
         saved = c.fetchone() is not None
 
         reels.append({
-            "id": r["id"],
-            "user_id": r["user_id"],
-            "username": r["username"],
-            "profile_photo": r["photo"],
-            "caption": r["caption"] or "",
-            "video_path": r["video_path"],
-            "thumbnail": r["thumbnail"],
-            "likes": r["likes"],
-            "liked": liked,
-            "following": is_following,
-            "saves": r["saves"],
-            "saved": saved,
-            "shares": r["shares"],
-            "comments_count": r["comments_count"],
-            "views": r["views"],
-            "created_at": created_at, "audio_name": r["audio_name"]
-        })
+                    "id": r["id"],
+                    "user_id": r["user_id"],
+                    "username": r["username"],
+                    "profile_photo": r["photo"],
+                    "caption": r["caption"] or "",
+                    "video_path": r["video_path"],
+                    "thumbnail": r["thumbnail"],
+                    "likes": r["likes"],
+                    "liked": liked,
+                    "following": is_following,
+                    "saves": r["saves"],
+                    "saved": saved,
+                    "shares": r["shares"],
+                    "comments_count": r["comments_count"],
+                    "views": r["views"],
+
+                    "created_at": created_at,
+                    "audio_name": r["audio_name"],
+
+                    "music_id": r["music_id"],
+                    "music_start": r["music_start"],
+                    "music_end": r["music_end"],
+
+                    "music_title": r["music_title"],
+                    "music_artist": r["music_artist"],
+                    "music_file": r["music_file"],
+                    "music_cover": r["music_cover"]
+                })
 
 
     uid = get_user_id()
@@ -221,6 +293,149 @@ def reels_page():
     user = c.fetchone()
 
     current_user_photo = "/static/default_dp.png"
+
+    if user and user["photo"]:
+        current_user_photo = user["photo"]
+
+    conn.close()
+
+    return render_template(
+        "reels_feed.html",
+        reels=reels,
+        current_user=uid,
+        current_user_photo=current_user_photo
+    )
+
+# ===============================
+# 🎬 VIEW REELS OF SAME USER
+# ===============================
+@reels_bp.route("/<int:reel_id>")
+def view_reel(reel_id):
+
+    init_reels_db()
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    # Clicked reel owner
+    c.execute(
+        "SELECT user_id FROM reels WHERE id=?",
+        (reel_id,)
+    )
+
+    row = c.fetchone()
+
+    if not row:
+        conn.close()
+        return "Reel not found", 404
+
+    owner_id = row["user_id"]
+
+    # Load only this user's reels
+    c.execute("""
+        SELECT
+            reels.id,
+            reels.user_id,
+            reels.caption,
+            reels.video_path,
+            reels.thumbnail,
+            reels.likes,
+            reels.saves,
+            reels.shares,
+            reels.comments_count,
+            reels.views,
+            reels.created_at,
+            reels.audio_name,
+
+            reels.music_id,
+            reels.music_start,
+            reels.music_end,
+
+            music.title AS music_title,
+            music.artist AS music_artist,
+            music.filename AS music_file,
+            music.cover AS music_cover,
+
+            users.username,
+            users.photo
+
+        FROM reels
+
+        JOIN users
+            ON reels.user_id = users.id
+
+        LEFT JOIN music
+            ON reels.music_id = music.id
+
+        WHERE reels.user_id=?
+
+        ORDER BY
+            CASE WHEN reels.id=? THEN 0 ELSE 1 END,
+            reels.id DESC
+    """, (owner_id, reel_id))
+
+    reels = []
+
+    for r in c.fetchall():
+
+        c.execute(
+            "SELECT 1 FROM reel_likes WHERE reel_id=? AND user_id=?",
+            (r["id"], get_user_id())
+        )
+
+        liked = c.fetchone() is not None
+
+        c.execute(
+            "SELECT 1 FROM follows WHERE follower_id=? AND following_id=?",
+            (get_user_id(), r["user_id"])
+        )
+
+        following = c.fetchone() is not None
+
+        c.execute(
+            "SELECT 1 FROM reel_saves WHERE reel_id=? AND user_id=?",
+            (r["id"], get_user_id())
+        )
+
+        saved = c.fetchone() is not None
+
+        reels.append({
+            "id": r["id"],
+            "user_id": r["user_id"],
+            "username": r["username"],
+            "profile_photo": r["photo"],
+            "caption": r["caption"] or "",
+            "video_path": r["video_path"],
+            "thumbnail": r["thumbnail"],
+            "likes": r["likes"],
+            "liked": liked,
+            "following": following,
+            "saves": r["saves"],
+            "saved": saved,
+            "shares": r["shares"],
+            "comments_count": r["comments_count"],
+            "views": r["views"],
+            "created_at": r["created_at"],
+            "audio_name": r["audio_name"],
+            "music_id": r["music_id"],
+            "music_start": r["music_start"],
+            "music_end": r["music_end"],
+            "music_title": r["music_title"],
+            "music_artist": r["music_artist"],
+            "music_file": r["music_file"],
+            "music_cover": r["music_cover"]
+        })
+
+    uid = get_user_id()
+
+    current_user_photo = "/static/default_dp.png"
+
+    c.execute(
+        "SELECT photo FROM users WHERE id=?",
+        (uid,)
+    )
+
+    user = c.fetchone()
 
     if user and user["photo"]:
         current_user_photo = user["photo"]
@@ -286,7 +501,6 @@ def upload_reel():
 
     return redirect("/reels")
 
-
 # ===============================
 # ❤️ LIKE / UNLIKE REEL (AJAX)
 # ===============================
@@ -295,31 +509,126 @@ def like_toggle(reel_id):
     init_reels_db()
 
     if "user_id" not in session:
-        return jsonify({"ok": False})
+        return jsonify({"ok": False, "error": "login required"}), 401
 
     uid = get_user_id()
 
-    conn = sqlite3.connect("database.db", timeout=10)
-    conn.row_factory = sqlite3.Row
+    conn = get_conn()
     c = conn.cursor()
 
-    c.execute("SELECT 1 FROM reel_likes WHERE reel_id=? AND user_id=?", (reel_id, uid))
+    # ==========================================
+    # 🎬 CHECK REEL + OWNER
+    # ==========================================
+    c.execute("""
+        SELECT id, user_id, likes
+        FROM reels
+        WHERE id=?
+    """, (reel_id,))
+
+    reel = c.fetchone()
+
+    if not reel:
+        conn.close()
+        return jsonify({
+            "ok": False,
+            "error": "reel not found"
+        }), 404
+
+    reel_owner_id = reel["user_id"]
+
+    # ==========================================
+    # ❤️ CHECK EXISTING LIKE
+    # ==========================================
+    c.execute("""
+        SELECT id
+        FROM reel_likes
+        WHERE reel_id=? AND user_id=?
+    """, (reel_id, uid))
+
     liked = c.fetchone()
 
+    # ==========================================
+    # 💔 UNLIKE
+    # ==========================================
     if liked:
-        c.execute("DELETE FROM reel_likes WHERE reel_id=? AND user_id=?", (reel_id, uid))
-        c.execute("UPDATE reels SET likes = CASE WHEN likes > 0 THEN likes - 1 ELSE 0 END WHERE id=?", (reel_id,))
+
+        c.execute("""
+            DELETE FROM reel_likes
+            WHERE reel_id=? AND user_id=?
+        """, (reel_id, uid))
+
+        c.execute("""
+            UPDATE reels
+            SET likes = CASE
+                WHEN likes > 0 THEN likes - 1
+                ELSE 0
+            END
+            WHERE id=?
+        """, (reel_id,))
+
         new_state = False
+
+    # ==========================================
+    # ❤️ LIKE
+    # ==========================================
     else:
-        c.execute("INSERT OR IGNORE INTO reel_likes (reel_id, user_id) VALUES (?, ?)", (reel_id, uid))
-        c.execute("UPDATE reels SET likes = likes + 1 WHERE id=?", (reel_id,))
+
+        c.execute("""
+            INSERT OR IGNORE INTO reel_likes
+            (reel_id, user_id)
+            VALUES (?,?)
+        """, (reel_id, uid))
+
+        c.execute("""
+            UPDATE reels
+            SET likes = likes + 1
+            WHERE id=?
+        """, (reel_id,))
+
         new_state = True
 
+        # ======================================
+        # 🔔 REEL LIKE NOTIFICATION
+        # ======================================
+
+        # Khud ki Reel ko like kare to notification nahi
+        if reel_owner_id != uid:
+
+            import json
+
+            meta = {
+                "reel_id": reel_id
+            }
+
+            c.execute("""
+                INSERT INTO notifications
+                (
+                    user_id,
+                    actor_id,
+                    type,
+                    meta
+                )
+                VALUES (?,?,?,?)
+            """, (
+                reel_owner_id,
+                uid,
+                "reel_like",
+                json.dumps(meta)
+            ))
+
+    # ==========================================
+    # ❤️ GET UPDATED LIKE COUNT
+    # ==========================================
+    c.execute("""
+        SELECT likes
+        FROM reels
+        WHERE id=?
+    """, (reel_id,))
+
+    row = c.fetchone()
+    count = row["likes"] if row else 0
+
     conn.commit()
-
-    c.execute("SELECT likes FROM reels WHERE id=?", (reel_id,))
-    count = c.fetchone()["likes"]
-
     conn.close()
 
     return jsonify({
@@ -327,7 +636,6 @@ def like_toggle(reel_id):
         "liked": new_state,
         "count": count
     })
-
 
 # ===============================
 # 🔖 SAVE / UNSAVE REEL (AJAX)
@@ -415,78 +723,295 @@ def share_reel(reel_id):
 
     return jsonify({"ok": True, "shares": shares})
 
-
 # ===============================
-# 💬 ADD COMMENT (AJAX)
+# 💬 ADD COMMENT / REPLY (AJAX)
 # ===============================
 @reels_bp.route("/comment/<int:reel_id>", methods=["POST"])
 def add_comment(reel_id):
+
     init_reels_db()
 
     if "user_id" not in session:
-        return jsonify({"ok": False, "error": "login required"})
+        return jsonify({
+            "ok": False,
+            "error": "login required"
+        })
 
     uid = get_user_id()
+
     comment = request.form.get("comment", "").strip()
+    reply_to = request.form.get("reply_to", "").strip()
 
     if not comment:
-        return jsonify({"ok": False, "error": "empty comment"})
+        return jsonify({
+            "ok": False,
+            "error": "empty comment"
+        })
+
+    parent_id = None
+    parent_owner_id = None
 
     conn = get_conn()
     c = conn.cursor()
 
+    # ===============================
+    # 🎬 CHECK REEL
+    # ===============================
     c.execute("""
-        INSERT INTO reel_comments (reel_id, user_id, comment)
-        VALUES (?,?,?)
-    """, (reel_id, uid, comment))
+        SELECT id, user_id
+        FROM reels
+        WHERE id=?
+    """, (reel_id,))
 
-    c.execute("UPDATE reels SET comments_count = comments_count + 1 WHERE id=?", (reel_id,))
+    reel = c.fetchone()
+
+    if not reel:
+        conn.close()
+        return jsonify({
+            "ok": False,
+            "error": "reel not found"
+        })
+
+    reel_owner_id = reel["user_id"]
+
+    # ===============================
+    # 🔁 CHECK REPLY TARGET
+    # ===============================
+    if reply_to:
+
+        try:
+            reply_to = int(reply_to)
+        except (ValueError, TypeError):
+            reply_to = None
+
+        if reply_to:
+
+            c.execute("""
+                SELECT id, user_id
+                FROM reel_comments
+                WHERE id=?
+                  AND reel_id=?
+                  AND parent_id IS NULL
+            """, (reply_to, reel_id))
+
+            parent = c.fetchone()
+
+            if parent:
+                parent_id = parent["id"]
+                parent_owner_id = parent["user_id"]
+
+    # ===============================
+    # 💬 SAVE COMMENT / REPLY
+    # ===============================
+    c.execute("""
+        INSERT INTO reel_comments
+        (
+            reel_id,
+            user_id,
+            comment,
+            parent_id
+        )
+        VALUES (?,?,?,?)
+    """, (
+        reel_id,
+        uid,
+        comment,
+        parent_id
+    ))
+
+    new_comment_id = c.lastrowid
+
+    # ===============================
+    # 📈 UPDATE COMMENT COUNT
+    # ===============================
+    c.execute("""
+        UPDATE reels
+        SET comments_count = comments_count + 1
+        WHERE id=?
+    """, (reel_id,))
+
+    # ===============================
+    # 🔔 NOTIFICATION
+    # ===============================
+
+    # REPLY
+    if parent_id is not None:
+
+        # Reply ki notification main comment ke owner ko
+        # Khud ko notification nahi bhejni
+        if parent_owner_id and parent_owner_id != uid:
+
+            meta = {
+                "reel_id": reel_id,
+                "comment_id": new_comment_id,
+                "parent_id": parent_id
+            }
+
+            import json
+
+            c.execute("""
+                INSERT INTO notifications
+                (
+                    user_id,
+                    actor_id,
+                    type,
+                    meta
+                )
+                VALUES (?,?,?,?)
+            """, (
+                parent_owner_id,
+                uid,
+                "reel_reply",
+                json.dumps(meta)
+            ))
+
+    # NORMAL COMMENT
+    else:
+
+        # Reel owner ko notification
+        # Khud apni reel par comment kare to notification nahi
+        if reel_owner_id != uid:
+
+            meta = {
+                "reel_id": reel_id,
+                "comment_id": new_comment_id
+            }
+
+            import json
+
+            c.execute("""
+                INSERT INTO notifications
+                (
+                    user_id,
+                    actor_id,
+                    type,
+                    meta
+                )
+                VALUES (?,?,?,?)
+            """, (
+                reel_owner_id,
+                uid,
+                "reel_comment",
+                json.dumps(meta)
+            ))
 
     conn.commit()
     conn.close()
 
-    return jsonify({"ok": True})
-
+    return jsonify({
+        "ok": True,
+        "reply": parent_id is not None
+    })
 
 # ===============================
-# 💬 GET COMMENTS (AJAX)
+# 💬 GET COMMENTS + REPLIES (AJAX)
 # ===============================
 @reels_bp.route("/comments/<int:reel_id>")
 def get_comments(reel_id):
+
     init_reels_db()
+
+    uid = session.get("user_id", 0)
 
     conn = get_conn()
     c = conn.cursor()
 
+    # ==========================================
+    # LOAD ALL COMMENTS + REPLIES
+    # ==========================================
     c.execute("""
-        SELECT rc.id, rc.comment, rc.created_at,
-               u.username, u.id as user_id, u.photo
+        SELECT
+            rc.id,
+            rc.reel_id,
+            rc.user_id,
+            rc.comment,
+            rc.created_at,
+            rc.parent_id,
+
+            u.username,
+            u.photo,
+
+            (
+                SELECT COUNT(*)
+                FROM reel_comment_likes rcl
+                WHERE rcl.comment_id = rc.id
+            ) AS likes,
+
+            EXISTS(
+                SELECT 1
+                FROM reel_comment_likes rcl2
+                WHERE rcl2.comment_id = rc.id
+                  AND rcl2.user_id = ?
+            ) AS liked
+
         FROM reel_comments rc
-        JOIN users u ON rc.user_id = u.id
-        WHERE rc.reel_id=?
-        ORDER BY rc.id DESC
-        LIMIT 50
-    """, (reel_id,))
 
-    comments = []
+        JOIN users u
+            ON rc.user_id = u.id
 
-    for r in c.fetchall():
+        WHERE rc.reel_id = ?
 
-        # 👇 replies (optional future support)
-        replies = []
+        ORDER BY rc.id ASC
+    """, (uid, reel_id))
 
-        comments.append({
+    rows = c.fetchall()
+
+    # ==========================================
+    # CREATE ALL COMMENT OBJECTS
+    # ==========================================
+    all_comments = {}
+
+    for r in rows:
+
+        all_comments[r["id"]] = {
             "id": r["id"],
             "username": r["username"],
             "user_id": r["user_id"],
-            "text": r["comment"],   # ⚠️ IMPORTANT (text not comment)
-            "profile": r["photo"], # 👈 PROFILE PIC
-            "likes": 0,
-            "replies": replies
-        })
+            "text": r["comment"],
+            "profile": r["photo"],
+            "likes": r["likes"] or 0,
+            "liked": bool(r["liked"]),
+            "parent_id": r["parent_id"],
+            "replies": []
+        }
+
+    # ==========================================
+    # SEPARATE COMMENTS + REPLIES
+    # ==========================================
+    comments = []
+
+    for r in rows:
+
+        current = all_comments[r["id"]]
+
+        # ===============================
+        # MAIN COMMENT
+        # ===============================
+        if r["parent_id"] is None:
+
+            comments.append(current)
+
+        # ===============================
+        # REPLY
+        # ===============================
+        else:
+
+            parent = all_comments.get(r["parent_id"])
+
+            if parent:
+                parent["replies"].append(current)
 
     conn.close()
-    return jsonify({"ok": True, "comments": comments})
+
+    # ==========================================
+    # NEWEST MAIN COMMENTS FIRST
+    # ==========================================
+    comments.reverse()
+
+    return jsonify({
+        "ok": True,
+        "comments": comments
+    })
 
 
 # ===============================
@@ -607,15 +1132,141 @@ def comments_page(id):
     )
 
 # ===============================
-# ❤️ LIKE COMMENT
+# ❤️ LIKE / UNLIKE COMMENT
 # ===============================
 @reels_bp.route("/comment_like/<int:id>", methods=["POST"])
 def comment_like(id):
-    if "user_id" not in session:
-        return jsonify({"ok": False})
 
-    # abhi simple dummy (baad me DB bana denge)
-    return jsonify({"ok": True, "likes": 1})
+    if "user_id" not in session:
+        return jsonify({
+            "ok": False,
+            "error": "login required"
+        })
+
+    uid = session.get("user_id")
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    # ==========================================
+    # CHECK COMMENT
+    # ==========================================
+    c.execute("""
+        SELECT
+            id,
+            user_id,
+            reel_id
+        FROM reel_comments
+        WHERE id=?
+    """, (id,))
+
+    comment = c.fetchone()
+
+    if not comment:
+        conn.close()
+
+        return jsonify({
+            "ok": False,
+            "error": "comment not found"
+        })
+
+    comment_owner_id = comment["user_id"]
+    reel_id = comment["reel_id"]
+
+    # ==========================================
+    # CHECK EXISTING LIKE
+    # ==========================================
+    c.execute("""
+        SELECT id
+        FROM reel_comment_likes
+        WHERE comment_id=?
+          AND user_id=?
+    """, (id, uid))
+
+    existing = c.fetchone()
+
+    # ==========================================
+    # ❤️ UNLIKE
+    # ==========================================
+    if existing:
+
+        c.execute("""
+            DELETE FROM reel_comment_likes
+            WHERE comment_id=?
+              AND user_id=?
+        """, (id, uid))
+
+        liked = False
+
+    # ==========================================
+    # ❤️ LIKE
+    # ==========================================
+    else:
+
+        c.execute("""
+            INSERT OR IGNORE INTO reel_comment_likes
+            (
+                comment_id,
+                user_id
+            )
+            VALUES (?,?)
+        """, (id, uid))
+
+        liked = True
+
+        # ======================================
+        # 🔔 COMMENT LIKE NOTIFICATION
+        # ======================================
+
+        # Khud ke comment ko like kare
+        # to notification nahi jayegi
+        if comment_owner_id != uid:
+
+            import json
+
+            meta = {
+                "reel_id": reel_id,
+                "comment_id": id
+            }
+
+            # notifications table already exists
+            c.execute("""
+                INSERT INTO notifications
+                (
+                    user_id,
+                    actor_id,
+                    type,
+                    meta
+                )
+                VALUES (?,?,?,?)
+            """, (
+                comment_owner_id,
+                uid,
+                "reel_comment_like",
+                json.dumps(meta)
+            ))
+
+    # ==========================================
+    # GET TOTAL LIKES
+    # ==========================================
+    c.execute("""
+        SELECT COUNT(*) AS total
+        FROM reel_comment_likes
+        WHERE comment_id=?
+    """, (id,))
+
+    row = c.fetchone()
+
+    likes = row["total"] if row else 0
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "liked": liked,
+        "likes": likes
+    })
 
 # =========================
 #   user id
@@ -690,7 +1341,7 @@ def reels_following_users():
     return jsonify({"users": users})
 
 # =========================
-# SHARE TO USER (DM STYLE)
+# 🎬 SHARE REEL TO USER (DM)
 # =========================
 @reels_bp.route("/share_to_user/<int:reel_id>/<int:user_id>", methods=["POST"])
 def share_to_user(reel_id, user_id):
@@ -698,11 +1349,121 @@ def share_to_user(reel_id, user_id):
     sender = session.get("user_id")
 
     if not sender:
-        return jsonify({"ok": False})
+        return jsonify({
+            "ok": False,
+            "error": "login required"
+        }), 401
+
+    # Khud ko reel share nahi
+    if sender == user_id:
+        return jsonify({
+            "ok": False,
+            "error": "cannot share to yourself"
+        }), 400
 
     conn = get_conn()
     c = conn.cursor()
 
+    # =========================
+    # 🎬 CHECK REEL
+    # =========================
+    c.execute("""
+        SELECT id
+        FROM reels
+        WHERE id=?
+    """, (reel_id,))
+
+    reel = c.fetchone()
+
+    if not reel:
+        conn.close()
+        return jsonify({
+            "ok": False,
+            "error": "reel not found"
+        }), 404
+
+    # =========================
+    # 👤 CHECK USER
+    # =========================
+    c.execute("""
+        SELECT id
+        FROM users
+        WHERE id=?
+    """, (user_id,))
+
+    receiver = c.fetchone()
+
+    if not receiver:
+        conn.close()
+        return jsonify({
+            "ok": False,
+            "error": "user not found"
+        }), 404
+
+    # =========================
+    # 💬 FIND EXISTING CHAT
+    # =========================
+    c.execute("""
+        SELECT id
+        FROM chats
+        WHERE
+            (user1=? AND user2=?)
+            OR
+            (user1=? AND user2=?)
+        LIMIT 1
+    """, (
+        sender,
+        user_id,
+        user_id,
+        sender
+    ))
+
+    chat = c.fetchone()
+
+    # =========================
+    # 🆕 CREATE CHAT IF NEEDED
+    # =========================
+    if chat:
+        chat_id = chat["id"]
+    else:
+        c.execute("""
+            INSERT INTO chats(user1, user2)
+            VALUES(?, ?)
+        """, (
+            sender,
+            user_id
+        ))
+
+        chat_id = c.lastrowid
+
+    # =========================
+    # 📌 SPECIAL REEL MESSAGE
+    # =========================
+    reel_msg = f"__SHARED_REEL__:{reel_id}"
+
+    # =========================
+    # 💬 INSERT INTO MESSAGES
+    # =========================
+    c.execute("""
+        INSERT INTO messages
+        (
+            chat_id,
+            sender_id,
+            msg,
+            attachment,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, datetime('now'))
+    """, (
+        chat_id,
+        sender,
+        reel_msg,
+        None
+    ))
+
+    # =========================
+    # 📊 SHARE RECORD
+    # =========================
     c.execute("""
         CREATE TABLE IF NOT EXISTS reel_shares (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -714,18 +1475,37 @@ def share_to_user(reel_id, user_id):
     """)
 
     c.execute("""
-        INSERT INTO reel_shares (
+        INSERT INTO reel_shares
+        (
             sender_id,
             receiver_id,
             reel_id
         )
-        VALUES (?,?,?)
-    """, (sender, user_id, reel_id))
+        VALUES (?, ?, ?)
+    """, (
+        sender,
+        user_id,
+        reel_id
+    ))
+
+    # =========================
+    # 📈 SHARE COUNT
+    # =========================
+    c.execute("""
+        UPDATE reels
+        SET shares = shares + 1
+        WHERE id=?
+    """, (reel_id,))
 
     conn.commit()
     conn.close()
 
-    return jsonify({"ok": True})
+    return jsonify({
+        "ok": True,
+        "chat_id": chat_id,
+        "reel_id": reel_id
+    })
+
 ############### reels view ##################
 @reels_bp.route("/view/<int:reel_id>", methods=["POST"])
 def add_view(reel_id):
@@ -764,4 +1544,43 @@ def add_view(reel_id):
     return jsonify({
         "ok": True,
         "views": views
+    })
+# =========================
+# 🎬 SHARED REEL THUMBNAIL
+# =========================
+@reels_bp.route("/shared_reel/<int:reel_id>")
+def shared_reel(reel_id):
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT thumbnail
+        FROM reels
+        WHERE id=?
+    """, (reel_id,))
+
+    reel = c.fetchone()
+
+    conn.close()
+
+    if not reel:
+        return jsonify({
+            "ok": False
+        }), 404
+
+    thumbnail = reel["thumbnail"]
+
+    if not thumbnail:
+        return jsonify({
+            "ok": True,
+            "image": "/static/default_post.png"
+        })
+
+    # Tumhare upload system ke hisaab se thumbnail
+    image = "/static/uploads/reels/thumbs/" + str(thumbnail)
+
+    return jsonify({
+        "ok": True,
+        "image": image
     })

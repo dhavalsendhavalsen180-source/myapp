@@ -1,10 +1,18 @@
+import eventlet
+eventlet.monkey_patch()
 from flask import Flask, send_from_directory, render_template
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from socketio_init import socketio
 from datetime import timedelta
+from routes.music import music_bp
+from routes.report import report_bp
+from routes.admin import admin_bp
 
-from flask import Flask, send_from_directory, render_template
+from dotenv import load_dotenv
+load_dotenv()
+
+import os
 
 from routes.basic import basic_bp
 from routes.auth import auth_bp
@@ -32,10 +40,6 @@ app.permanent_session_lifetime = timedelta(days=30)
 
 CORS(app, supports_credentials=True)
 
-from dotenv import load_dotenv
-load_dotenv()
-
-import os
 
 app.config["GOOGLE_CLIENT_ID"] = os.environ.get("GOOGLE_CLIENT_ID")
 app.config["GOOGLE_CLIENT_SECRET"] = os.environ.get("GOOGLE_CLIENT_SECRET")
@@ -63,6 +67,9 @@ app.register_blueprint(editor_bp)
 app.register_blueprint(stories_bp, url_prefix="/stories")
 app.register_blueprint(messages_bp)
 app.register_blueprint(call_bp)
+app.register_blueprint(music_bp)
+app.register_blueprint(report_bp)
+app.register_blueprint(admin_bp)
 
 @app.route("/")
 def home():

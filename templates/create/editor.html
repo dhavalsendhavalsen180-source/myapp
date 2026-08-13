@@ -24,6 +24,80 @@ body{margin:0;background:#0b0b0b;color:#fff;font-family:Inter,system-ui,Arial}
 
   <h2 class="text-2xl font-bold mt-3">Editor</h2>
 
+<!-- MUSIC -->
+<div class="mt-4 flex items-center gap-3">
+
+<a href="/music?media_path={{ media_path }}&mode={{ mode }}"
+   class="px-4 py-2 rounded-xl bg-violet-600 text-white font-semibold">
+    🎵 Select Music
+</a>
+
+  {% if request.args.get("music_id") %}
+  <span class="text-green-400 font-semibold">
+      ✅ Music Selected
+  </span>
+  {% endif %}
+
+</div>
+
+{% if music %}
+<div class="mt-4 p-3 rounded-xl bg-zinc-900 border border-zinc-700">
+
+    <div class="font-bold">🎵 {{ music.title }}</div>
+
+    <div class="text-sm text-gray-400">
+        {{ music.artist }}
+    </div>
+
+    <audio
+        id="musicPlayer"
+        controls
+        class="w-full mt-3"
+        preload="auto">
+        <source src="/static/music/uploads/{{ music.filename }}">
+    </audio>
+
+</div>
+{% endif %}
+
+<div class="mt-4 p-4 rounded-xl bg-zinc-900 border border-zinc-700">
+
+    <div class="font-semibold mb-4">
+        🎚 Audio Mix
+    </div>
+
+    <div class="mb-4">
+        <div class="flex justify-between text-sm mb-1">
+            <span>Original Audio</span>
+            <span id="ovLabel">100%</span>
+        </div>
+
+        <input
+            id="originalVolume"
+            type="range"
+            min="0"
+            max="100"
+            value="100"
+            class="w-full">
+    </div>
+
+    <div>
+        <div class="flex justify-between text-sm mb-1">
+            <span>Music</span>
+            <span id="mvLabel">70%</span>
+        </div>
+
+        <input
+            id="musicVolume"
+            type="range"
+            min="0"
+            max="100"
+            value="70"
+            class="w-full">
+    </div>
+
+</div>
+
 <div class="preview mt-4 relative" id="previewArea">
 
 {% if media_path %}
@@ -172,7 +246,23 @@ txt.oninput=()=>{
     const fd = new FormData();
     fd.append('export', new File([blob], filename, {type: blob.type}));
 
-    const resp = await fetch("/create/editor?mode={{ mode }}", { method:"POST", body: fd });
+    const musicId = new URLSearchParams(window.location.search).get("music_id") || "";
+
+    const mediaPath = new URLSearchParams(window.location.search).get("media_path") || "";
+
+    const originalVolume = document.getElementById("originalVolume")?.value || 100;
+    const musicVolume = document.getElementById("musicVolume")?.value || 70;
+
+    const resp = await fetch(
+    "/create/editor?mode={{ mode }}" +
+    "&media_path=" + encodeURIComponent(mediaPath) +
+    "&music_id=" + encodeURIComponent(musicId) +
+    "&original_volume=" + encodeURIComponent(originalVolume) +
+    "&music_volume=" + encodeURIComponent(musicVolume),
+    {
+        method: "POST",
+        body: fd
+    });
 
     if(resp.redirected){
       window.location = resp.url;
@@ -180,6 +270,47 @@ txt.oninput=()=>{
       window.location = '/create/publish';
     }
   });
+
+// =======================
+// Audio Mix Preview
+// =======================
+
+const ov = document.getElementById("originalVolume");
+const mv = document.getElementById("musicVolume");
+
+const ovLabel = document.getElementById("ovLabel");
+const mvLabel = document.getElementById("mvLabel");
+
+const musicPlayer = document.getElementById("musicPlayer");
+
+if (ov) {
+    ov.oninput = () => {
+        ovLabel.textContent = ov.value + "%";
+
+        if (mediaEl && mediaEl.tagName.toLowerCase() === "video") {
+            mediaEl.volume = ov.value / 100;
+        }
+    };
+}
+
+if (mv) {
+    mv.oninput = () => {
+        mvLabel.textContent = mv.value + "%";
+
+        if (musicPlayer) {
+            musicPlayer.volume = mv.value / 100;
+        }
+    };
+}
+
+// Default values
+if (mediaEl && mediaEl.tagName.toLowerCase() === "video") {
+    mediaEl.volume = 1;
+}
+
+if (musicPlayer) {
+    musicPlayer.volume = 0.7;
+}
 
 })();
 </script>

@@ -137,23 +137,22 @@ body{
     background:linear-gradient(to top,rgba(0,0,0,.85),transparent);
 }
 
-.msg-wrap{
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
-
 .msg{
     flex:1;
     display:flex;
     align-items:center;
+    height:48px;
+    padding:0 8px 0 16px;
     border:1px solid rgba(255,255,255,.35);
-    border-radius:40px;
-    padding:10px 15px;
+    border-radius:999px;
+    background:rgba(0,0,0,.35);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
 }
 
 .msg input{
     flex:1;
+    min-width:0;
     background:none;
     border:none;
     outline:none;
@@ -162,13 +161,35 @@ body{
 }
 
 .msg input::placeholder{
-    color:#ddd;
+    color:rgba(255,255,255,.8);
 }
 
-.bottom-actions{
+.story-send-btn{
+    width:38px;
+    height:38px;
+    border:0;
+    border-radius:50%;
+    background:white;
+    color:#111;
     display:flex;
     align-items:center;
-    gap:14px;
+    justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    font-size:18px;
+    transition:transform .15s ease;
+}
+
+.story-send-btn:active{
+    transform:scale(.88);
+}
+
+.story-send-btn svg{
+    width:20px;
+    height:20px;
+    stroke:#111;
+    fill:none;
+    stroke-width:2;
 }
 
 /* BOTTOM */
@@ -353,6 +374,167 @@ scale(2);
     min-width:160px;
 }
 
+/* =========================
+   STORY SHARE MODAL
+========================= */
+
+#storyShareModal{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:2000;
+    background:rgba(0,0,0,.55);
+    align-items:flex-end;
+    justify-content:center;
+}
+
+.story-share-box{
+    width:100%;
+    max-width:520px;
+    height:72vh;
+    background:white;
+    border-radius:24px 24px 0 0;
+    overflow:hidden;
+    color:#111;
+}
+
+.story-share-header{
+    height:58px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 18px;
+    border-bottom:1px solid #eee;
+    font-weight:700;
+    font-size:17px;
+}
+
+.story-share-search{
+    margin:12px;
+    width:calc(100% - 24px);
+    height:44px;
+    border:none;
+    outline:none;
+    background:#f2f2f2;
+    border-radius:12px;
+    padding:0 15px;
+    font-size:14px;
+}
+
+#storyShareUsers{
+    padding:8px 14px 30px;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:18px 8px;
+    overflow-y:auto;
+    height:calc(100% - 120px);
+}
+
+.story-share-user{
+    text-align:center;
+    cursor:pointer;
+}
+
+.story-share-user img{
+    width:58px;
+    height:58px;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid #eee;
+}
+
+.story-share-username{
+    margin-top:6px;
+    font-size:12px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+/* =========================
+   STORY BOTTOM FIX
+========================= */
+
+.owner-bottom{
+    justify-content:space-between;
+}
+
+.viewer-bottom{
+    width:100%;
+}
+
+.reply-box{
+    flex:1;
+    min-width:0;
+    height:48px;
+    display:flex;
+    align-items:center;
+    padding:0 14px;
+    border:1px solid rgba(255,255,255,.4);
+    border-radius:999px;
+    background:rgba(0,0,0,.4);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+}
+
+.reply-box input{
+    flex:1;
+    min-width:0;
+    height:100%;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:white;
+    font-size:15px;
+}
+
+.reply-box input::placeholder{
+    color:rgba(255,255,255,.85);
+}
+
+.reply-box .icon{
+    flex:none;
+    width:24px;
+    height:24px;
+}
+
+/* =========================
+   STORY PAUSE / INTERACTION
+========================= */
+
+.msg-wrap,
+.bottom,
+.bottom *,
+.top,
+.top *,
+#storyMenu,
+#activitySheet,
+#activityOverlay,
+#storyShareModal {
+    pointer-events:auto;
+}
+
+.msg-wrap,
+.bottom-actions,
+.msg,
+.msg input,
+.bottom svg {
+    position:relative;
+    z-index:100;
+}
+
+/* Tap zones ko controls ke niche rakho */
+.leftTap,
+.rightTap {
+    z-index:20;
+}
+
+/* UI controls */
+.top,
+.bottom {
+    z-index:100;
+}
+
 </style>
 </head>
 
@@ -423,30 +605,28 @@ scale(2);
 
 <div class="top-right">
 
-{% if owner_id|string == session.get("user_id")|string %}
-    <!-- OWNER ONLY -->
-    <svg class="icon" onclick="toggleMenu()" viewBox="0 0 24 24">
-        <circle cx="5" cy="12" r="1"></circle>
-        <circle cx="12" cy="12" r="1"></circle>
-        <circle cx="19" cy="12" r="1"></circle>
-    </svg>
-    {% endif %}
+<!-- MENU -->
+<svg class="icon" onclick="toggleMenu()" viewBox="0 0 24 24">
+    <circle cx="5" cy="12" r="1"></circle>
+    <circle cx="12" cy="12" r="1"></circle>
+    <circle cx="19" cy="12" r="1"></circle>
+</svg>
 
-    <!-- CLOSE -->
-    <svg class="icon" onclick="history.back()" viewBox="0 0 24 24">
-        <path d="M18 6L6 18"></path>
-        <path d="M6 6L18 18"></path>
-    </svg>
+<!-- CLOSE -->
+<svg class="icon" onclick="history.back()" viewBox="0 0 24 24">
+    <path d="M18 6L6 18"></path>
+    <path d="M6 6L18 18"></path>
+</svg>
 
 </div>
 
-   </div>
+</div>
 
-    </div>
-
-{% if owner_id|string == session.get("user_id")|string %}
+</div>
 
 <div id="storyMenu">
+
+{% if owner_id|string == session.get("user_id")|string %}
 
     <div onclick="deleteStory()"
          style="
@@ -455,12 +635,34 @@ scale(2);
          color:#ff3040;
          font-weight:600;
          text-align:center;
+         cursor:pointer;
          ">
-        Delete Story
+        🗑 Delete Story
     </div>
 
-</div>
+{% else %}
+
+    <form method="GET" action="/report" style="margin:0;">
+        <input type="hidden" name="target_type" value="story">
+        <input type="hidden" id="storyTargetId" name="target_id">
+        <input type="hidden" name="owner_id" value="{{ owner_id }}">
+
+        <button type="submit"
+                style="
+                width:100%;
+                padding:14px 18px;
+                border:none;
+                background:white;
+                color:#ff3040;
+                font-weight:600;
+                cursor:pointer;">
+            🧾 Report Story
+        </button>
+    </form>
+
 {% endif %}
+
+</div>
 
     <!-- MEDIA -->
     <img id="img" class="story-media" style="display:none">
@@ -475,82 +677,109 @@ scale(2);
 
 {% if owner_id|string == session.get("user_id")|string %}
 
-<div class="msg-wrap" style="justify-content:space-between;width:100%;">
+    <!-- OWNER -->
+    <div class="msg-wrap owner-bottom">
 
-    <div class="msg"
-     onclick="openActivity()"
-     id="activityBtn"
-     style="
-     flex:none;
-     width:120px;
-     cursor:pointer;
-     font-weight:600;
-     position:relative;">
+        <div class="msg activity-btn"
+             id="activityBtn"
+             onclick="openActivity()">
 
-    <div id="heartBurst"></div>
+            <div id="heartBurst"></div>
 
-    <svg viewBox="0 0 24 24"
-         style="width:20px;height:20px;stroke:white;fill:none;stroke-width:2;margin-right:8px;">
-        <path d="M12 19V5"></path>
-        <path d="M5 12L12 19L19 12"></path>
-    </svg>
+            <svg viewBox="0 0 24 24">
+                <path d="M12 19V5"></path>
+                <path d="M5 12L12 19L19 12"></path>
+            </svg>
 
-    Activity
+            Activity
+        </div>
 
-</div>
+        <div class="bottom-actions">
 
-    <div class="bottom-actions" style="margin-left:auto;">
+            <!-- SHARE -->
+            <svg viewBox="0 0 24 24"
+                 onclick="openStoryShare()"
+                 style="width:28px;height:28px;stroke:white;fill:none;stroke-width:2;cursor:pointer;">
 
-        <!-- Share -->
-        <svg viewBox="0 0 24 24"
-             onclick="navigator.share ? navigator.share({url:location.href}) : window.open('https://wa.me/?text='+location.href)"
-             style="width:28px;height:28px;stroke:white;fill:none;stroke-width:2;cursor:pointer;">
-            <path d="M22 2L11 13"></path>
-            <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
-        </svg>
+                <path d="M22 2L11 13"></path>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
 
-  {% else %}
-
-        <!-- VIEWER UI -->
-        <div class="msg-wrap">
-
-            <div class="msg">
-
-                <input id="msg" placeholder="Send message...">
-
-<!-- CAMERA -->
-<svg class="icon" viewBox="0 0 24 24">
-    <path d="M4 7h4l2-2h4l2 2h4v12H4z"></path>
-    <circle cx="12" cy="13" r="3"></circle>
-</svg>
-            </div>
-
-            <div class="bottom-actions">
-
-<!-- LIKE -->
-<svg id="likeBtn"
-     onclick="toggleLike()"
-     viewBox="0 0 24 24"
-     style="width:28px;height:28px;stroke:white;fill:none;stroke-width:2;cursor:pointer;">
-
-    <path id="heartPath"
-          d="M12 21s-7-4.35-9-8.5C1 8 3.5 5 7 5c2 0 3.5 1 5 3 1.5-2 3-3 5-3 3.5 0 6 3 4 7.5-2 4.15-9 8.5-9 8.5z">
-    </path>
-
-</svg>
-                <!-- SHARE -->
-                <svg viewBox="0 0 24 24">
-                    <path d="M22 2L11 13"></path>
-                    <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
-                </svg>
-
-            </div>
+            </svg>
 
         </div>
 
-        {% endif %}
+    </div>
+
+{% else %}
+
+    <!-- VIEWER -->
+    <div class="msg-wrap viewer-bottom">
+
+        <!-- REPLY BOX -->
+<div class="msg">
+
+    <input
+        id="msg"
+        type="text"
+        placeholder="Send message..."
+        autocomplete="off"
+        maxlength="1000"
+    >
+
+    <!-- Camera -->
+    <svg
+        class="icon"
+        viewBox="0 0 24 24"
+        style="width:24px;height:24px;margin-right:8px;flex-shrink:0;"
+    >
+        <path d="M4 7h4l2-2h4l2 2h4v12H4z"></path>
+        <circle cx="12" cy="13" r="3"></circle>
+    </svg>
+
+    <!-- SEND -->
+    <button
+        type="button"
+        id="storySendBtn"
+        class="story-send-btn"
+        aria-label="Send message"
+    >
+        <svg viewBox="0 0 24 24">
+            <path d="M22 2L11 13"></path>
+            <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+        </svg>
+    </button>
+
+</div>
+
+        <div class="bottom-actions">
+
+            <!-- LIKE -->
+            <svg id="likeBtn"
+                 onclick="toggleLike()"
+                 viewBox="0 0 24 24"
+                 style="width:28px;height:28px;stroke:white;fill:none;stroke-width:2;cursor:pointer;">
+
+                <path id="heartPath"
+                      d="M12 21s-7-4.35-9-8.5C1 8 3.5 5 7 5c2 0 3.5 1 5 3 1.5-2 3-3 5-3 3.5 0 6 3 4 7.5-2 4.15-9 8.5-9 8.5z">
+                </path>
+
+            </svg>
+
+            <!-- SHARE -->
+            <svg viewBox="0 0 24 24"
+                 onclick="openStoryShare()"
+                 style="width:28px;height:28px;stroke:white;fill:none;stroke-width:2;cursor:pointer;">
+
+                <path d="M22 2L11 13"></path>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+
+            </svg>
+
+        </div>
 
     </div>
+
+{% endif %}
 
 </div>
 
@@ -560,126 +789,1117 @@ let stories = {{ stories|tojson }};
 let storyUsers = {{ story_users|tojson }};
 let currentOwner = "{{ owner_id }}";
 let currentUser = "{{ current_user }}";
+
 let i = 0;
-let timer;
-let liked = false;
+
+/* =========================
+   STORY TIMER STATE
+========================= */
+
+let timer = null;
+
+let storyDuration = 5000;
+let storyElapsed = 0;
+let storyStartedAt = 0;
+
+let storyPaused = false;
+
+let touchStartX = 0;
+let touchStartY = 0;
+
+let holdTimer = null;
+let isHolding = false;
+
+
+/* =========================
+   LIKE
+========================= */
 
 function toggleLike(){
 
+    const story = stories[i];
+
+    if(!story) return;
+
     fetch("/stories/api/react",{
+
         method:"POST",
+
         headers:{
             "Content-Type":"application/json"
         },
+
         body:JSON.stringify({
-            story_id:stories[i].id,
+
+            story_id:story.id,
             reaction:"❤️"
+
         })
+
     })
+
     .then(r=>r.json())
+
     .then(d=>{
 
-        let heart=document.getElementById("heartPath");
+        const heart =
+            document.getElementById("heartPath");
+
+        if(!heart) return;
 
         if(d.liked){
 
-            heart.setAttribute("fill","#ff3040");
-            heart.setAttribute("stroke","#ff3040");
+            heart.setAttribute(
+                "fill",
+                "#ff3040"
+            );
+
+            heart.setAttribute(
+                "stroke",
+                "#ff3040"
+            );
+
+            /*
+             * Local state update
+             */
+            if(!story.likes){
+                story.likes = [];
+            }
+
+            if(!story.likes.includes(
+                String(currentUser)
+            )){
+
+                story.likes.push(
+                    String(currentUser)
+                );
+
+            }
 
         }else{
 
-            heart.setAttribute("fill","none");
-            heart.setAttribute("stroke","white");
+            heart.setAttribute(
+                "fill",
+                "none"
+            );
+
+            heart.setAttribute(
+                "stroke",
+                "white"
+            );
+
+            if(story.likes){
+
+                story.likes =
+                    story.likes.filter(
+                        x =>
+                        String(x) !==
+                        String(currentUser)
+                    );
+
+            }
 
         }
+
+    })
+
+    .catch(err=>{
+
+        console.error(
+            "LIKE ERROR:",
+            err
+        );
+
     });
 }
 
-let startX = 0;
 
-document.addEventListener("touchstart",(e)=>{
-    startX = e.touches[0].clientX;
-});
-
-document.addEventListener("touchend",(e)=>{
-
-    let endX = e.changedTouches[0].clientX;
-    let diff = endX - startX;
-
-    // swipe left
-    if(diff < -80){
-        next();
-    }
-
-    // swipe right
-    if(diff > 80){
-        prev();
-    }
-
-});
+/* =========================
+   LOAD STORY
+========================= */
 
 function load(){
 
     clearTimeout(timer);
 
-    let s = stories[i];
+    storyPaused = false;
+    storyElapsed = 0;
+    storyStartedAt = 0;
+
+    const s = stories[i];
+
+    if(!s) return;
 
     initLike();
-
     checkLikes();
 
-    document.querySelectorAll(".fill").forEach(e=>{
-        e.style.transition="none";
-        e.style.width="0%";
-    });
+    /*
+     * Reset progress
+     */
 
-    let img = document.getElementById("img");
-    let vid = document.getElementById("vid");
+    document
+        .querySelectorAll(".fill")
+        .forEach(bar=>{
 
-    img.style.display="none";
-    vid.style.display="none";
+            bar.style.transition = "none";
+            bar.style.width = "0%";
 
-    let src="/stories/media/"+s.filename;
+        });
 
-const imageExts = [
-    "jpg","jpeg","png","gif",
-    "webp","bmp","tiff","tif",
-    "heic","heif","avif"
-];
+    const img =
+        document.getElementById("img");
 
-const ext = s.filename.split('.').pop().toLowerCase();
+    const vid =
+        document.getElementById("vid");
 
-if(imageExts.includes(ext))
-{
-    img.src = src;
-    img.style.display = "block";
+    if(!img || !vid) return;
 
-    animate(5000);
-    timer = setTimeout(next,5000);
+    img.style.display = "none";
+
+    vid.style.display = "none";
+
+    vid.pause();
+
+    vid.removeAttribute("src");
+
+    const src =
+        "/stories/media/" + s.filename;
+
+    const imageExts = [
+
+        "jpg",
+        "jpeg",
+        "png",
+        "gif",
+        "webp",
+        "bmp",
+        "tiff",
+        "tif",
+        "heic",
+        "heif",
+        "avif"
+
+    ];
+
+    const ext =
+        s.filename
+        .split(".")
+        .pop()
+        .toLowerCase();
+
+
+    /* =========================
+       IMAGE STORY
+    ========================= */
+
+    if(imageExts.includes(ext)){
+
+        img.src = src;
+
+        img.style.display = "block";
+
+        storyDuration = 5000;
+
+        startStory();
+
+    }
+
+
+    /* =========================
+       VIDEO STORY
+    ========================= */
+
+    else{
+
+        vid.src = src;
+
+        vid.style.display = "block";
+
+        vid.onloadedmetadata = ()=>{
+
+            storyDuration =
+                (vid.duration * 1000) || 5000;
+
+            vid.currentTime = 0;
+
+            vid.play()
+                .catch(err=>{
+
+                    console.log(
+                        "VIDEO AUTOPLAY:",
+                        err
+                    );
+
+                });
+
+            startStory();
+
+        };
+
+    }
+
 }
-else
-{
-    vid.src = src;
-    vid.style.display = "block";
 
-    vid.onloadedmetadata = ()=>{
 
-        vid.play();
+/* =========================
+   START STORY
+========================= */
 
-        let t = (vid.duration*1000) || 5000;
+function startStory(){
 
-        animate(t);
-        timer = setTimeout(next,t);
- };
+    clearTimeout(timer);
+
+    storyPaused = false;
+
+    storyElapsed = 0;
+
+    storyStartedAt = Date.now();
+
+    const bar =
+        document.getElementById(
+            "p" + i
+        );
+
+    if(bar){
+
+        bar.style.transition = "none";
+
+        bar.style.width = "0%";
+
+        requestAnimationFrame(()=>{
+
+            bar.style.transition =
+                "width " +
+                storyDuration +
+                "ms linear";
+
+            bar.style.width = "100%";
+
+        });
+
+    }
+
+    timer = setTimeout(()=>{
+
+        if(!storyPaused){
+
+            next();
+
+        }
+
+    }, storyDuration);
+
 }
 
-} // <-- YE load() KO BAND KARTA HAI
-let lastLikes = -1;
+
+/* =========================
+   PAUSE STORY
+========================= */
+
+function pauseStory(){
+
+    if(storyPaused){
+
+        return;
+
+    }
+
+    storyPaused = true;
+
+    clearTimeout(timer);
+
+    /*
+     * Calculate exact elapsed time
+     */
+
+    if(storyStartedAt){
+
+        storyElapsed +=
+            Date.now() -
+            storyStartedAt;
+
+    }
+
+    /*
+     * Limit
+     */
+
+    storyElapsed =
+        Math.min(
+            storyElapsed,
+            storyDuration
+        );
+
+
+    /* =========================
+       VIDEO PAUSE
+    ========================= */
+
+    const vid =
+        document.getElementById("vid");
+
+    if(
+        vid &&
+        vid.style.display !== "none" &&
+        !vid.paused
+    ){
+
+        vid.pause();
+
+    }
+
+
+    /* =========================
+       PROGRESS BAR PAUSE
+    ========================= */
+
+    const bar =
+        document.getElementById(
+            "p" + i
+        );
+
+    if(bar){
+
+        const percent =
+            (
+                storyElapsed /
+                storyDuration
+            ) * 100;
+
+        bar.style.transition = "none";
+
+        bar.style.width =
+            Math.min(
+                100,
+                percent
+            ) + "%";
+
+    }
+
+}
+
+
+/* =========================
+   RESUME STORY
+========================= */
+
+function resumeStory(){
+
+    if(!storyPaused){
+
+        return;
+
+    }
+
+    storyPaused = false;
+
+    const remaining =
+        Math.max(
+            100,
+            storyDuration -
+            storyElapsed
+        );
+
+
+    /* =========================
+       PROGRESS RESUME
+    ========================= */
+
+    const bar =
+        document.getElementById(
+            "p" + i
+        );
+
+    if(bar){
+
+        const percent =
+            (
+                storyElapsed /
+                storyDuration
+            ) * 100;
+
+        bar.style.transition = "none";
+
+        bar.style.width =
+            percent + "%";
+
+        requestAnimationFrame(()=>{
+
+            bar.style.transition =
+                "width " +
+                remaining +
+                "ms linear";
+
+            bar.style.width =
+                "100%";
+
+        });
+
+    }
+
+
+    /* =========================
+       VIDEO RESUME
+    ========================= */
+
+    const vid =
+        document.getElementById("vid");
+
+    if(
+        vid &&
+        vid.style.display !== "none"
+    ){
+
+        vid.play()
+            .catch(()=>{});
+
+    }
+
+
+    /*
+     * Restart timer only
+     * for remaining duration
+     */
+
+    storyStartedAt = Date.now();
+
+    timer = setTimeout(()=>{
+
+        if(!storyPaused){
+
+            next();
+
+        }
+
+    }, remaining);
+
+}
+
+
+/* =========================
+   CHECK STORY CONTROL
+========================= */
+
+function isStoryControl(target){
+
+    if(!target) return false;
+
+    return !!(
+
+        target.closest(".bottom") ||
+
+        target.closest(".top") ||
+
+        target.closest("#activitySheet") ||
+
+        target.closest("#activityOverlay") ||
+
+        target.closest("#storyMenu") ||
+
+        target.closest("#storyShareModal")
+
+    );
+
+}
+
+
+/* =========================
+   TOUCH START
+========================= */
+
+document.addEventListener(
+    "touchstart",
+    function(e){
+
+        const target =
+            e.target;
+
+
+        /*
+         * Bottom/top controls:
+         * immediately pause.
+         */
+
+        if(isStoryControl(target)){
+
+            pauseStory();
+
+            return;
+
+        }
+
+
+        touchStartX =
+            e.touches[0].clientX;
+
+        touchStartY =
+            e.touches[0].clientY;
+
+        isHolding = false;
+
+
+        /*
+         * Long press
+         */
+
+        clearTimeout(holdTimer);
+
+        holdTimer =
+            setTimeout(()=>{
+
+                isHolding = true;
+
+                pauseStory();
+
+            }, 350);
+
+    },
+    {
+        passive:true
+    }
+);
+
+
+/* =========================
+   TOUCH MOVE
+========================= */
+
+document.addEventListener(
+    "touchmove",
+    function(e){
+
+        if(!touchStartX){
+
+            return;
+
+        }
+
+        const x =
+            e.touches[0].clientX;
+
+        const y =
+            e.touches[0].clientY;
+
+        const dx =
+            Math.abs(
+                x - touchStartX
+            );
+
+        const dy =
+            Math.abs(
+                y - touchStartY
+            );
+
+
+        /*
+         * Movement means
+         * it isn't long press.
+         */
+
+        if(
+            dx > 20 ||
+            dy > 20
+        ){
+
+            clearTimeout(
+                holdTimer
+            );
+
+        }
+
+    },
+    {
+        passive:true
+    }
+);
+
+
+/* =========================
+   TOUCH END
+========================= */
+
+document.addEventListener(
+    "touchend",
+    function(e){
+
+        clearTimeout(
+            holdTimer
+        );
+
+
+        const target =
+            e.target;
+
+
+        /*
+         * If user touched UI,
+         * don't navigate.
+         */
+
+        if(isStoryControl(target)){
+
+            /*
+             * Small delay prevents
+             * accidental navigation.
+             */
+
+            setTimeout(()=>{
+
+                /*
+                 * Don't resume if
+                 * reply input is focused.
+                 */
+
+                const active =
+                    document.activeElement;
+
+                if(
+                    active &&
+                    active.id === "msg"
+                ){
+
+                    return;
+
+                }
+
+                resumeStory();
+
+            }, 100);
+
+            return;
+
+        }
+
+
+        const endX =
+            e.changedTouches[0].clientX;
+
+        const endY =
+            e.changedTouches[0].clientY;
+
+        const diffX =
+            endX - touchStartX;
+
+        const diffY =
+            endY - touchStartY;
+
+
+        /*
+         * HOLD
+         */
+
+        if(isHolding){
+
+            isHolding = false;
+
+            resumeStory();
+
+            touchStartX = 0;
+            touchStartY = 0;
+
+            return;
+
+        }
+
+
+        /*
+         * HORIZONTAL SWIPE
+         */
+
+        if(
+
+            Math.abs(diffX) > 80 &&
+
+            Math.abs(diffX) >
+            Math.abs(diffY)
+
+        ){
+
+            if(diffX < 0){
+
+                next();
+
+            }else{
+
+                prev();
+
+            }
+
+            touchStartX = 0;
+            touchStartY = 0;
+
+            return;
+
+        }
+
+
+        /*
+         * NORMAL TAP
+         */
+
+        if(
+
+            Math.abs(diffX) < 20 &&
+
+            Math.abs(diffY) < 20
+
+        ){
+
+            if(
+                endX <
+                window.innerWidth / 2
+            ){
+
+                prev();
+
+            }else{
+
+                next();
+
+            }
+
+        }
+
+
+        touchStartX = 0;
+        touchStartY = 0;
+
+    }
+);
+
+/* ================= STORY REPLY ================= */
+
+const msg = document.getElementById("msg");
+const storySendBtn = document.getElementById("storySendBtn");
+
+
+/* ================= SEND REPLY ================= */
+
+async function sendStoryReply(){
+
+    if(!msg) return;
+
+    const text = msg.value.trim();
+
+    if(!text) return;
+
+    const story = stories[i];
+
+    if(!story) return;
+
+
+    /* Button temporarily disable */
+
+    if(storySendBtn){
+
+        storySendBtn.disabled = true;
+        storySendBtn.style.opacity = "0.5";
+
+    }
+
+
+    try{
+
+        const res = await fetch(
+            "/stories/api/reply",
+            {
+                method:"POST",
+
+                headers:{
+                    "Content-Type":"application/json"
+                },
+
+                body:JSON.stringify({
+
+                    to_user: story.user_id,
+
+                    story_id: story.id,
+
+                    text: text
+
+                })
+            }
+        );
+
+
+        const data = await res.json();
+
+
+        if(!res.ok || data.ok === false){
+
+            console.error(
+                "STORY REPLY ERROR:",
+                data
+            );
+
+            return;
+        }
+
+
+        /* Clear message */
+
+        msg.value = "";
+
+
+        /*
+         * Keyboard open reh sakta hai,
+         * isliye story resume nahi karenge.
+         */
+
+        msg.focus();
+
+
+    }catch(error){
+
+        console.error(
+            "STORY REPLY NETWORK ERROR:",
+            error
+        );
+
+
+    }finally{
+
+        if(storySendBtn){
+
+            storySendBtn.disabled = false;
+            storySendBtn.style.opacity = "1";
+
+        }
+
+    }
+
+}
+
+
+/* ================= INPUT FOCUS ================= */
+
+if(msg){
+
+    msg.addEventListener(
+        "focus",
+        function(){
+
+            pauseStory();
+
+        }
+    );
+
+
+    /* ================= TYPING ================= */
+
+    msg.addEventListener(
+        "input",
+        function(){
+
+            pauseStory();
+
+        }
+    );
+
+
+    /* ================= ENTER SEND ================= */
+
+    msg.addEventListener(
+        "keydown",
+        function(e){
+
+            if(e.key === "Enter"){
+
+                e.preventDefault();
+
+                sendStoryReply();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ================= SEND BUTTON ================= */
+
+if(storySendBtn){
+
+    storySendBtn.addEventListener(
+        "click",
+        function(e){
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            sendStoryReply();
+
+        }
+    );
+
+}
+
+
+/* =========================
+   NEXT STORY
+========================= */
+
+function next(){
+
+    clearTimeout(timer);
+
+    storyPaused = false;
+
+    if(i < stories.length - 1){
+
+        i++;
+
+        load();
+
+        return;
+
+    }
+
+
+    const idx =
+        storyUsers.indexOf(
+            currentOwner
+        );
+
+
+    if(
+        idx !== -1 &&
+        idx < storyUsers.length - 1
+    ){
+
+        const nextUser =
+            storyUsers[idx + 1];
+
+        window.location.href =
+            "/stories/view/" +
+            nextUser;
+
+        return;
+
+    }
+
+
+    window.location.href =
+        "/posts/feed";
+
+}
+
+
+/* =========================
+   PREVIOUS STORY
+========================= */
+
+function prev(){
+
+    clearTimeout(timer);
+
+    storyPaused = false;
+
+
+    if(i > 0){
+
+        i--;
+
+        load();
+
+        return;
+
+    }
+
+
+    const idx =
+        storyUsers.indexOf(
+            currentOwner
+        );
+
+
+    if(idx > 0){
+
+        const prevUser =
+            storyUsers[idx - 1];
+
+        window.location.href =
+            "/stories/view/" +
+            prevUser;
+
+    }
+
+}
+
+
+/* =========================
+   INIT LIKE
+========================= */
+
+function initLike(){
+
+    const heart =
+        document.getElementById(
+            "heartPath"
+        );
+
+    if(!heart){
+
+        return;
+
+    }
+
+
+    const likes =
+        stories[i].likes || [];
+
+
+    if(
+        likes.some(
+            x =>
+            String(x) ===
+            String(currentUser)
+        )
+    ){
+
+        heart.setAttribute(
+            "fill",
+            "#ff3040"
+        );
+
+        heart.setAttribute(
+            "stroke",
+            "#ff3040"
+        );
+
+    }else{
+
+        heart.setAttribute(
+            "fill",
+            "none"
+        );
+
+        heart.setAttribute(
+            "stroke",
+            "white"
+        );
+
+    }
+
+}
+
+
+/* =========================
+   LIKE COUNT
+========================= */
 
 function checkLikes(){
 
-    fetch("/stories/activity_count/" + stories[i].id)
+    if(!stories[i]) return;
+
+    fetch(
+        "/stories/activity_count/" +
+        stories[i].id
+    )
+
     .then(r=>r.json())
+
     .then(d=>{
 
         if(d.likes > 0){
@@ -692,233 +1912,782 @@ function checkLikes(){
 
         }
 
-    });
+    })
+
+    .catch(()=>{});
+
 }
 
-setInterval(checkLikes,5000);
+setInterval(
+    checkLikes,
+    5000
+);
 
-function animate(t){
 
-    let bar=document.getElementById("p"+i);
-
-    bar.style.transition="width "+t+"ms linear";
-
-    setTimeout(()=>{
-        bar.style.width="100%";
-    },50);
-}
+/* =========================
+   HEART FOUNTAIN
+========================= */
 
 let heartInterval = null;
 
 function startHeartFountain(){
 
-    if(heartInterval) return;
+    if(heartInterval){
 
-    heartInterval = setInterval(()=>{
+        return;
 
-        createHeartFountain();
+    }
 
-    },700); // har 0.7 second naya batch
+    heartInterval =
+        setInterval(()=>{
+
+            createHeartFountain();
+
+        },700);
 
 }
 
+
 function stopHeartFountain(){
 
-    clearInterval(heartInterval);
+    clearInterval(
+        heartInterval
+    );
+
     heartInterval = null;
 
 }
 
+
 function createHeartFountain(){
 
-    let box = document.getElementById("heartBurst");
+    const box =
+        document.getElementById(
+            "heartBurst"
+        );
 
-    if(!box) return;
+    if(!box){
 
-    for(let i=0;i<5;i++){
+        return;
 
-        let h=document.createElement("div");
+    }
 
-        h.className="flyHeart";
-        h.innerHTML=["❤️","💖","💕","💜","💙"][Math.floor(Math.random()*5)];
 
-        h.style.setProperty("--x",Math.random());
+    for(
+        let j = 0;
+        j < 5;
+        j++
+    ){
+
+        const h =
+            document.createElement(
+                "div"
+            );
+
+        h.className =
+            "flyHeart";
+
+        h.innerHTML =
+            [
+                "❤️",
+                "💖",
+                "💕",
+                "💜",
+                "💙"
+            ][
+                Math.floor(
+                    Math.random() * 5
+                )
+            ];
+
+        h.style.setProperty(
+            "--x",
+            Math.random()
+        );
 
         box.appendChild(h);
 
         setTimeout(()=>{
+
             h.remove();
+
         },6000);
+
     }
+
 }
 
-function next(){
 
-    if(i < stories.length-1){
-
-        i++;
-        load();
-        return;
-    }
-
-    let idx = storyUsers.indexOf(currentOwner);
-
-    if(idx !== -1 && idx < storyUsers.length - 1){
-
-        let nextUser = storyUsers[idx + 1];
-
-        window.location.href =
-            "/stories/view/" + nextUser;
-
-        return;
-    }
-
-    window.location.href="/posts/feed";
-}
-
-function prev(){
-
-    if(i > 0){
-
-        i--;
-        load();
-        return;
-    }
-
-    let idx = storyUsers.indexOf(currentOwner);
-
-    if(idx > 0){
-
-        let prevUser = storyUsers[idx - 1];
-
-        window.location.href =
-            "/stories/view/" + prevUser;
-    }
-}
-
-function initLike(){
-
-    let heart = document.getElementById("heartPath");
-
-    if(!heart){
-        return;
-    }
-
-    if(
-        stories[i].likes &&
-        stories[i].likes.includes(currentUser)
-    ){
-        heart.setAttribute("fill","#ff3040");
-        heart.setAttribute("stroke","#ff3040");
-    }else{
-        heart.setAttribute("fill","none");
-        heart.setAttribute("stroke","white");
-    }
-}
-
-let msg=document.getElementById("msg");
-
-if(msg){
-
-    msg.addEventListener("keypress",function(e){
-
-        if(e.key==="Enter"){
-
-            fetch("/stories/api/reply",{
-                method:"POST",
-                headers:{
-                    "Content-Type":"application/json"
-                },
-                body:JSON.stringify({
-                    to_user:stories[i].user_id,
-                    story_id:stories[i].id,
-                    text:this.value
-                })
-            });
-
-            this.value="";
-        }
-    });
-}
+/* =========================
+   MENU
+========================= */
 
 function toggleMenu(){
 
-    let m = document.getElementById("storyMenu");
+    pauseStory();
 
-    if(m.style.display==="block"){
-        m.style.display="none";
-    }else{
-        m.style.display="block";
+    const input =
+        document.getElementById(
+            "storyTargetId"
+        );
+
+    if(input){
+
+        input.value =
+            stories[i].id;
+
     }
+
+
+    const m =
+        document.getElementById(
+            "storyMenu"
+        );
+
+    if(!m) return;
+
+
+    if(
+        m.style.display ===
+        "block"
+    ){
+
+        m.style.display =
+            "none";
+
+        resumeStory();
+
+    }else{
+
+        m.style.display =
+            "block";
+
+    }
+
 }
+
+
+/* =========================
+   ACTIVITY
+========================= */
 
 function openActivity(){
 
-    document.getElementById("activityOverlay").style.display="block";
+    pauseStory();
 
-    document.getElementById("activitySheet")
-        .classList.add("show");
+    const overlay =
+        document.getElementById(
+            "activityOverlay"
+        );
 
-    document.getElementById("activityFrame").src =
-        "/stories/activity/" + stories[i].id;
+    const sheet =
+        document.getElementById(
+            "activitySheet"
+        );
+
+    const frame =
+        document.getElementById(
+            "activityFrame"
+        );
+
+    if(overlay){
+
+        overlay.style.display =
+            "block";
+
+    }
+
+    if(sheet){
+
+        sheet.classList.add(
+            "show"
+        );
+
+    }
+
+    if(frame){
+
+        frame.src =
+            "/stories/activity/" +
+            stories[i].id;
+
+    }
+
 }
+
 
 function closeActivity(){
 
-    document.getElementById("activityOverlay").style.display="none";
+    const overlay =
+        document.getElementById(
+            "activityOverlay"
+        );
 
-    document.getElementById("activitySheet")
-        .classList.remove("show");
+    const sheet =
+        document.getElementById(
+            "activitySheet"
+        );
+
+    if(overlay){
+
+        overlay.style.display =
+            "none";
+
+    }
+
+    if(sheet){
+
+        sheet.classList.remove(
+            "show"
+        );
+
+    }
+
+    resumeStory();
+
 }
 
-/* Swipe Down Close */
 
-let sheet = document.getElementById("activitySheet");
+/* =========================
+   ACTIVITY SWIPE DOWN
+========================= */
+
+const sheet =
+    document.getElementById(
+        "activitySheet"
+    );
+
 let startY = 0;
 
-sheet.addEventListener("touchstart",(e)=>{
-    startY = e.touches[0].clientY;
-});
+if(sheet){
 
-sheet.addEventListener("touchend",(e)=>{
+    sheet.addEventListener(
+        "touchstart",
+        function(e){
 
-    let endY = e.changedTouches[0].clientY;
+            startY =
+                e.touches[0].clientY;
 
-    if(endY - startY > 80){
-        closeActivity();
-    }
-});
+        },
+        {
+            passive:true
+        }
+    );
+
+
+    sheet.addEventListener(
+        "touchend",
+        function(e){
+
+            const endY =
+                e.changedTouches[0].clientY;
+
+            if(
+                endY - startY > 80
+            ){
+
+                closeActivity();
+
+            }
+
+        },
+        {
+            passive:true
+        }
+    );
+
+}
+
+
+/* =========================
+   DELETE STORY
+========================= */
 
 function deleteStory(){
 
-    if(!confirm("Delete this story?")){
+    if(
+        !confirm(
+            "Delete this story?"
+        )
+    ){
+
         return;
+
     }
 
-    fetch("/stories/api/delete",{
-        method:"POST",
-        headers:{
-            "Content-Type":"application/json"
-        },
-        body:JSON.stringify({
-            story_id: stories[i].id
-        })
-    })
-    .then(r => r.json())
-    .then(d => {
+    fetch(
+        "/stories/api/delete",
+        {
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":
+                    "application/json"
+            },
+
+            body:JSON.stringify({
+
+                story_id:
+                    stories[i].id
+
+            })
+
+        }
+    )
+
+    .then(r=>r.json())
+
+    .then(d=>{
 
         if(d.ok){
-            alert("Story deleted");
-            location.href="/posts/feed";
+
+            alert(
+                "Story deleted"
+            );
+
+            location.href =
+                "/posts/feed";
+
         }else{
-            alert("Delete failed");
+
+            alert(
+                "Delete failed"
+            );
+
         }
+
+    })
+
+    .catch(err=>{
+
+        console.error(
+            "DELETE ERROR:",
+            err
+        );
 
     });
 
 }
 
+
+/* =========================
+   START
+========================= */
+
 load();
+
+
+/* ================================
+   STORY SHARE
+================================ */
+
+let storyShareUsers = [];
+
+
+async function openStoryShare(){
+
+    pauseStory();
+
+    const story =
+        stories[i];
+
+    if(!story){
+
+        alert(
+            "Story not found"
+        );
+
+        return;
+
+    }
+
+
+    const existing =
+        document.getElementById(
+            "storyShareModal"
+        );
+
+    if(existing){
+
+        existing.remove();
+
+    }
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+    modal.id =
+        "storyShareModal";
+
+
+    modal.style.cssText = `
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.65);
+        z-index:99999;
+        display:flex;
+        align-items:flex-end;
+        justify-content:center;
+    `;
+
+
+    modal.innerHTML = `
+
+        <div style="
+            width:100%;
+            max-width:520px;
+            height:70vh;
+            background:white;
+            border-radius:24px 24px 0 0;
+            overflow:hidden;
+            display:flex;
+            flex-direction:column;
+        ">
+
+            <div style="
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                padding:16px;
+                border-bottom:1px solid #eee;
+                color:#111;
+                font-weight:700;
+            ">
+
+                <span>
+                    Share Story
+                </span>
+
+                <button
+                    onclick="closeStoryShare()"
+                    style="
+                        border:0;
+                        background:none;
+                        font-size:22px;
+                        cursor:pointer;
+                    "
+                >
+                    ✕
+                </button>
+
+            </div>
+
+
+            <div style="
+                padding:12px 16px;
+            ">
+
+                <input
+                    id="storyShareSearch"
+                    oninput="
+                        filterStoryShareUsers()
+                    "
+                    placeholder="Search people..."
+                    style="
+                        width:100%;
+                        padding:12px 15px;
+                        border:1px solid #ddd;
+                        border-radius:999px;
+                        outline:none;
+                        font-size:14px;
+                    "
+                >
+
+            </div>
+
+
+            <div
+                id="storyShareUsers"
+                style="
+                    flex:1;
+                    overflow-y:auto;
+                    padding:8px 16px 30px;
+                "
+            >
+                Loading...
+            </div>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(
+        modal
+    );
+
+
+    try{
+
+        const res =
+            await fetch(
+                "/reels/api/following_users"
+            );
+
+        const data =
+            await res.json();
+
+        storyShareUsers =
+            data.users || [];
+
+        renderStoryShareUsers(
+            storyShareUsers
+        );
+
+    }catch(e){
+
+        console.error(e);
+
+        const box =
+            document.getElementById(
+                "storyShareUsers"
+            );
+
+        if(box){
+
+            box.innerHTML = `
+
+                <div style="
+                    text-align:center;
+                    padding:30px;
+                    color:#777;
+                ">
+                    Failed to load users
+                </div>
+
+            `;
+
+        }
+
+    }
+
+}
+
+
+/* =========================
+   RENDER SHARE USERS
+========================= */
+
+function renderStoryShareUsers(
+    users
+){
+
+    const box =
+        document.getElementById(
+            "storyShareUsers"
+        );
+
+    if(!box) return;
+
+
+    if(!users.length){
+
+        box.innerHTML = `
+
+            <div style="
+                text-align:center;
+                padding:40px;
+                color:#777;
+            ">
+                No users found
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    box.innerHTML = "";
+
+
+    users.forEach(user=>{
+
+        box.innerHTML += `
+
+            <div
+                onclick="
+                    sendStoryToUser(
+                        ${user.id}
+                    )
+                "
+                style="
+                    display:flex;
+                    align-items:center;
+                    gap:14px;
+                    padding:12px 4px;
+                    cursor:pointer;
+                    border-bottom:
+                        1px solid #f1f1f1;
+                "
+            >
+
+                <img
+                    src="${user.avatar}"
+                    onerror="
+                        this.src=
+                        '/static/default_dp.png'
+                    "
+                    style="
+                        width:52px;
+                        height:52px;
+                        border-radius:50%;
+                        object-fit:cover;
+                    "
+                >
+
+                <div style="
+                    flex:1;
+                    color:#111;
+                    font-weight:600;
+                ">
+                    ${user.username}
+                </div>
+
+                <div style="
+                    background:#111;
+                    color:white;
+                    padding:8px 14px;
+                    border-radius:999px;
+                    font-size:12px;
+                ">
+                    Send
+                </div>
+
+            </div>
+
+        `;
+
+    });
+
+}
+
+
+/* =========================
+   SEARCH SHARE USERS
+========================= */
+
+function filterStoryShareUsers(){
+
+    const input =
+        document.getElementById(
+            "storyShareSearch"
+        );
+
+    if(!input) return;
+
+
+    const value =
+        input.value
+        .toLowerCase();
+
+
+    renderStoryShareUsers(
+
+        storyShareUsers.filter(
+            user =>
+            user.username
+            .toLowerCase()
+            .includes(value)
+        )
+
+    );
+
+}
+
+
+/* =========================
+   CLOSE SHARE
+========================= */
+
+function closeStoryShare(){
+
+    const modal =
+        document.getElementById(
+            "storyShareModal"
+        );
+
+    if(modal){
+
+        modal.remove();
+
+    }
+
+    resumeStory();
+
+}
+
+
+/* =========================
+   SEND STORY
+========================= */
+
+async function sendStoryToUser(
+    userId
+){
+
+    const story =
+        stories[i];
+
+    if(!story){
+
+        return;
+
+    }
+
+
+    try{
+
+        const res =
+            await fetch(
+
+                `/stories/share_to_user/` +
+                `${story.id}/${userId}`,
+
+                {
+                    method:"POST"
+                }
+
+            );
+
+
+        const data =
+            await res.json();
+
+
+        if(data.ok){
+
+            closeStoryShare();
+
+            alert(
+                "Story sent ✅"
+            );
+
+        }else{
+
+            alert(
+                data.error ||
+                "Failed to send story"
+            );
+
+        }
+
+    }catch(e){
+
+        console.error(e);
+
+        alert(
+            "Network error"
+        );
+
+    }
+
+}
 
 </script>
 

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Upload Music • InsChat</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+<body class="bg-black text-white">
+
+<div class="max-w-lg mx-auto p-5">
+
+<a href="/music" class="text-cyan-400 text-lg">
+← Back
+</a>
+
+<h1 class="text-3xl font-bold mt-5">
+🎵 Upload Music
+</h1>
+
+<form method="POST"
+      enctype="multipart/form-data"
+      class="space-y-5 mt-8">
+
+<div>
+
+<label class="block mb-2">
+Music Title
+</label>
+
+<input
+type="text"
+name="title"
+required
+class="w-full bg-zinc-900 rounded-xl p-3 outline-none">
+
+</div>
+
+
+<div>
+
+<label class="block mb-2">
+Artist
+</label>
+
+<input
+type="text"
+name="artist"
+class="w-full bg-zinc-900 rounded-xl p-3 outline-none">
+
+</div>
+
+
+<div>
+
+<label class="block mb-2">
+Audio File
+</label>
+
+<input
+type="file"
+name="audio"
+accept="audio/*"
+required
+class="w-full bg-zinc-900 rounded-xl p-3">
+
+</div>
+
+
+<div>
+
+<label class="block mb-2">
+Cover Image (Optional)
+</label>
+
+<input
+type="file"
+name="cover"
+accept="image/*"
+class="w-full bg-zinc-900 rounded-xl p-3">
+
+</div>
+
+
+<button
+type="submit"
+class="w-full bg-cyan-500 text-black font-bold rounded-xl p-4">
+
+Upload Music
+
+</button>
+
+</form>
+
+</div>
+
+</body>
+</html>

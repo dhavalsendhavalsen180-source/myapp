@@ -1,63 +1,230 @@
 <!doctype html>
+
 <html lang="en">
-<head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Notifications • InsChat</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
+<head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Notifications • InsChat</title><script src="https://cdn.tailwindcss.com"></script><style>
 
 body{
-    background:#000;
+    background:linear-gradient(
+        135deg,
+        #00e5ff 0%,
+        #2563eb 35%,
+        #7c3aed 65%,
+        #facc15 100%
+    );
     color:#fff;
     font-family:Arial,sans-serif;
+    min-height:100vh;
+}
+
+/* =========================================
+   ✨ SOFT BRANDING GLOW
+   ========================================= */
+
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+
+    pointer-events:none;
+
+    background:
+        linear-gradient(
+            120deg,
+            rgba(255,255,255,.08),
+            transparent 30%,
+            rgba(255,255,255,.04) 50%,
+            transparent 70%,
+            rgba(255,255,255,.06)
+        );
+
+    mix-blend-mode:screen;
+    z-index:-1;
+}
+
+
+/* =========================================
+   🌌 SUBTLE MOVING LIGHT
+   ========================================= */
+
+body::after{
+    content:"";
+    position:fixed;
+
+    width:500px;
+    height:500px;
+
+    left:-150px;
+    top:20%;
+
+    border-radius:50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(0,229,255,.18),
+            rgba(124,58,237,.10),
+            transparent 70%
+        );
+
+    filter:blur(35px);
+
+    pointer-events:none;
+
+    animation:inschatGlow 9s ease-in-out infinite alternate;
+
+    z-index:-1;
+}
+
+
+@keyframes inschatGlow{
+
+    0%{
+        transform:
+            translate(0,0)
+            scale(1);
+    }
+
+    50%{
+        transform:
+            translate(45vw,8vh)
+            scale(1.35);
+    }
+
+    100%{
+        transform:
+            translate(75vw,35vh)
+            scale(.9);
+    }
+}
+
+
+/* =========================================
+   🔥 SELECTION
+   ========================================= */
+
+::selection{
+    background:#00e5ff;
+    color:#000;
+}
+
+
+/* =========================================
+   📱 MOBILE
+   ========================================= */
+
+@media(max-width:640px){
+
+    body{
+        background-attachment:scroll;
+    }
+
 }
 
 ::-webkit-scrollbar{
     width:0;
 }
 
-/* CARD */
+/* =========================================================
+   INSCHAT BRAND GRADIENT
+   CYAN → BLUE → PURPLE → YELLOW
+========================================================= */
+
+.brand-gradient{
+    background:linear-gradient(
+        90deg,
+        #00f5ff 0%,
+        #2563eb 35%,
+        #7c3aed 70%,
+        #facc15 100%
+    );
+}
+
+.brand-text{
+    background:linear-gradient(
+        90deg,
+        #00f5ff,
+        #2563eb,
+        #7c3aed,
+        #facc15
+    );
+
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+}
+
+/* =========================================================
+   NOTIFICATION CARD
+========================================================= */
+
 .notify-card{
     transition:.18s;
+    border-left:2px solid transparent;
 }
 
 .notify-card:hover{
-    background:#0f0f0f;
+    background:#090909;
+    border-left-color:#2563eb;
 }
 
-/* INS STORY BORDER */
+/* =========================================================
+   STORY / PROFILE RING
+========================================================= */
+
 .story-ring{
     background:
     linear-gradient(#000,#000) padding-box,
-    linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5) border-box;
+    linear-gradient(
+        45deg,
+        #00f5ff,
+        #2563eb,
+        #7c3aed,
+        #facc15
+    ) border-box;
 
     border:2px solid transparent;
 }
 
-/* FOLLOW BTN */
+/* =========================================================
+   FOLLOW BUTTON
+========================================================= */
+
 .follow-btn{
-    background:#0095f6;
+    background:linear-gradient(
+        90deg,
+        #00cfff,
+        #2563eb,
+        #7c3aed
+    );
+
+    transition:.18s;
 }
 
 .follow-btn:hover{
-    background:#1877f2;
+    transform:scale(1.03);
+    filter:brightness(1.15);
 }
 
-/* MESSAGE BTN */
+/* =========================================================
+   MESSAGE BUTTON
+========================================================= */
+
 .msg-btn{
-    background:#262626;
+    background:#15151a;
+    border:1px solid #29293a;
+    transition:.18s;
 }
 
 .msg-btn:hover{
-    background:#333;
+    border-color:#7c3aed;
+    background:#1b1728;
 }
 
-/* SECTION */
+/* =========================================================
+   SECTION
+========================================================= */
+
 .section-title{
     color:#a1a1aa;
     font-size:14px;
@@ -65,275 +232,455 @@ body{
     padding:18px 16px 8px;
 }
 
-/* BLUE DOT */
+/* =========================================================
+   BLUE / BRAND DOT
+========================================================= */
+
 .blue-dot{
     width:8px;
     height:8px;
     border-radius:999px;
-    background:#0095f6;
+
+    background:linear-gradient(
+        135deg,
+        #00f5ff,
+        #2563eb,
+        #7c3aed
+    );
+
+    box-shadow:
+        0 0 8px rgba(37,99,235,.7);
 }
 
-</style>
+/* =========================================================
+   REEL THUMBNAIL
+========================================================= */
 
-</head>
+.reel-thumb{
+    width:58px;
+    height:76px;
+    border-radius:8px;
+    overflow:hidden;
 
-<body>
+    background:#111;
 
-<!-- TOP BAR -->
-<div class="sticky top-0 z-50 bg-black border-b border-[#1f1f1f]">
+    flex-shrink:0;
 
-    <div class="max-w-xl mx-auto flex items-center justify-between px-4 py-4">
+    border:1px solid #292929;
 
-        <div class="text-2xl font-bold">
-            Notifications
-        </div>
+    transition:.18s;
+}
 
-        <a href="/posts/feed"
+.reel-thumb:hover{
+    border-color:#7c3aed;
+    transform:scale(1.03);
+}
+
+.reel-thumb img,
+.reel-thumb video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+/* =========================================================
+   TOP BAR
+========================================================= */
+
+.top-brand-line{
+    height:2px;
+
+    background:linear-gradient(
+        90deg,
+        #00f5ff,
+        #2563eb,
+        #7c3aed,
+        #facc15
+    );
+}
+
+</style></head><body><!-- =========================================================
+     TOP BRAND LINE
+========================================================= --><div class="top-brand-line"></div><!-- =========================================================
+     TOP BAR
+========================================================= --><div class="sticky top-0 z-50 bg-black/95 backdrop-blur border-b border-[#1f1f1f]"><div class="max-w-xl mx-auto flex items-center justify-between px-4 py-4">
+
+    <div class="text-2xl font-bold brand-text">
+        Notifications
+    </div>
+
+    <a
+        href="/posts/feed"
         class="text-2xl">
-            🏠
-        </a>
 
-    </div>
+        🏠
+
+    </a>
 
 </div>
 
+</div><div class="max-w-xl mx-auto pb-32"><!-- =========================================================
+     FOLLOW REQUESTS
+========================================================= --><div class="px-4 py-4 border-b border-[#161616] flex items-center gap-3"><div class="relative">
 
+    <div class="flex -space-x-3">
 
-<div class="max-w-xl mx-auto pb-32">
-
-
-<!-- FOLLOW REQUESTS -->
-<div class="px-4 py-4 border-b border-[#161616] flex items-center gap-3">
-
-    <div class="relative">
-
-        <div class="flex -space-x-3">
-
-            <img src="/static/default_dp.png"
+        <img
+            src="/static/default_dp.png"
             class="w-10 h-10 rounded-full border-2 border-black object-cover">
 
-            <img src="/static/default_dp.png"
+        <img
+            src="/static/default_dp.png"
             class="w-10 h-10 rounded-full border-2 border-black object-cover">
 
-        </div>
-
-    </div>
-
-    <div class="flex-1">
-
-        <div class="font-semibold text-[15px]">
-            Follow requests
-        </div>
-
-        <div class="text-gray-400 text-sm">
-            Approve or ignore requests
-        </div>
-
     </div>
 
 </div>
 
 
+<div class="flex-1">
 
-<!-- TODAY -->
-<div class="section-title">
-Today
+    <div class="font-semibold text-[15px]">
+        Follow requests
+    </div>
+
+    <div class="text-gray-400 text-sm">
+        Approve or ignore requests
+    </div>
+
 </div>
 
+</div><!-- =========================================================
+     TODAY
+========================================================= --><div class="section-title">
+    Today
+</div><!-- =========================================================
+     NOTIFICATIONS
+========================================================= -->{% for n in notifications %}
 
+<div class="notify-card px-4 py-4 flex items-center gap-3 border-b border-[#121212]"><!-- =====================================================
+     PROFILE
+===================================================== -->
 
-{% for n in notifications %}
+<a href="/profile/{{ n.actor_id }}">
 
-<div class="notify-card px-4 py-4 flex items-center gap-3 border-b border-[#121212]">
+    <div class="story-ring rounded-full p-[2px]">
 
-    <!-- PROFILE -->
-    <a href="/profile/{{ n.actor_id }}">
-
-        <div class="story-ring rounded-full p-[2px]">
-
-            <img
-
-            src="{% if n.actor_photo and n.actor_photo != 'None' and n.actor_photo != 'null' %}
-
-                    {% if n.actor_photo.startswith('/static/') %}
-                        {{ n.actor_photo }}
-                    {% else %}
-                        /static/profile/{{ n.actor_photo }}
-                    {% endif %}
-
-                {% else %}
-                    /static/default_dp.png
-                {% endif %}"
+        <img
+            src="{% if n.actor_photo and n.actor_photo != 'None' and n.actor_photo != 'null' %}{% if n.actor_photo.startswith('/static/') %}{{ n.actor_photo }}{% else %}/static/profile/{{ n.actor_photo }}{% endif %}{% else %}/static/default_dp.png{% endif %}"
 
             onerror="this.src='/static/default_dp.png'"
 
             class="w-14 h-14 rounded-full object-cover bg-[#111]">
 
-        </div>
+    </div>
 
-    </a>
+</a>
 
 
+<!-- =====================================================
+     TEXT
+===================================================== -->
 
-    <!-- TEXT -->
-    <div class="flex-1 min-w-0">
+<div class="flex-1 min-w-0">
 
-        <div class="text-[15px] leading-5 break-words">
+    <div class="text-[15px] leading-5 break-words">
 
-            <a
+        <a
             href="/profile/{{ n.actor_id }}"
             class="font-semibold hover:underline">
 
-                {{ n.actor_username }}
+            {{ n.actor_username }}
 
-            </a>
-
-
-            {% if n.type == "follow" %}
-
-                started following you 👤
-
-            {% elif n.type == "like" %}
-
-                liked your post ❤️
-
-            {% elif n.type == "comment" %}
-
-                commented on your post 💬
-
-            {% endif %}
-
-        </div>
-
-
-        <!-- TIME -->
-        <div class="flex items-center gap-2 mt-1">
-
-            <div class="text-gray-500 text-xs">
-
-                {{ n.created_at }}
-
-            </div>
-
-            {% if not n.is_read %}
-                <div class="blue-dot"></div>
-            {% endif %}
-
-        </div>
-
-    </div>
-
-
-
-    <!-- RIGHT -->
-    <div class="shrink-0">
+        </a>
 
         {% if n.type == "follow" %}
 
-            <button
-            class="follow-btn text-white text-sm font-semibold px-4 py-1.5 rounded-lg">
+            started following you 👤
 
-                Follow
-            </button>
 
-        {% elif n.type == "like" %}
+        {% elif n.type == "post_like" %}
 
-            <div class="w-12 h-12 rounded bg-[#111] flex items-center justify-center text-xl">
-                ❤️
-            </div>
+            liked your post ❤️
 
-        {% elif n.type == "comment" %}
 
-            <button
-            class="msg-btn text-white text-sm px-4 py-1.5 rounded-lg">
+        {% elif n.type == "post_comment" %}
 
-                Reply
+            commented on your post 💬
 
-            </button>
+
+        {% elif n.type == "post_reply" %}
+
+            replied to your comment 💬↩️
+
+
+        {% elif n.type == "post_comment_like" %}
+
+            liked your comment ❤️
+
+
+        {% elif n.type == "reel_like" %}
+
+            liked your reel ❤️🎬
+
+
+        {% elif n.type == "reel_comment" %}
+
+            commented on your reel 🎬💬
+
+
+        {% elif n.type == "reel_reply" %}
+
+            replied to your comment 💬↩️
+
+
+        {% elif n.type == "reel_comment_like" %}
+
+            liked your comment ❤️
 
         {% endif %}
 
     </div>
 
-</div>
 
-{% endfor %}
+    <!-- =================================================
+         TIME
+    ================================================= -->
 
+    <div class="flex items-center gap-2 mt-1">
 
+        <div class="text-gray-500 text-xs">
 
-<!-- SUGGESTIONS -->
-<div class="section-title mt-2">
-People you may know
-</div>
+            {{ n.created_at }}
 
-
-
-<!-- USER -->
-<div class="px-4 py-4 flex items-center gap-3 border-b border-[#121212]">
-
-    <img
-    src="/static/default_dp.png"
-    class="w-14 h-14 rounded-full object-cover">
-
-    <div class="flex-1">
-
-        <div class="font-semibold">
-            testing vishal sen
         </div>
 
-        <div class="text-gray-500 text-sm">
-            3 mutual followers
-        </div>
+
+        {% if not n.is_read %}
+
+            <div class="blue-dot"></div>
+
+        {% endif %}
 
     </div>
 
-    <button
-    class="follow-btn px-4 py-1.5 rounded-lg text-sm font-semibold">
 
-        Follow
+    <!-- =================================================
+         REEL COMMENT / REPLY BUTTON
+    ================================================= -->
 
-    </button>
+{% if n.type == "comment"
+   or n.type == "post_comment"
+   or n.type == "post_reply"
+   or n.type == "post_comment_like" %}
 
-</div>
+    <div class="flex items-center gap-2 mt-3">
 
+        <a
+            href="/posts/comments/{{ n.post_id }}"
+            class="msg-btn text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
 
+            💬 Reply
 
-<div class="px-4 py-4 flex items-center gap-3 border-b border-[#121212]">
-
-    <img
-    src="/static/default_dp.png"
-    class="w-14 h-14 rounded-full object-cover">
-
-    <div class="flex-1">
-
-        <div class="font-semibold">
-            testing vijay
-        </div>
-
-        <div class="text-gray-500 text-sm">
-            Followed by Vishal + 2 more
-        </div>
+        </a>
 
     </div>
 
-    <button
+{% elif n.type == "reel_comment"
+   or n.type == "reel_reply"
+   or n.type == "reel_comment_like" %}
+
+    <div class="flex items-center gap-2 mt-3">
+
+        <a
+            href="/reels/comments_page/{{ n.reel_id }}"
+            class="msg-btn text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
+
+            💬 Reply
+
+        </a>
+
+    </div>
+
+{% endif %}
+
+</div>
+
+<!-- =====================================================
+     RIGHT SIDE MEDIA
+===================================================== -->
+
+<div class="shrink-0">
+
+<!-- =============================================
+     POST NOTIFICATION
+============================================= -->
+
+{% if n.type == "post_like"
+   or n.type == "comment"
+   or n.type == "post_comment"
+   or n.type == "post_reply"
+   or n.type == "post_comment_like" %}
+
+    <a
+        href="/posts/{{ n.post_id }}"
+        class="reel-thumb block">
+
+        {% if n.post_image %}
+
+            <img
+                src="{{ n.post_image }}"
+                onerror="this.src='/static/default_reel.jpg'"
+                class="w-full h-full object-cover">
+
+        {% else %}
+
+            <div class="w-full h-full flex items-center justify-center text-2xl">
+                🖼️
+            </div>
+
+        {% endif %}
+
+    </a>
+
+    <!-- =============================================
+         REEL NOTIFICATION
+    ============================================= -->
+
+    {% elif n.type == "reel_like"
+       or n.type == "reel_comment"
+       or n.type == "reel_reply"
+       or n.type == "reel_comment_like" %}
+
+        <a
+            href="/reels/{{ n.reel_id }}"
+            class="reel-thumb block">
+
+            {% if n.reel_thumbnail %}
+
+                <img
+                    src="{{ n.reel_thumbnail }}"
+                    onerror="this.src='/static/default_reel.jpg'">
+
+            {% elif n.reel_video %}
+
+                <video
+                    src="{{ n.reel_video }}"
+                    muted
+                    preload="metadata">
+                </video>
+
+            {% else %}
+
+                <div class="w-full h-full flex items-center justify-center text-2xl">
+                    🎬
+                </div>
+
+            {% endif %}
+
+        </a>
+
+
+    {% elif n.type == "follow" %}
+
+        <button
+            class="follow-btn text-white text-sm font-semibold px-4 py-1.5 rounded-lg">
+
+            Follow
+
+        </button>
+
+
+    {% elif n.type == "like" %}
+
+        <div
+            class="w-12 h-12 rounded bg-[#111] flex items-center justify-center text-xl">
+
+            ❤️
+
+        </div>
+
+
+    {% elif n.type == "comment" %}
+
+        <button
+            class="msg-btn text-white text-sm px-4 py-1.5 rounded-lg">
+
+            Reply
+
+        </button>
+
+    {% endif %}
+
+</div>
+
+</div>{% else %}
+
+<!-- =========================================================
+     NO NOTIFICATIONS
+========================================================= --><div class="text-center text-gray-500 py-16"><div class="text-4xl mb-3">
+    🔔
+</div>
+
+<div class="text-sm">
+    No notifications yet
+</div>
+
+</div>{% endfor %}
+
+<!-- =========================================================
+     SUGGESTIONS
+========================================================= --><div class="section-title mt-2">
+    People you may know
+</div><!-- USER 1 --><div class="px-4 py-4 flex items-center gap-3 border-b border-[#121212]"><img
+    src="/static/default_dp.png"
+    class="w-14 h-14 rounded-full object-cover">
+
+<div class="flex-1">
+
+    <div class="font-semibold">
+        testing vishal sen
+    </div>
+
+    <div class="text-gray-500 text-sm">
+        3 mutual followers
+    </div>
+
+</div>
+
+<button
     class="follow-btn px-4 py-1.5 rounded-lg text-sm font-semibold">
 
-        Follow
+    Follow
 
-    </button>
+</button>
+
+</div><!-- USER 2 --><div class="px-4 py-4 flex items-center gap-3 border-b border-[#121212]"><img
+    src="/static/default_dp.png"
+    class="w-14 h-14 rounded-full object-cover">
+
+<div class="flex-1">
+
+    <div class="font-semibold">
+        testing vijay
+    </div>
+
+    <div class="text-gray-500 text-sm">
+        Followed by Vishal + 2 more
+    </div>
 
 </div>
 
+<button
+    class="follow-btn px-4 py-1.5 rounded-lg text-sm font-semibold">
 
+    Follow
 
-</div>
+</button>
 
-
-
-<script>
-
-/* AUTO MARK READ */
+</div></div><!-- =========================================================
+     AUTO MARK READ
+========================================================= --><script>
 
 async function autoRead(){
 
@@ -341,9 +688,12 @@ async function autoRead(){
 
         {% if not n.is_read %}
 
-            fetch("/social/notifications/mark_read/{{ n.id }}",{
-                method:"POST"
-            })
+            fetch(
+                "/social/notifications/mark_read/{{ n.id }}",
+                {
+                    method:"POST"
+                }
+            );
 
         {% endif %}
 
@@ -351,17 +701,11 @@ async function autoRead(){
 
 }
 
-autoRead()
+autoRead();
 
-</script>
+</script><script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script><script>
 
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-
-<script>
 window.me = {{ session.get("user_id")|tojson }};
-</script>
 
-<script src="/static/js/global_call.js"></script>
-
-</body>
+</script><script src="/static/js/global_call.js"></script></body>
 </html>

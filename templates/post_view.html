@@ -2,171 +2,338 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <link rel="manifest" href="/manifest.json?v=1">
+  <meta name="theme-color" content="#2563eb">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Post • InsChat</title>
+  <title>inschat</title>
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    .icon-btn { font-size: 26px; line-height: 1; }
-    .icon-btn:hover { opacity: 0.7; }
+    .carousel { position: relative; overflow: hidden; }
+    .carousel-track {
+      display:flex;
+      transition: transform 0.3s ease-in-out;
+      scroll-snap-type: x mandatory;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .carousel-track img {
+        flex: 0 0 100%;
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        background: transparent;
+        max-height: none;
+    }
 
     .carousel-btn {
-      background: rgba(0,0,0,0.45);
-      color: white;
-      border-radius: 9999px;
-      width: 42px;
-      height: 42px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 10;
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      background:rgba(0,0,0,0.45);
+      color:white;
+      padding:8px 12px;
+      border-radius:9999px;
+      font-size:22px;
+      z-index:10;
     }
-    .carousel-btn:hover { background: rgba(0,0,0,0.65); }
+    .carousel-btn.left { left:10px; }
+    .carousel-btn.right { right:10px; }
 
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 9999px;
-      background: rgba(255,255,255,0.5);
-    }
-    .dot.active {
-      background: white;
-      width: 10px;
-      height: 10px;
-    }
+.heart{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%) scale(0);
+    font-size:110px;
+    opacity:0;
+    pointer-events:none;
+    z-index:999;
 
-    /* ❤️ Heart Animation */
-    #bigHeart {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0.5);
-      font-size: 90px;
-      opacity: 0;
-      transition: all 0.25s ease;
-      z-index: 20;
-      pointer-events: none;
-      text-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    filter: drop-shadow(0 0 15px rgba(255,0,80,.8))
+            drop-shadow(0 0 35px rgba(255,0,80,.5));
+}
+
+.heart.show{
+    animation: heartPop 0.9s ease forwards;
+}
+
+@keyframes heartPop{
+
+    0%{
+        opacity:0;
+        transform:translate(-50%,-50%) scale(0);
     }
 
-    #bigHeart.show {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1.2);
+    20%{
+        opacity:1;
+        transform:translate(-50%,-50%) scale(1.45);
     }
 
-    #bigHeart.hide {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(0.5);
+    35%{
+        transform:translate(-50%,-50%) scale(1.1);
     }
+
+    50%{
+        transform:translate(-50%,-50%) scale(1.3);
+    }
+
+    70%{
+        opacity:1;
+        transform:translate(-50%,-50%) scale(1);
+    }
+
+    100%{
+        opacity:0;
+        transform:translate(-50%,-50%) scale(1.8);
+    }
+}
+
+
+    .no-scrollbar::-webkit-scrollbar { display:none; }
+
+.bottom-nav svg{
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: .25s ease;
+}
+
+.bottom-nav a:hover svg{
+    transform: scale(1.12);
+}
+
+.bottom-nav .active svg{
+    color:#3b82f6;
+}
+
   </style>
+
 </head>
 
-<body class="bg-gray-100 min-h-screen">
+<body class="min-h-screen bg-gradient-to-br from-cyan-50 via-white to-blue-50">
 
-  <!-- NAV -->
-  <div class="flex items-center justify-between p-4 bg-white shadow">
-    <a href="javascript:history.back()" class="text-xl font-bold">⬅ Back</a>
-    <h2 class="font-bold text-lg">Post</h2>
-    <div></div>
-  </div>
+<!-- ✨ INSCHAT POST HEADER -->
+<div class="sticky top-0 z-50">
 
-  <!-- POST CARD -->
-  <div class="max-w-2xl mx-auto mt-6 bg-white rounded-2xl shadow overflow-hidden">
+  <!-- Blur Background -->
+  <div class="backdrop-blur-xl bg-white/80 border-b border-cyan-100 shadow-sm">
 
-    <!-- HEADER -->
-    <div class="flex items-center justify-between px-4 py-3 border-b">
-      <div class="flex items-center gap-3">
-        <img src="/static/default_dp.png" class="w-10 h-10 rounded-full object-cover border">
-        
-        <!-- ✅ FIXED PROFILE LINK -->
-        <a href="/profile/{{ post.user_id }}" class="font-semibold text-gray-800">
-          @{{ post.username }}
-        </a>
+    <div class="flex items-center justify-between px-4 py-3">
+
+      <!-- BACK -->
+      <button onclick="history.back()"
+              class="group w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center shadow-lg active:scale-95 transition">
+
+        <svg class="w-6 h-6 transition-transform duration-300 group-hover:-translate-x-1"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2.4">
+
+          <path stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15 18l-6-6 6-6"/>
+
+        </svg>
+
+      </button>
+
+      <!-- TITLE -->
+      <div class="text-center">
+
+        <h1 class="text-xl font-extrabold tracking-wide bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+          InsChat
+        </h1>
+
+        <p class="text-[11px] text-gray-500 -mt-1 tracking-[3px] uppercase">
+          POST VIEW
+        </p>
+
       </div>
 
-      <!-- POST DELETE ONLY FOR OWNER -->
-      {% if current_user == post.user_id %}
-      <form method="POST" action="/posts/delete/{{ post.id }}" onsubmit="return confirm('Delete this post?')">
-        <button class="text-red-600 font-semibold text-sm">Delete</button>
-      </form>
-      {% else %}
-      <div class="text-gray-500 text-2xl">⋮</div>
-      {% endif %}
+      <!-- MENU -->
+      <button onclick="togglePostMenu()"
+              class="group w-11 h-11 rounded-2xl bg-white border border-gray-200 shadow-md flex items-center justify-center active:scale-95 transition hover:bg-gray-50">
+
+        <svg class="w-6 h-6 text-gray-700"
+             viewBox="0 0 24 24"
+             fill="currentColor">
+
+          <circle cx="12" cy="5" r="1.7"/>
+          <circle cx="12" cy="12" r="1.7"/>
+          <circle cx="12" cy="19" r="1.7"/>
+
+        </svg>
+
+      </button>
+
     </div>
 
-    <!-- IMAGE CAROUSEL -->
-    {% if images %}
-      <div class="relative bg-black select-none overflow-hidden" id="carousel">
+  </div>
 
-        <!-- ❤️ BIG HEART -->
-        <div id="bigHeart">❤️</div>
+</div>
 
-        <!-- LEFT BUTTON -->
-        {% if images|length > 1 %}
-        <button onclick="prevImage()" class="carousel-btn left-3">❮</button>
-        {% endif %}
+<!-- FEED -->
+  <div class="max-w-xl mx-auto mt-4 space-y-6 pb-24">
 
-        <!-- RIGHT BUTTON -->
-        {% if images|length > 1 %}
-        <button onclick="nextImage()" class="carousel-btn right-3">❯</button>
-        {% endif %}
+{% for post in posts %}
 
-        <!-- IMAGES -->
-        <div class="w-full max-h-[550px] flex transition-transform duration-300 ease-in-out"
-             id="carouselTrack"
-             style="transform: translateX(0%);">
+<!-- POST CARD -->
+<div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/30">
 
-          {% for img in images %}
-            <div class="min-w-full flex justify-center bg-black">
-              <img src="{{ img }}"
-                   class="w-full max-h-[550px] object-contain bg-black">
-            </div>
-          {% endfor %}
+<!-- HEADER -->
+<div class="flex items-center justify-between px-4 py-3">
 
+    <!-- USER -->
+    <a href="/profile/{{ post.owner_id }}"
+       class="flex items-center space-x-3">
+
+    <div class="
+    {% if post.has_story and not post.story_seen %}
+    story-active
+    {% elif post.story_seen %}
+    story-seen
+    {% endif %}
+    ">
+    <img src="{{ post.photo }}"
+         class="w-10 h-10 rounded-full object-cover"
+         onerror="this.src='/static/default_dp.png'">
+</div>
+
+        <div class="font-semibold hover:text-cyan-400 transition">
+            @{{ post.username }}
         </div>
 
-        <!-- DOTS -->
-        {% if images|length > 1 %}
-        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2" id="dots">
-          {% for img in images %}
-            <div class="dot {% if loop.index0 == 0 %}active{% endif %}"></div>
-          {% endfor %}
-        </div>
-        {% endif %}
-      </div>
+    </a>
+
+        <!-- DELETE ONLY OWN POST -->
+<!-- POST MENU -->
+<div class="relative">
+
+  <button onclick="toggleMenu({{ post.id }})"
+          class="text-2xl text-gray-600">
+    ⋮
+  </button>
+
+  <div id="menu-{{ post.id }}"
+       class="hidden absolute right-0 top-8 bg-white border rounded-lg shadow-lg w-40 z-50">
+
+    <a href="/posts/{{ post.id }}"
+       class="block px-4 py-2 hover:bg-gray-100">
+      👁 View
+    </a>
+
+    {% if post.owner_id == current_user %}
+
+      <form method="POST"
+            action="/posts/delete/{{ post.id }}"
+            onsubmit="return confirm('Delete this post?')">
+
+        <button type="submit"
+                class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
+          🗑 Delete
+        </button>
+
+      </form>
+
     {% else %}
-      <div class="p-10 text-center text-gray-500">No Image</div>
+
+<form method="GET" action="/report">
+    <input type="hidden" name="target_type" value="post">
+    <input type="hidden" name="target_id" value="{{ post.id }}">
+    <input type="hidden" name="owner_id" value="{{ post.owner_id }}">
+
+    <button type="submit"
+            class="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100">
+        📃 Report
+    </button>
+</form>
+
     {% endif %}
 
-    <!-- ACTIONS -->
-    <div class="px-4 py-3 flex items-center justify-between">
+  </div>
 
-      <div class="flex items-center gap-5">
+</div>
 
-        <!-- LIKE FORM -->
-<form method="POST" action="/posts/like_toggle/{{ post.id }}">
-  <button type="submit" class="icon-btn">
+</div> <!-- END HEADER -->
 
-<svg id="likeSvg"
-     class="w-7 h-7 {% if liked_by_me %}text-red-500{% endif %}"
-     viewBox="0 0 24 24"
-     fill="{% if liked_by_me %}currentColor{% else %}none{% endif %}"
-     stroke="currentColor"
-     stroke-width="1.8">
+      <!-- IMAGES (CAROUSEL + DOUBLE TAP) -->
+      <div class="relative">
 
-      <path stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M20.8 4.6c-1.8-1.8-4.7-1.8-6.5 0L12 6.9 9.7 4.6c-1.8-1.8-4.7-1.8-6.5 0s-1.8 4.7 0 6.5L12 21l8.8-9.9c1.8-1.8 1.8-4.7 0-6.5z"/>
-    </svg>
+        {% if post.images and post.images|length > 1 %}
+        <div class="carousel">
+          <div id="track-{{ post.id }}" class="carousel-track no-scrollbar">
 
-  </button>
-</form>
+            {% for img in post.images %}
+            <img src="{{ img }}"
+                 ondblclick="doubleTapLike({{ post.id }})"
+                 ontouchend="onImageTap({{ post.id }})">
+            {% endfor %}
+
+          </div>
+
+          <button class="carousel-btn left" onclick="scrollByTrack('{{ post.id }}', -1)">‹</button>
+          <button class="carousel-btn right" onclick="scrollByTrack('{{ post.id }}', +1)">›</button>
+        </div>
+
+{% elif post.images and post.images|length == 1 %}
+<img src="{{ post.images[0] }}"
+     class="w-full h-auto block"
+     ondblclick="doubleTapLike({{ post.id }})"
+     ontouchend="onImageTap({{ post.id }})">
+{% else %}
+<div class="p-12 text-center text-gray-400">No Image</div>
+{% endif %}
+
+        <!-- HEART ANIMATION -->
+<div class="heart" id="heart-{{ post.id }}">
+    <span class="h h1">💞</span>
+</div>
+
+{% if post.music_file %}
+<audio
+    class="post-audio"
+    src="{{ post.music_file }}"
+    preload="metadata"
+    loop>
+</audio>
+{% endif %}
+
+<!-- ACTION ROW -->
+<div class="px-4 pt-3">
+
+  <div class="flex items-center justify-between">
+
+    <!-- LEFT SIDE -->
+    <div class="flex items-center gap-4">
+
+      <!-- LIKE -->
+<button id="like-btn-{{ post.id }}"
+        onclick="toggleLike({{ post.id }}, this)">
+
+  <svg class="w-8 h-8 transition-all duration-300 hover:scale-125 {% if post.liked_by_me %}text-pink-500{% endif %}"
+       viewBox="0 0 24 24"
+       fill="{% if post.liked_by_me %}currentColor{% else %}none{% endif %}"
+       stroke="currentColor"
+       stroke-width="1.8"
+       stroke-linecap="round"
+       stroke-linejoin="round">
+
+    <path d="
+      M12 21
+      C11.2 20.4 3.5 15.4 3.5 9
+      C3.5 5.8 5.8 3.5 8.8 3.5
+      C10.7 3.5 11.8 4.4 12 5.7
+      C12.2 4.4 13.3 3.5 15.2 3.5
+      C18.2 3.5 20.5 5.8 20.5 9
+      C20.5 15.4 12.8 20.4 12 21Z"/>
+  </svg>
+
+</button>
+
         <!-- COMMENT BUTTON -->
-<button onclick="openCommentBox()" class="icon-btn">
+<button onclick="openComment({{ post.id }})" class="icon-btn">
 
   <svg class="w-7 h-7"
        viewBox="0 0 24 24"
@@ -182,7 +349,7 @@
 </button>
 
         <!-- SHARE BUTTON -->
-<button onclick="openShare()" class="icon-btn">
+<button onclick="openShare({{ post.id }})" class="icon-btn">
 
   <svg class="w-7 h-7"
        viewBox="0 0 24 24"
@@ -201,375 +368,342 @@
 
 </button>
 
-      <!-- SAVE BUTTON -->
-<button onclick="toggleSave()" class="icon-btn">
+</div>
+    <!-- RIGHT SIDE SAVE -->
+    <button id="save-btn-{{ post.id }}"
+            onclick="toggleSave({{ post.id }}, this)">
 
-  <svg id="saveSvg"
-       class="w-7 h-7"
-       viewBox="0 0 24 24"
-       fill="{% if saved_by_me %}currentColor{% else %}none{% endif %}"
-       stroke="currentColor"
-       stroke-width="1.8">
+      <svg class="w-7 h-7 {% if post.saved_by_me %}text-black{% endif %}"
+           viewBox="0 0 24 24"
+           fill="{% if post.saved_by_me %}currentColor{% else %}none{% endif %}"
+           stroke="currentColor"
+           stroke-width="1.8">
 
-    <path stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M5 5v16l7-5 7 5V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"/>
-  </svg>
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/>
+      </svg>
 
-</button>
-    <!-- LIKES -->
-    <div class="px-4 text-sm font-semibold text-gray-800" id="likesCount">
-      {{ likes }} likes
-    </div>
+    </button>
 
-    <!-- CAPTION -->
-    <div class="px-4 mt-2 text-sm text-gray-800">
-      <span class="font-semibold">@{{ post.username }}</span>
-      <span class="text-gray-700">{{ post.caption or "" }}</span>
-    </div>
+  </div>
 
-    <!-- COMMENTS -->
-    <div class="px-4 mt-4 pb-2">
-      <div class="font-semibold text-gray-800 mb-2">Comments</div>
+<!-- LIKE COUNT -->
+<div id="likes-count-{{ post.id }}"
+     class="mt-2 font-semibold text-sm">
+    {{ post.likes }} likes
+</div>
 
-      <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
-        {% for c in comments %}
-          <div class="text-sm text-gray-800 flex items-center justify-between">
+</div> <!-- END flex items-center justify-between -->
 
-            <div>
-              <span class="font-semibold">@{{ c.username }}</span>
-              <span class="text-gray-700">{{ c.comment }}</span>
-            </div>
+</div> <!-- END ACTION ROW -->
 
-            <!-- ✅ DELETE COMMENT ONLY IF OWNER -->
-            {% if current_user == c.user_id %}
-              <form method="POST" action="/posts/comment_delete/{{ c.id }}/{{ post.id }}"
-                    onsubmit="return confirm('Delete this comment?')">
-                <button class="text-red-500 text-xs font-semibold">Delete</button>
-              </form>
-            {% endif %}
+</div> <!-- END POST CARD -->
 
-          </div>
-        {% else %}
-          <div class="text-gray-500 text-sm">No comments yet</div>
-        {% endfor %}
-      </div>
-    </div>
+{% endfor %}
 
-    <!-- ADD COMMENT -->
-    <div class="border-t px-4 py-3">
-      <form method="POST" action="/posts/comment_view/{{ post.id }}" class="flex gap-2 items-center">
-        <input id="commentInput" name="comment" placeholder="Add a comment..."
-          class="flex-1 border rounded-full px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400">
+</div> <!-- END FEED -->
 
-        <button type="submit"
-          class="text-blue-600 font-semibold text-sm hover:text-blue-800">
-          Post
-        </button>
-      </form>
+<!-- 🏠🔍➕🎬BOTTOM NAV -->
+<!-- ✨ INSCHAT BOTTOM NAV -->
+<div class="fixed bottom-0 left-0 right-0 z-50">
+
+  <div class="mx-3 mb-3 rounded-3xl
+              bg-white/90 backdrop-blur-xl
+              border border-white/50
+              shadow-2xl">
+
+    <div class="flex items-center justify-around h-20">
+
+      <!-- Home -->
+      <a href="/posts/feed"
+         class="flex flex-col items-center justify-center text-slate-600 hover:text-cyan-600 transition">
+
+        <svg class="w-6 h-6"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2">
+
+          <path stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10.5z"/>
+
+        </svg>
+
+      </a>
+
+      <!-- Explore -->
+      <a href="/explore"
+         class="flex flex-col items-center justify-center text-slate-600 hover:text-cyan-600 transition">
+
+        <svg class="w-6 h-6"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2">
+
+          <circle cx="11" cy="11" r="7"/>
+          <path d="M21 21l-4.3-4.3"/>
+
+        </svg>
+
+      </a>
+
+      <!-- Create -->
+      <a href="/create"
+         class="flex items-center justify-center -mt-8">
+
+        <div class="w-16 h-16 rounded-full
+                    bg-gradient-to-r
+                    from-cyan-500
+                    via-blue-600
+                    via-purple-600
+                    to-yellow-500
+                    text-white
+                    shadow-2xl
+                    flex items-center justify-center
+                    active:scale-95 transition">
+
+          <svg class="w-8 h-8"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2.5">
+
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 5v14M5 12h14"/>
+
+          </svg>
+
+        </div>
+
+      </a>
+
+      <!-- Reels -->
+      <a href="/reels"
+         class="flex flex-col items-center justify-center text-slate-600 hover:text-purple-600 transition">
+
+        <svg class="w-6 h-6"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2">
+
+          <rect x="3" y="3" width="18" height="18" rx="3"/>
+          <path d="M10 9l6 3-6 3V9z" fill="currentColor"/>
+
+        </svg>
+
+      </a>
+
+      <!-- Profile -->
+      <a href="/profile/{{ current_user }}"
+         class="flex items-center justify-center">
+
+        <img src="{{ current_user_photo }}"
+             class="w-10 h-10 rounded-full object-cover border-2 border-cyan-400 shadow-lg"
+             onerror="this.src='/static/default_dp.png'">
+
+      </a>
+
     </div>
 
   </div>
 
-
-  <!-- SHARE MODAL -->
-  <div id="shareModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-2xl w-full max-w-md p-5">
-
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold">Share Post</h3>
-        <button onclick="closeShare()" class="text-gray-600 text-xl">✕</button>
-      </div>
-
-      <!-- External Share -->
-      <div class="space-y-3">
-        <button onclick="shareWhatsApp()" class="w-full py-3 rounded-xl bg-green-600 text-white font-semibold">
-          Share on WhatsApp
-        </button>
-
-        <button onclick="shareTelegram()" class="w-full py-3 rounded-xl bg-blue-500 text-white font-semibold">
-          Share on Telegram
-        </button>
-
-        <button onclick="copyPostLink()" class="w-full py-3 rounded-xl bg-gray-900 text-white font-semibold">
-          Copy Link
-        </button>
-      </div>
-
-      <hr class="my-5">
-
-      <!-- In-App Share -->
-      <h4 class="font-semibold mb-2">Send to Followers</h4>
-
-      <div id="followersList" class="max-h-64 overflow-y-auto space-y-2 border rounded-xl p-3">
-        <div class="text-gray-500 text-sm">Loading...</div>
-      </div>
-
-    </div>
-  </div>
-
+</div>
 
 <script>
-  let currentIndex = 0;
-  const total = {{ images|length if images else 0 }};
-  let likedByMe = {{ "true" if liked_by_me else "false" }};
-  let likesCount = {{ likes }};
+async function toggleLike(postId, btn){
 
-  function updateCarousel(){
-    const track = document.getElementById("carouselTrack");
-    if(!track) return;
+try{
 
-    track.style.transform = `translateX(-${currentIndex * 100}%)`;
-
-    const dots = document.querySelectorAll("#dots .dot");
-    dots.forEach((d, i) => {
-      d.classList.toggle("active", i === currentIndex);
-    });
-  }
-
-  function nextImage(){
-    if(total <= 1) return;
-    currentIndex = (currentIndex + 1) % total;
-    updateCarousel();
-  }
-
-  function prevImage(){
-    if(total <= 1) return;
-    currentIndex = (currentIndex - 1 + total) % total;
-    updateCarousel();
-  }
-
-  // Swipe Support (Mobile)
-  let startX = 0;
-  let endX = 0;
-
-  const carousel = document.getElementById("carousel");
-
-  if(carousel){
-    carousel.addEventListener("touchstart", (e) => {
-      startX = e.touches[0].clientX;
+    const res = await fetch("/posts/like_toggle/" + postId, {
+        method: "POST"
     });
 
-    carousel.addEventListener("touchend", (e) => {
-      endX = e.changedTouches[0].clientX;
+    if(res.ok){
 
-      if(startX - endX > 50){
-        nextImage();
-      }
-      if(endX - startX > 50){
-        prevImage();
-      }
-    });
-  }
+        const svg = btn.querySelector("svg");
 
-  // ❤️ BIG HEART animation
-  function showHeart(){
-    const heart = document.getElementById("bigHeart");
-    if(!heart) return;
+        const countBox = document.getElementById(
+            "likes-count-" + postId
+        );
 
-    heart.classList.remove("hide");
-    heart.classList.add("show");
+        let current = parseInt(countBox.innerText) || 0;
 
-    setTimeout(() => {
-      heart.classList.remove("show");
-      heart.classList.add("hide");
-    }, 500);
-  }
+        if(svg.getAttribute("fill") === "currentColor"){
 
-  // ❤️ Update Like UI without reload
-function updateLikeUI(){
-    const likeSvg = document.getElementById("likeSvg");
-    const likesCountDiv = document.getElementById("likesCount");
+            svg.setAttribute("fill", "none");
+            svg.classList.remove("text-red-500");
 
-    if(likedByMe){
-        likeSvg.classList.add("text-red-500");
-        likeSvg.setAttribute("fill", "currentColor");
-    } else {
-        likeSvg.classList.remove("text-red-500");
-        likeSvg.setAttribute("fill", "none");
+            countBox.innerText = (current - 1) + " likes";
+
+        }else{
+
+            svg.setAttribute("fill", "currentColor");
+            svg.classList.add("text-red-500");
+
+            countBox.innerText = (current + 1) + " likes";
+
+            // ❤️ Heart Animation
+            const heart = document.getElementById(
+                "heart-" + postId
+            );
+
+            if(heart){
+
+                heart.classList.remove("show");
+
+                void heart.offsetWidth;
+
+                heart.classList.add("show");
+
+                setTimeout(() => {
+                    heart.classList.remove("show");
+                }, 900);
+            }
+        }
+
     }
 
-    likesCountDiv.innerText = likesCount + " likes";
+}catch(e){
+    console.log(e);
 }
 
-  // ❤️ Like toggle function (AJAX)
-  async function toggleLikeAjax(){
-    try{
-      const res = await fetch("/posts/like_toggle/{{ post.id }}", { method: "POST" });
-      if(res.ok){
-        if(likedByMe){
-          likedByMe = false;
-          likesCount -= 1;
-        } else {
-          likedByMe = true;
-          likesCount += 1;
-        }
-        updateLikeUI();
-      }
-    }catch(e){
-      console.log("Like error", e);
+}
+
+function doubleTapLike(postId){
+
+    const heart = document.getElementById("heart-" + postId);
+
+    if (heart){
+        heart.classList.remove("show");
+        void heart.offsetWidth;
+        heart.classList.add("show");
+
+        setTimeout(() => {
+            heart.classList.remove("show");
+        }, 900);
     }
-  }
 
-  // Like button click AJAX
-  const likeForm = document.getElementById("likeForm");
-  if(likeForm){
-    likeForm.addEventListener("submit", function(e){
-      e.preventDefault();
-      toggleLikeAjax();
-    });
-  }
+    const btn = document.getElementById("like-btn-" + postId);
+    const svg = btn.querySelector("svg");
 
-  // DOUBLE TAP LIKE ❤️
-  let lastTap = 0;
-
-  if(carousel){
-    carousel.addEventListener("click", async function(){
-      const now = new Date().getTime();
-      const diff = now - lastTap;
-
-      if(diff < 300 && diff > 0){
-        showHeart();
-
-        if(!likedByMe){
-          await toggleLikeAjax();
-        }
-      }
-
-      lastTap = now;
-    });
-  }
-
-  // 💬 COMMENT BUTTON
-  function openCommentBox(){
-    const inp = document.getElementById("commentInput");
-    if(inp){
-      inp.scrollIntoView({ behavior: "smooth", block: "center" });
-      inp.focus();
+    if (svg.getAttribute("fill") !== "currentColor"){
+        toggleLike(postId, btn);
     }
-  }
+}
 
-  // SHARE MODAL
-  function openShare(){
-    document.getElementById("shareModal").classList.remove("hidden");
-    document.getElementById("shareModal").classList.add("flex");
-    loadFollowers();
-  }
+</script>
 
-  function closeShare(){
-    document.getElementById("shareModal").classList.add("hidden");
-    document.getElementById("shareModal").classList.remove("flex");
-  }
-
-  function copyPostLink(){
-    const link = window.location.href;
-    navigator.clipboard.writeText(link).then(() => {
-      alert("Link copied!");
-    });
-  }
-
-  function shareWhatsApp(){
-    const link = encodeURIComponent(window.location.href);
-    window.open(`https://wa.me/?text=${link}`, "_blank");
-  }
-
-  function shareTelegram(){
-    const link = encodeURIComponent(window.location.href);
-    window.open(`https://t.me/share/url?url=${link}`, "_blank");
-  }
-
-  async function loadFollowers(){
-    const box = document.getElementById("followersList");
-    box.innerHTML = `<div class="text-gray-500 text-sm">Loading...</div>`;
+<script>
+async function toggleSave(postId, btn){
 
     try{
-      const res = await fetch("/posts/get_followers");
-      const data = await res.json();
 
-      if(!data.ok){
-        box.innerHTML = `<div class="text-red-500 text-sm">Login required</div>`;
-        return;
-      }
-
-      if(data.followers.length === 0){
-        box.innerHTML = `<div class="text-gray-500 text-sm">No followers found</div>`;
-        return;
-      }
-
-      box.innerHTML = "";
-
-      data.followers.forEach(f => {
-        box.innerHTML += `
-          <div class="flex items-center justify-between border-b pb-2">
-            <div class="font-semibold text-gray-800">@${f.username}</div>
-            <button onclick="sendPostToUser(${f.id})"
-              class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-semibold">
-              Send
-            </button>
-          </div>
-        `;
-      });
-
-    }catch(e){
-      box.innerHTML = `<div class="text-red-500 text-sm">Error loading followers</div>`;
-    }
-  }
-
-  async function sendPostToUser(userId){
-    try{
-      const res = await fetch("/posts/share_to_user", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-          to_user_id: userId,
-          post_id: {{ post.id }}
-        })
-      });
-
-      const data = await res.json();
-
-      if(data.ok){
-        alert("Sent!");
-      } else {
-        alert(data.error || "Failed");
-      }
-
-    }catch(e){
-      alert("Network error");
-    }
-  }
-
-  let savedByMe = {{ "true" if saved_by_me else "false" }};
-
-async function toggleSave(){
-    try{
-        const res = await fetch("/posts/save_toggle/{{ post.id }}", {
-            method: "POST"
+        const res = await fetch("/posts/save_toggle/" + postId,{
+            method:"POST"
         });
 
         const data = await res.json();
 
         if(data.ok){
 
-            savedByMe = !savedByMe;
+            const svg = btn.querySelector("svg");
 
-            const saveSvg = document.getElementById("saveSvg");
-
-            if(savedByMe){
-                saveSvg.setAttribute("fill", "currentColor");
+            if(data.action === "saved"){
+                svg.setAttribute("fill","currentColor");
             }else{
-                saveSvg.setAttribute("fill", "none");
+                svg.setAttribute("fill","none");
             }
 
-        }else{
-            alert("Login required");
         }
 
     }catch(e){
         console.log(e);
-        alert("Network error");
     }
+
 }
+</script>
+
+<script>
+function toggleMenu(postId){
+
+  document.querySelectorAll("[id^='menu-']").forEach(el=>{
+    if(el.id !== "menu-" + postId){
+      el.classList.add("hidden");
+    }
+  });
+
+  document
+    .getElementById("menu-" + postId)
+    .classList.toggle("hidden");
+}
+
+document.addEventListener("click", function(e){
+
+  if(!e.target.closest(".relative")){
+    document.querySelectorAll("[id^='menu-']").forEach(el=>{
+      el.classList.add("hidden");
+    });
+  }
+
+});
+</script>
+
+<script>
+function openComment(postId){
+    window.location.href = "/posts/comments/" + postId;
+}
+</script>
+
+
+{% include "post_share.html" %}
+
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+window.me = {{ session.get("user_id")|tojson }};
+</script>
+
+<script src="/static/js/global_call.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const audios = document.querySelectorAll(".post-audio");
+
+    audios.forEach(audio => {
+        audio.volume = 1.0;
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+
+        entries.forEach(entry => {
+
+            const audio = entry.target.querySelector(".post-audio");
+            if (!audio) return;
+
+            if (entry.isIntersecting) {
+                audio.play().catch(() => {});
+            } else {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+        });
+
+    }, {
+        threshold: 0.6
+    });
+
+    document.querySelectorAll(".bg-white\\/95").forEach(post => {
+        observer.observe(post);
+    });
+
+});
 </script>
 
 </body>

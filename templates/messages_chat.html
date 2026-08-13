@@ -1,5 +1,4 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %}                                         {% block content %}
 
 <link rel="stylesheet" href="/static/css/messages.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
@@ -40,7 +39,12 @@
 
   <div class="send-box">
     <span class="icon" id="attachBtn">📎</span>
-    <input type="file" id="attachInput" hidden>
+    <input
+        type="file"
+        id="attachInput"
+        accept="image/*,video/*"
+        hidden
+    >
     <input id="msgInput" type="text" placeholder="Message..." autocomplete="off">
     <span class="icon" id="voiceBtn">🎤</span>
     <button id="sendBtn" type="button">➤</button>

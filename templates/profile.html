@@ -537,7 +537,7 @@ Edit Profile
 
             {% for r in reels %}
 
-            <div onclick="window.location.href='/reels?start={{ r.id }}'"
+            <div onclick="window.location.href='/reels/{{ r.id }}'"
                  class="relative aspect-square rounded-2xl overflow-hidden cursor-pointer bg-black shadow">
 
                 <img src="/static/uploads/reels/thumbs/{{ r.thumbnail }}"
@@ -893,6 +893,26 @@ class="w-full py-3 rounded-2xl bg-white/20 text-white font-bold border border-wh
 👤 View Profile Photo
 
 </button>
+
+{% if current_user and (current_user != profile.id) %}
+
+<form method="GET" action="/report" class="mt-3">
+
+    <input type="hidden" name="target_type" value="profile">
+    <input type="hidden" name="target_id" value="{{ profile.id }}">
+    <input type="hidden" name="owner_id" value="{{ profile.id }}">
+
+    <button
+        type="submit"
+        class="w-full py-3 rounded-2xl bg-red-600 text-white font-bold">
+
+        🧾 Report Profile
+
+    </button>
+
+</form>
+
+{% endif %}
 
 </div>
 

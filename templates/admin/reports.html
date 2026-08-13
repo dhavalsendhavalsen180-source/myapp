@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Reports</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+<div class="max-w-6xl mx-auto p-6">
+
+<h1 class="text-3xl font-bold mb-6">
+📃 Pending Reports
+</h1>
+
+<table class="w-full bg-white rounded-xl shadow">
+
+<tr class="bg-gray-200">
+<th class="p-3">ID</th>
+<th>Type</th>
+<th>Target</th>
+<th>Reason</th>
+<th>Reporter</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+
+{% for r in reports %}
+
+<tr class="border-t">
+
+<td class="p-3">{{ r.id }}</td>
+
+<td>{{ r.target_type }}</td>
+
+<td>#{{ r.target_id }}</td>
+
+<td>{{ r.reason }}</td>
+
+<td>{{ r.reporter_name }}</td>
+
+<td>{{ r.status }}</td>
+
+<td>
+
+<a
+href="/admin/report/{{ r.id }}"
+class="bg-red-500 text-white px-3 py-1 rounded inline-block">
+Review
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+</body>
+</html>

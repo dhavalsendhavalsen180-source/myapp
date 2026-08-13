@@ -41,6 +41,94 @@ body{background:#0b0b0b;color:#fff;font-family:Inter,system-ui,Arial}
 
     <input type="hidden" name="media_path" value="{{ media_path }}">
     <input type="hidden" name="mode" value="{{ mode }}">
+    <input type="hidden" name="music_id" value="{{ request.args.get('music_id', '') }}">
+    <input type="hidden" name="music_start" value="{{ request.args.get('music_start', 0) }}">
+    <input type="hidden" name="music_end" value="{{ request.args.get('music_end', 30) }}">
+    <input
+        type="hidden"
+        name="original_volume"
+        id="originalVolumeHidden"
+        value="{{ request.args.get('original_volume',100) }}">
+    <input
+        type="hidden"
+        name="music_volume"
+        id="musicVolumeHidden"
+        value="{{ request.args.get('music_volume',70) }}">
+
+
+<!-- ==========================
+🎵 Audio Mix
+========================== -->
+<div class="box p-4">
+
+    <h3 class="font-semibold mb-4 text-white">
+        🎵 Audio Mix
+    </h3>
+
+    <!-- Original Audio -->
+    <div class="mb-5">
+        <div class="flex justify-between text-sm mb-2">
+            <span>Original Audio</span>
+            <span id="originalValue">100%</span>
+        </div>
+
+        <input
+            type="range"
+            min="0"
+            max="100"
+            value="100"
+            name="original_volume"
+            id="originalVolume"
+            class="w-full accent-green-500">
+    </div>
+
+    <!-- Music -->
+    <div>
+        <div class="flex justify-between text-sm mb-2">
+            <span>Music</span>
+            <span id="musicValue">70%</span>
+        </div>
+
+        <input
+            type="range"
+            min="0"
+            max="100"
+            value="70"
+            name="music_volume"
+            id="musicVolume"
+            class="w-full accent-cyan-500">
+    </div>
+
+</div>
+
+<script>
+const originalSlider = document.getElementById("originalVolume");
+const musicSlider = document.getElementById("musicVolume");
+
+const originalValue = document.getElementById("originalValue");
+const musicValue = document.getElementById("musicValue");
+
+const originalHidden = document.getElementById("originalVolumeHidden");
+const musicHidden = document.getElementById("musicVolumeHidden");
+
+// Load saved values
+originalSlider.value = originalHidden.value;
+musicSlider.value = musicHidden.value;
+
+originalValue.textContent = originalSlider.value + "%";
+musicValue.textContent = musicSlider.value + "%";
+
+// Update labels + hidden inputs
+originalSlider.oninput = () => {
+    originalValue.textContent = originalSlider.value + "%";
+    originalHidden.value = originalSlider.value;
+};
+
+musicSlider.oninput = () => {
+    musicValue.textContent = musicSlider.value + "%";
+    musicHidden.value = musicSlider.value;
+};
+</script>
 
     <div class="box p-4">
       <label class="block text-sm text-gray-300 font-semibold mb-2">Caption</label>

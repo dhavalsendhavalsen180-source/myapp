@@ -418,8 +418,7 @@ scroll-snap-stop:always;
 
 {% endif %}
 
-<!-- OWNER MENU -->
-{% if reel.user_id == session.user_id %}
+<!-- REEL MENU -->
 <div class="absolute top-5 right-4 z-50">
 
   <button onclick="toggleMenu({{ reel.id }})"
@@ -437,22 +436,34 @@ scroll-snap-stop:always;
 
   </button>
 
-  <div id="menu-{{ reel.id }}"
-       class="reel-menu">
+  <div id="menu-{{ reel.id }}" class="reel-menu">
 
-    <form action="/reels/delete/{{ reel.id }}" method="POST">
-      <button type="submit"
-              onclick="return confirm('Delete this reel?')">
+    {% if reel.user_id == session.user_id %}
 
-        🗑 Remove Reel
+      <form action="/reels/delete/{{ reel.id }}" method="POST">
+        <button type="submit"
+                onclick="return confirm('Delete this reel?')">
+          🗑 Remove Reel
+        </button>
+      </form>
 
-      </button>
-    </form>
+    {% else %}
+
+      <form method="GET" action="/report">
+        <input type="hidden" name="target_type" value="reel">
+        <input type="hidden" name="target_id" value="{{ reel.id }}">
+        <input type="hidden" name="owner_id" value="{{ reel.user_id }}">
+
+        <button type="submit">
+          🚩 Report Reel
+        </button>
+      </form>
+
+    {% endif %}
 
   </div>
 
 </div>
-{% endif %}
 
 <!-- APP HEADER -->
 <div class="absolute top-5 left-4 right-16 flex items-center justify-between z-40">

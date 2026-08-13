@@ -1,294 +1,2181 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comments</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Comments • InsChat</title><script src="https://cdn.tailwindcss.com"></script><style>
 
-<style>
+/* =========================================================
+   GLOBAL
+========================================================= */
+
+*{
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
 body{
     margin:0;
-    color:white;
-    font-family:system-ui;
-    background:linear-gradient(135deg,#06b6d4,#2563eb,#7c3aed,#facc15);
-    background-size:300% 300%;
-    animation:bgMove 10s ease infinite;
-    padding-bottom:90px;
+    color:#fff;
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+
+    background:
+        linear-gradient(
+            135deg,
+            #06b6d4 0%,
+            #2563eb 35%,
+            #7c3aed 68%,
+            #facc15 100%
+        );
+
+    background-size:400% 400%;
+    animation:bgMove 14s ease infinite;
+
+    min-height:100vh;
+    padding-bottom:92px;
+
+    overflow-x:hidden;
 }
 
 @keyframes bgMove{
-    0%{background-position:0% 50%;}
-    50%{background-position:100% 50%;}
-    100%{background-position:0% 50%;}
+
+    0%{
+        background-position:0% 50%;
+    }
+
+    50%{
+        background-position:100% 50%;
+    }
+
+    100%{
+        background-position:0% 50%;
+    }
+
 }
 
-/* HEADER */
+
+/* =========================================================
+   HEADER
+========================================================= */
+
 .header{
+
     position:sticky;
     top:0;
+
     z-index:999;
+
+    height:58px;
+
     display:flex;
-    justify-content:space-between;
     align-items:center;
-    padding:14px 18px;
-    background:rgba(0,0,0,.35);
-    backdrop-filter:blur(18px);
-    border-bottom:1px solid rgba(255,255,255,.12);
+    justify-content:space-between;
+
+    padding:0 16px;
+
+    background:rgba(0,0,0,.38);
+
+    backdrop-filter:blur(22px);
+    -webkit-backdrop-filter:blur(22px);
+
+    border-bottom:
+        1px solid
+        rgba(255,255,255,.14);
+
+    box-shadow:
+        0 8px 30px
+        rgba(0,0,0,.16);
 }
 
-/* COMMENT */
-.comment{
+.header button{
+
+    width:38px;
+    height:38px;
+
     display:flex;
-    gap:12px;
-    margin:12px;
-    padding:14px;
-    border-radius:20px;
-    background:rgba(255,255,255,.08);
-    backdrop-filter:blur(16px);
-    border:1px solid rgba(255,255,255,.08);
+    align-items:center;
+    justify-content:center;
+
+    border:0;
+    border-radius:50%;
+
+    color:#fff;
+
+    background:rgba(255,255,255,.10);
+
+    cursor:pointer;
+
+    transition:.2s;
 }
+
+.header button:active{
+    transform:scale(.9);
+}
+
+.header-title{
+
+    font-size:17px;
+    font-weight:800;
+
+    letter-spacing:.2px;
+}
+
+.header-space{
+    width:38px;
+}
+
+
+/* =========================================================
+   COMMENT LIST
+========================================================= */
+
+#commentList{
+
+    width:100%;
+    max-width:680px;
+
+    margin:0 auto;
+
+    padding:
+        10px
+        10px
+        25px;
+}
+
+
+/* =========================================================
+   MAIN COMMENT
+========================================================= */
+
+.comment{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:12px;
+
+    width:100%;
+
+    margin:
+        8px 0
+        14px;
+
+    padding:
+        14px;
+
+    border-radius:22px;
+
+    background:
+        rgba(0,0,0,.18);
+
+    border:
+        1px solid
+        rgba(255,255,255,.12);
+
+    box-shadow:
+        0 8px 28px
+        rgba(0,0,0,.10);
+
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+
+    transition:
+        transform .2s ease,
+        background .2s ease;
+}
+
+.comment:active{
+    transform:scale(.995);
+}
+
+
+/* =========================================================
+   AVATAR
+========================================================= */
 
 .avatar{
-    width:42px;
-    height:42px;
+
+    width:43px;
+    height:43px;
+
+    flex-shrink:0;
+
     border-radius:50%;
+
     object-fit:cover;
-    border:2px solid white;
-    box-shadow:0 0 12px rgba(255,255,255,.25);
+
+    border:
+        2px solid
+        rgba(255,255,255,.85);
+
+    box-shadow:
+        0 0 0 2px rgba(6,182,212,.20),
+        0 0 14px rgba(255,255,255,.18);
+
+    cursor:pointer;
 }
 
+.reply-avatar{
+
+    width:34px;
+    height:34px;
+
+    flex-shrink:0;
+
+    border-radius:50%;
+
+    object-fit:cover;
+
+    border:
+        1.5px solid
+        rgba(255,255,255,.75);
+
+    box-shadow:
+        0 0 10px
+        rgba(255,255,255,.15);
+
+    cursor:pointer;
+}
+
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
 .content{
+
     flex:1;
+
+    min-width:0;
+}
+
+
+/* =========================================================
+   COMMENT TOP
+========================================================= */
+
+.comment-top{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    justify-content:space-between;
+
+    gap:12px;
+}
+
+.comment-text-area{
+
+    flex:1;
+
+    min-width:0;
 }
 
 .username{
-    font-weight:700;
+
+    display:inline-block;
+
+    color:#fff;
+
     font-size:14px;
+
+    font-weight:800;
+
+    line-height:1.2;
+
     cursor:pointer;
+
+    margin-bottom:4px;
+}
+
+.username:hover{
+    text-decoration:underline;
 }
 
 .text{
+
+    color:#f5f5f5;
+
     font-size:14px;
-    margin-top:2px;
-    line-height:1.4;
+
+    line-height:1.5;
+
+    word-break:break-word;
+
+    white-space:pre-wrap;
 }
+
+
+/* =========================================================
+   ACTIONS
+========================================================= */
 
 .meta{
+
+    display:flex;
+
+    align-items:center;
+
+    flex-wrap:wrap;
+
+    gap:14px;
+
+    margin-top:9px;
+
     font-size:12px;
-    color:#ddd;
-    margin-top:6px;
+
+    color:
+        rgba(255,255,255,.62);
 }
 
-.reply,
-.like{
+.action{
+
     cursor:pointer;
-    margin-right:12px;
+
+    user-select:none;
+
+    transition:
+        color .2s ease,
+        transform .2s ease;
 }
 
-.followBtn{
-    border:none;
-    color:white;
-    font-size:12px;
+.action:active{
+    transform:scale(.94);
+}
+
+.reply-action{
+    color:
+        rgba(255,255,255,.82);
+
     font-weight:700;
-    padding:6px 14px;
-    border-radius:999px;
-    background:linear-gradient(135deg,#06b6d4,#2563eb,#7c3aed,#facc15);
-    background-size:250% 250%;
-    animation:bgMove 4s linear infinite;
 }
 
-/* INPUT */
+.reply-action:hover{
+    color:#fff;
+}
+
+.delete-action{
+    color:#ff9a9a;
+    font-weight:700;
+}
+
+.report-action{
+    color:#ffd0d0;
+    font-weight:700;
+}
+
+
+/* =========================================================
+   LIKE
+========================================================= */
+
+.like{
+
+    width:42px;
+    min-width:42px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+    justify-content:center;
+
+    gap:3px;
+
+    cursor:pointer;
+
+    user-select:none;
+
+    -webkit-tap-highlight-color:transparent;
+}
+
+.like svg{
+
+    width:23px;
+    height:23px;
+
+    fill:none;
+
+    stroke:#fff;
+
+    stroke-width:2;
+
+    stroke-linecap:round;
+    stroke-linejoin:round;
+
+    transition:
+        transform .25s ease,
+        fill .25s ease,
+        stroke .25s ease,
+        filter .25s ease;
+}
+
+.likeCount{
+
+    color:
+        rgba(255,255,255,.75);
+
+    font-size:11px;
+
+    font-weight:700;
+
+    line-height:1;
+}
+
+.like.liked svg{
+
+    fill:#ff1744;
+
+    stroke:#ff1744;
+
+    filter:
+        drop-shadow(
+            0 0 5px
+            rgba(255,23,68,.7)
+        )
+        drop-shadow(
+            0 0 12px
+            rgba(255,23,68,.40)
+        );
+}
+
+.like.liked .likeCount{
+    color:#ff8b9a;
+}
+
+
+/* =========================================================
+   HEART CLICK ANIMATION
+========================================================= */
+
+.likePop svg{
+    animation:
+        heartPop .4s ease;
+}
+
+@keyframes heartPop{
+
+    0%{
+        transform:scale(1);
+    }
+
+    40%{
+        transform:scale(1.42);
+    }
+
+    70%{
+        transform:scale(.90);
+    }
+
+    100%{
+        transform:scale(1);
+    }
+
+}
+
+
+/* =========================================================
+   SOFT HEART GLOW
+========================================================= */
+
+.like.liked svg{
+    animation:
+        heartGlow 3.5s ease-in-out infinite;
+}
+
+@keyframes heartGlow{
+
+    0%,70%,100%{
+        filter:
+            drop-shadow(
+                0 0 3px
+                rgba(255,23,68,.35)
+            );
+    }
+
+    78%{
+        filter:
+            drop-shadow(
+                0 0 7px
+                rgba(255,23,68,.80)
+            )
+            drop-shadow(
+                0 0 15px
+                rgba(255,23,68,.55)
+            );
+    }
+
+    86%{
+        filter:
+            drop-shadow(
+                0 0 3px
+                rgba(255,23,68,.35)
+            );
+    }
+}
+
+
+/* =========================================================
+   REPLIES CONTAINER
+========================================================= */
+
+.replies{
+
+    margin-top:14px;
+
+    margin-left:12px;
+
+    padding-left:14px;
+
+    border-left:
+        2px solid
+        rgba(255,255,255,.16);
+}
+
+
+/* =========================================================
+   SINGLE REPLY
+========================================================= */
+
+.reply-item{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:9px;
+
+    margin-top:12px;
+
+    padding:
+        10px
+        11px;
+
+    border-radius:17px;
+
+    background:
+        rgba(255,255,255,.065);
+
+    border:
+        1px solid
+        rgba(255,255,255,.07);
+
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+
+    box-shadow:
+        0 5px 18px
+        rgba(0,0,0,.08);
+}
+
+.reply-item:first-child{
+    margin-top:0;
+}
+
+.reply-content{
+    flex:1;
+    min-width:0;
+}
+
+.reply-top{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    justify-content:space-between;
+
+    gap:9px;
+}
+
+.reply-text-area{
+
+    flex:1;
+
+    min-width:0;
+}
+
+.reply-username{
+
+    display:block;
+
+    font-size:13px;
+
+    font-weight:800;
+
+    margin-bottom:3px;
+
+    cursor:pointer;
+}
+
+.reply-text{
+
+    color:#f1f1f1;
+
+    font-size:13px;
+
+    line-height:1.45;
+
+    word-break:break-word;
+
+    white-space:pre-wrap;
+}
+
+
+/* =========================================================
+   VIEW MORE
+========================================================= */
+
+.view-more{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:5px;
+
+    margin-top:13px;
+
+    padding:5px 2px;
+
+    border:0;
+
+    background:none;
+
+    color:
+        #ddd6fe;
+
+    font-size:13px;
+
+    font-weight:800;
+
+    cursor:pointer;
+}
+
+.view-more:hover{
+    color:#fff;
+}
+
+
+/* =========================================================
+   INPUT
+========================================================= */
+
 .inputBox{
+
     position:fixed;
+
     left:0;
     right:0;
     bottom:0;
+
+    z-index:1000;
+
     display:flex;
-    gap:10px;
-    padding:12px;
-    background:rgba(0,0,0,.45);
-    backdrop-filter:blur(18px);
-    border-top:1px solid rgba(255,255,255,.12);
-    z-index:999;
+
+    align-items:center;
+
+    gap:9px;
+
+    padding:
+        10px
+        12px;
+
+    background:
+        rgba(0,0,0,.48);
+
+    backdrop-filter:blur(22px);
+    -webkit-backdrop-filter:blur(22px);
+
+    border-top:
+        1px solid
+        rgba(255,255,255,.14);
+
+    box-shadow:
+        0 -8px 30px
+        rgba(0,0,0,.14);
 }
 
 .inputBox input{
+
     flex:1;
-    border:none;
+
+    min-width:0;
+
+    height:44px;
+
+    border:0;
+
     outline:none;
-    padding:12px 16px;
+
+    padding:
+        0 17px;
+
     border-radius:999px;
-    background:rgba(255,255,255,.12);
-    color:white;
+
+    background:
+        rgba(255,255,255,.13);
+
+    border:
+        1px solid
+        rgba(255,255,255,.10);
+
+    color:#fff;
+
     font-size:14px;
+
+    backdrop-filter:blur(12px);
+}
+
+.inputBox input:focus{
+
+    border-color:
+        rgba(255,255,255,.28);
+
+    background:
+        rgba(255,255,255,.16);
 }
 
 .inputBox input::placeholder{
-    color:#ddd;
+    color:
+        rgba(255,255,255,.65);
 }
 
 .inputBox button{
-    border:none;
-    color:white;
-    font-weight:700;
-    padding:12px 18px;
+
+    height:44px;
+
+    border:0;
+
+    padding:
+        0 19px;
+
     border-radius:999px;
-    background:linear-gradient(135deg,#06b6d4,#2563eb,#7c3aed,#facc15);
+
+    color:#fff;
+
+    font-size:14px;
+
+    font-weight:800;
+
+    cursor:pointer;
+
+    background:
+        linear-gradient(
+            135deg,
+            #06b6d4,
+            #2563eb,
+            #7c3aed,
+            #facc15
+        );
+
     background-size:250% 250%;
-    animation:bgMove 4s linear infinite;
+
+    animation:
+        bgMove 5s ease infinite;
+
+    box-shadow:
+        0 5px 18px
+        rgba(37,99,235,.25);
 }
-</style>
-</head>
 
-<body>
+.inputBox button:active{
+    transform:scale(.95);
+}
 
-<div class="header">
-  <button onclick="history.back()">⬅</button>
-  <b>Comments</b>
-  <div></div>
+
+/* =========================================================
+   REPLY MODE
+========================================================= */
+
+.reply-mode{
+
+    position:fixed;
+
+    left:0;
+    right:0;
+    bottom:64px;
+
+    z-index:998;
+
+    display:none;
+
+    align-items:center;
+    justify-content:space-between;
+
+    padding:
+        7px 14px;
+
+    color:
+        rgba(255,255,255,.85);
+
+    font-size:12px;
+
+    background:
+        rgba(0,0,0,.35);
+
+    backdrop-filter:blur(14px);
+
+    border-top:
+        1px solid
+        rgba(255,255,255,.08);
+}
+
+.reply-mode.active{
+    display:flex;
+}
+
+.reply-cancel{
+
+    border:0;
+
+    background:none;
+
+    color:#fff;
+
+    font-size:12px;
+
+    font-weight:800;
+
+    cursor:pointer;
+}
+
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.empty-comments{
+
+    padding:
+        70px 20px;
+
+    text-align:center;
+
+    color:
+        rgba(255,255,255,.75);
+}
+
+.empty-icon{
+    font-size:44px;
+    margin-bottom:10px;
+}
+
+.empty-title{
+    font-size:16px;
+    font-weight:800;
+}
+
+.empty-sub{
+    margin-top:5px;
+    font-size:13px;
+    color:
+        rgba(255,255,255,.55);
+}
+
+
+/* =========================================================
+   DELETE MODAL
+========================================================= */
+
+#deleteModal{
+
+    display:none;
+
+    position:fixed;
+
+    inset:0;
+
+    z-index:99999;
+
+    background:
+        rgba(0,0,0,.65);
+
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+
+    justify-content:center;
+    align-items:center;
+
+    padding:20px;
+}
+
+.delete-card{
+
+    width:100%;
+
+    max-width:340px;
+
+    padding:23px;
+
+    text-align:center;
+
+    border-radius:24px;
+
+    background:
+        rgba(20,20,20,.94);
+
+    border:
+        1px solid
+        rgba(255,255,255,.12);
+
+    box-shadow:
+        0 20px 60px
+        rgba(0,0,0,.55);
+
+    animation:
+        modalIn .22s ease;
+}
+
+@keyframes modalIn{
+
+    from{
+        opacity:0;
+        transform:scale(.92);
+    }
+
+    to{
+        opacity:1;
+        transform:scale(1);
+    }
+
+}
+
+.delete-icon{
+    font-size:45px;
+}
+
+.delete-title{
+
+    margin-top:9px;
+
+    color:#fff;
+
+    font-size:19px;
+
+    font-weight:800;
+}
+
+.delete-desc{
+
+    margin-top:7px;
+
+    color:#aaa;
+
+    font-size:13px;
+}
+
+.delete-actions{
+
+    display:flex;
+
+    gap:10px;
+
+    margin-top:22px;
+}
+
+.delete-actions button{
+
+    flex:1;
+
+    height:44px;
+
+    border:0;
+
+    border-radius:999px;
+
+    color:#fff;
+
+    font-weight:800;
+
+    cursor:pointer;
+}
+
+.cancel-btn{
+    background:#2d2d2d;
+}
+
+.confirm-btn{
+
+    background:
+        linear-gradient(
+            135deg,
+            #ff1744,
+            #ff6b6b
+        );
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media(max-width:480px){
+
+    #commentList{
+        padding-left:8px;
+        padding-right:8px;
+    }
+
+    .comment{
+        padding:12px;
+        gap:10px;
+        border-radius:19px;
+    }
+
+    .avatar{
+        width:40px;
+        height:40px;
+    }
+
+    .replies{
+        margin-left:5px;
+        padding-left:11px;
+    }
+
+    .reply-item{
+        padding:9px;
+    }
+
+    .inputBox{
+        padding:
+            9px;
+        gap:7px;
+    }
+
+    .inputBox button{
+        padding:0 16px;
+    }
+
+}
+
+
+/* =========================================================
+   REDUCE MOTION
+========================================================= */
+
+@media(prefers-reduced-motion:reduce){
+
+    body,
+    .inputBox button,
+    .like.liked svg{
+        animation:none;
+    }
+
+}
+
+</style></head><body><!-- =========================================================
+     HEADER
+========================================================= --><div class="header"><button
+    onclick="history.back()"
+    aria-label="Go back">
+    ⬅
+</button>
+
+<div class="header-title">
+    Comments
 </div>
 
-<div id="commentList"></div>
+<div class="header-space"></div>
 
-<div class="inputBox">
-  <input id="commentInput" placeholder="Add a comment...">
-  <button onclick="sendComment()">Post</button>
-</div>
+</div><!-- =========================================================
+     COMMENTS
+========================================================= --><div id="commentList"></div><!-- =========================================================
+     REPLY MODE
+========================================================= --><div
+    id="replyMode"
+    class="reply-mode"><span id="replyText">
+    Replying...
+</span>
 
-<script>
+<button
+    class="reply-cancel"
+    onclick="cancelReply()">
+    Cancel
+</button>
+
+</div><!-- =========================================================
+     INPUT
+========================================================= --><div class="inputBox"><input
+    id="commentInput"
+    autocomplete="off"
+    placeholder="Add a comment..."
+    onkeydown="handleInputKey(event)">
+
+<button
+    onclick="sendComment()">
+    Post
+</button>
+
+</div><script>
+
+/* =========================================================
+   VARIABLES
+========================================================= */
 
 let reelId = "{{ reel_id }}";
-let currentUser = "{{ current_user or '' }}";
+
+let currentUser =
+    "{{ current_user or '' }}";
+
 let replyTo = null;
 
-/* LOAD */
-async function loadComments(){
-  try{
-    const res = await fetch(`/reels/comments/${reelId}`);
-    const d = await res.json();
+let allCommentsData = [];
 
-    let html="";
+let isLoading = false;
 
-    d.comments.forEach(c=>{
-      html += renderComment(c);
-    });
+let deleteCommentId = null;
 
-    document.getElementById("commentList").innerHTML = html;
 
-  }catch(e){
-    console.error(e);
-  }
+/* =========================================================
+   ESCAPE HTML
+   Prevents comment text from breaking the UI
+========================================================= */
+
+function escapeHtml(value){
+
+    if(value === null || value === undefined){
+        return "";
+    }
+
+    return String(value)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
 }
 
-/* RENDER COMMENT */
+
+/* =========================================================
+   LOAD COMMENTS
+========================================================= */
+
+async function loadComments(){
+
+    if(isLoading){
+        return;
+    }
+
+    isLoading = true;
+
+    try{
+
+        const res =
+            await fetch(
+                `/reels/comments/${reelId}`,
+                {
+                    cache:"no-store"
+                }
+            );
+
+        if(!res.ok){
+            throw new Error("Failed to load comments");
+        }
+
+        const d =
+            await res.json();
+
+        allCommentsData =
+            Array.isArray(d.comments)
+                ? d.comments
+                : [];
+
+        renderAllComments();
+
+    }catch(e){
+
+        console.error(
+            "Comments load error:",
+            e
+        );
+
+    }finally{
+
+        isLoading = false;
+
+    }
+}
+
+
+/* =========================================================
+   RENDER ALL
+========================================================= */
+
+function renderAllComments(){
+
+    const list =
+        document.getElementById(
+            "commentList"
+        );
+
+    if(!allCommentsData.length){
+
+        list.innerHTML = `
+
+            <div class="empty-comments">
+
+                <div class="empty-icon">
+                    💬
+                </div>
+
+                <div class="empty-title">
+                    No comments yet
+                </div>
+
+                <div class="empty-sub">
+                    Be the first to comment on this reel.
+                </div>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+    let html = "";
+
+    allCommentsData.forEach(
+        c => {
+            html +=
+                renderComment(c);
+        }
+    );
+
+    list.innerHTML = html;
+}
+
+
+/* =========================================================
+   LIKE ICON
+========================================================= */
+
+function likeIcon(){
+
+    return `
+
+        <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true">
+
+            <path
+                d="
+                M20.84 4.61
+                a5.5 5.5 0 0 0-7.78 0
+                L12 5.67
+                l-1.06-1.06
+                a5.5 5.5 0 0 0-7.78 7.78
+                L12 21.23
+                l8.84-8.84
+                a5.5 5.5 0 0 0 0-7.78z">
+            </path>
+
+        </svg>
+
+    `;
+}
+
+
+/* =========================================================
+   LIKE BUTTON
+========================================================= */
+
+function renderLike(item){
+
+    return `
+
+        <span
+            class="like ${item.liked ? "liked" : ""}"
+            onclick="likeComment(${item.id},this)">
+
+            ${likeIcon()}
+
+            <span class="likeCount">
+                ${Number(item.likes || 0)}
+            </span>
+
+        </span>
+
+    `;
+}
+
+
+/* =========================================================
+   RENDER MAIN COMMENT
+========================================================= */
+
 function renderComment(c){
 
-  let isMe = String(c.user_id) === String(currentUser);
+    const isMe =
+        String(c.user_id) ===
+        String(currentUser);
 
-  return `
-  <div class="comment" onclick="event.stopPropagation()">
+    const replies =
+        Array.isArray(c.replies)
+            ? c.replies
+            : [];
 
-    <img src="${c.profile || '/static/default_dp.png'}"
-         class="avatar"
-         onerror="this.src='/static/default_dp.png'"
-         onclick="openProfile(${c.user_id})">
+    return `
 
-    <div class="content">
+        <div
+            class="comment"
+            data-comment-id="${c.id}">
 
-      <div class="username" onclick="openProfile(${c.user_id})">
-        @${c.username}
-      </div>
+            <!-- AVATAR -->
 
-      <div class="text">${c.text}</div>
+            <img
+                src="${escapeHtml(
+                    c.profile ||
+                    "/static/default_dp.png"
+                )}"
+                class="avatar"
+                onerror="
+                    this.src='/static/default_dp.png'
+                "
+                onclick="
+                    openProfile(${c.user_id})
+                ">
 
-      <div class="meta">
-        <span class="like" onclick="likeComment(${c.id}, this)">
-          ❤️ ${c.likes || 0}
-        </span>
 
-        <span class="reply" onclick="setReply('${c.id}','${c.username}')">
-          Reply
-        </span>
-      </div>
+            <!-- CONTENT -->
 
-      ${c.replies ? c.replies.map(r=>`
-        <div style="margin-left:20px;margin-top:8px">
-          <div class="username" onclick="openProfile(${r.user_id})">@${r.username}</div>
-          <div class="text">${r.text}</div>
+            <div class="content">
+
+
+                <!-- COMMENT TOP -->
+
+                <div class="comment-top">
+
+                    <div class="comment-text-area">
+
+                        <div
+                            class="username"
+                            onclick="
+                                openProfile(${c.user_id})
+                            ">
+
+                            @${escapeHtml(
+                                c.username
+                            )}
+
+                        </div>
+
+                        <div class="text">
+                            ${escapeHtml(c.text)}
+                        </div>
+
+                    </div>
+
+
+                    <!-- LIKE -->
+
+                    ${renderLike(c)}
+
+                </div>
+
+
+                <!-- ACTIONS -->
+
+                <div class="meta">
+
+                    <span
+                        class="action reply-action"
+                        onclick="
+                            setReply(
+                                ${c.id},
+                                '${escapeHtml(
+                                    c.username
+                                )}'
+                            )
+                        ">
+
+                        Reply
+
+                    </span>
+
+
+                    ${
+                        isMe
+
+                        ? `
+
+                            <span
+                                class="action delete-action"
+                                onclick="
+                                    deleteComment(
+                                        ${c.id}
+                                    )
+                                ">
+
+                                🗑 Delete
+
+                            </span>
+
+                        `
+
+                        : `
+
+                            <span
+                                class="action report-action"
+                                onclick="
+                                    reportComment(
+                                        ${c.id},
+                                        ${c.user_id}
+                                    )
+                                ">
+
+                                🚩 Report
+
+                            </span>
+
+                        `
+                    }
+
+                </div>
+
+
+                <!-- REPLIES -->
+
+                ${
+                    replies.length
+
+                    ? renderReplies(
+                        c,
+                        replies,
+                        3
+                    )
+
+                    : ""
+                }
+
+            </div>
+
         </div>
-      `).join("") : ""}
 
-    </div>
-
-    ${!isMe ? `
-      <button class="followBtn" onclick="followUser(${c.user_id}, this)">
-        Follow
-      </button>
-    ` : ``}
-
-  </div>`;
+    `;
 }
 
-/* PROFILE */
+
+/* =========================================================
+   RENDER REPLIES
+========================================================= */
+
+function renderReplies(
+    parent,
+    replies,
+    limit
+){
+
+    const visible =
+        replies.slice(
+            0,
+            limit
+        );
+
+    let html = `
+
+        <div
+            class="replies"
+            id="replies-${parent.id}">
+    `;
+
+
+    visible.forEach(
+        r => {
+
+            html +=
+                renderReply(
+                    r,
+                    parent.id
+                );
+
+        }
+    );
+
+
+    html += `</div>`;
+
+
+    if(replies.length > limit){
+
+        html += `
+
+            <button
+                class="view-more"
+                onclick="
+                    showMoreReplies(
+                        ${parent.id}
+                    )
+                ">
+
+                ↳ View
+                ${replies.length - limit}
+                more replies
+
+            </button>
+
+        `;
+
+    }
+
+
+    return html;
+}
+
+
+/* =========================================================
+   RENDER SINGLE REPLY
+========================================================= */
+
+function renderReply(
+    r,
+    parentId
+){
+
+    const replyIsMe =
+        String(r.user_id) ===
+        String(currentUser);
+
+    return `
+
+        <div class="reply-item">
+
+
+            <!-- REPLY AVATAR -->
+
+            <img
+                src="${escapeHtml(
+                    r.profile ||
+                    "/static/default_dp.png"
+                )}"
+                class="reply-avatar"
+                onerror="
+                    this.src='/static/default_dp.png'
+                "
+                onclick="
+                    openProfile(${r.user_id})
+                ">
+
+
+            <!-- REPLY CONTENT -->
+
+            <div class="reply-content">
+
+
+                <div class="reply-top">
+
+
+                    <div class="reply-text-area">
+
+                        <div
+                            class="reply-username"
+                            onclick="
+                                openProfile(${r.user_id})
+                            ">
+
+                            @${escapeHtml(
+                                r.username
+                            )}
+
+                        </div>
+
+                        <div class="reply-text">
+
+                            ${escapeHtml(
+                                r.text
+                            )}
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- LIKE -->
+
+                    ${renderLike(r)}
+
+                </div>
+
+
+                <!-- REPLY ACTIONS -->
+
+                <div class="meta">
+
+                    <span
+                        class="action reply-action"
+                        onclick="
+                            setReply(
+                                ${parentId},
+                                '${escapeHtml(
+                                    r.username
+                                )}'
+                            )
+                        ">
+
+                        Reply
+
+                    </span>
+
+
+                    ${
+                        replyIsMe
+
+                        ? `
+
+                            <span
+                                class="action delete-action"
+                                onclick="
+                                    deleteComment(
+                                        ${r.id}
+                                    )
+                                ">
+
+                                🗑 Delete
+
+                            </span>
+
+                        `
+
+                        : `
+
+                            <span
+                                class="action report-action"
+                                onclick="
+                                    reportComment(
+                                        ${r.id},
+                                        ${r.user_id}
+                                    )
+                                ">
+
+                                🚩 Report
+
+                            </span>
+
+                        `
+                    }
+
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+}
+
+
+/* =========================================================
+   VIEW MORE REPLIES
+========================================================= */
+
+function showMoreReplies(commentId){
+
+    const comment =
+        allCommentsData.find(
+            c =>
+                String(c.id) ===
+                String(commentId)
+        );
+
+    if(
+        !comment ||
+        !Array.isArray(comment.replies)
+    ){
+        return;
+    }
+
+
+    const box =
+        document.getElementById(
+            "replies-" + commentId
+        );
+
+    if(!box){
+        return;
+    }
+
+
+    box.innerHTML =
+        comment.replies
+            .map(
+                r =>
+                    renderReply(
+                        r,
+                        commentId
+                    )
+            )
+            .join("");
+
+
+    const button =
+        box.parentElement
+            .querySelector(
+                ".view-more"
+            );
+
+    if(button){
+        button.remove();
+    }
+
+}
+
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
 function openProfile(id){
-  window.location.href = "/profile/" + id;
+
+    window.location.href =
+        "/profile/" + id;
+
 }
 
-/* FOLLOW */
-async function followUser(id,btn){
-  btn.innerText="...";
-  const res = await fetch(`/social/follow/${id}`,{method:"POST"});
-  const d = await res.json();
 
-  btn.innerText = d.action === "followed" ? "Following" : "Follow";
+/* =========================================================
+   SET REPLY
+========================================================= */
+
+function setReply(
+    id,
+    user
+){
+
+    replyTo = id;
+
+    const input =
+        document.getElementById(
+            "commentInput"
+        );
+
+    input.placeholder =
+        "Reply to @" + user;
+
+    input.focus();
+
+
+    const mode =
+        document.getElementById(
+            "replyMode"
+        );
+
+    const text =
+        document.getElementById(
+            "replyText"
+        );
+
+    text.innerText =
+        "Replying to @" + user;
+
+    mode.classList.add(
+        "active"
+    );
+
 }
 
-/* LIKE COMMENT */
-async function likeComment(id, el){
-  const res = await fetch(`/reels/comment_like/${id}`,{method:"POST"});
-  const d = await res.json();
 
-  if(d.ok){
-    el.innerText = "❤️ " + d.likes;
-  }
+/* =========================================================
+   CANCEL REPLY
+========================================================= */
+
+function cancelReply(){
+
+    replyTo = null;
+
+    const input =
+        document.getElementById(
+            "commentInput"
+        );
+
+    input.placeholder =
+        "Add a comment...";
+
+
+    document
+        .getElementById(
+            "replyMode"
+        )
+        .classList.remove(
+            "active"
+        );
+
 }
 
-/* REPLY */
-function setReply(id,user){
-  replyTo = id;
-  document.getElementById("commentInput").placeholder = "Reply to @" + user;
+
+/* =========================================================
+   INPUT ENTER
+========================================================= */
+
+function handleInputKey(e){
+
+    if(
+        e.key === "Enter" &&
+        !e.shiftKey
+    ){
+
+        e.preventDefault();
+
+        sendComment();
+
+    }
+
 }
 
-/* SEND */
+
+/* =========================================================
+   SEND COMMENT
+========================================================= */
+
 async function sendComment(){
-  let text = document.getElementById("commentInput").value;
-  if(!text) return;
 
-  let fd = new FormData();
-  fd.append("comment", text);
+    const input =
+        document.getElementById(
+            "commentInput"
+        );
 
-  if(replyTo){
-    fd.append("reply_to", replyTo);
-  }
+    const text =
+        input.value.trim();
 
-  await fetch(`/reels/comment/${reelId}`,{
-    method:"POST",
-    body:fd
-  });
 
-  document.getElementById("commentInput").value="";
-  replyTo=null;
+    if(!text){
+        return;
+    }
 
-  loadComments();
+
+    const button =
+        document.querySelector(
+            ".inputBox button"
+        );
+
+    button.disabled = true;
+
+    button.innerText =
+        "Posting...";
+
+
+    try{
+
+        const fd =
+            new FormData();
+
+        fd.append(
+            "comment",
+            text
+        );
+
+
+        if(replyTo){
+
+            fd.append(
+                "reply_to",
+                replyTo
+            );
+
+        }
+
+
+        const res =
+            await fetch(
+                `/reels/comment/${reelId}`,
+                {
+                    method:"POST",
+                    body:fd
+                }
+            );
+
+
+        if(!res.ok){
+
+            throw new Error(
+                "Comment failed"
+            );
+
+        }
+
+
+        input.value = "";
+
+        cancelReply();
+
+        await loadComments();
+
+
+    }catch(e){
+
+        console.error(
+            "Send comment error:",
+            e
+        );
+
+    }finally{
+
+        button.disabled = false;
+
+        button.innerText =
+            "Post";
+
+    }
+
 }
 
-/* AUTO REFRESH */
-setInterval(loadComments,5000);
+
+/* =========================================================
+   LIKE COMMENT / REPLY
+========================================================= */
+
+async function likeComment(
+    id,
+    el
+){
+
+    try{
+
+        const res =
+            await fetch(
+                `/reels/comment_like/${id}`,
+                {
+                    method:"POST"
+                }
+            );
+
+
+        const d =
+            await res.json();
+
+
+        if(!d.ok){
+            return;
+        }
+
+
+        const count =
+            el.querySelector(
+                ".likeCount"
+            );
+
+
+        if(count){
+
+            count.innerText =
+                d.likes;
+
+        }
+
+
+        if(d.liked){
+
+            el.classList.add(
+                "liked"
+            );
+
+        }else{
+
+            el.classList.remove(
+                "liked"
+            );
+
+        }
+
+
+        el.classList.remove(
+            "likePop"
+        );
+
+
+        void el.offsetWidth;
+
+
+        el.classList.add(
+            "likePop"
+        );
+
+
+    }catch(e){
+
+        console.error(
+            "Like error:",
+            e
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   DELETE
+========================================================= */
+
+function deleteComment(id){
+
+    deleteCommentId = id;
+
+    document
+        .getElementById(
+            "deleteModal"
+        )
+        .style.display =
+        "flex";
+
+}
+
+
+/* =========================================================
+   CLOSE DELETE MODAL
+========================================================= */
+
+function closeDeleteModal(){
+
+    deleteCommentId =
+        null;
+
+    document
+        .getElementById(
+            "deleteModal"
+        )
+        .style.display =
+        "none";
+
+}
+
+
+/* =========================================================
+   CONFIRM DELETE
+========================================================= */
+
+async function confirmDelete(){
+
+    if(
+        deleteCommentId === null
+    ){
+        return;
+    }
+
+
+    const id =
+        deleteCommentId;
+
+
+    try{
+
+        await fetch(
+            `/reels/comment_delete/${id}`,
+            {
+                method:"POST"
+            }
+        );
+
+
+        closeDeleteModal();
+
+        await loadComments();
+
+
+    }catch(e){
+
+        console.error(
+            "Delete error:",
+            e
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   REPORT
+========================================================= */
+
+function reportComment(
+    commentId,
+    ownerId
+){
+
+    window.location.href =
+        "/report?target_type=reel_comment" +
+        "&target_id=" +
+        encodeURIComponent(
+            commentId
+        ) +
+        "&owner_id=" +
+        encodeURIComponent(
+            ownerId
+        );
+
+}
+
+
+/* =========================================================
+   AUTO REFRESH
+========================================================= */
+
+/*
+   5 second refresh rakha hai,
+   lekin rendering centralized hai.
+*/
+
+setInterval(
+    loadComments,
+    5000
+);
+
+
+/* =========================================================
+   INITIAL LOAD
+========================================================= */
 
 loadComments();
 
-</script>
+</script><!-- =========================================================
+     DELETE MODAL
+========================================================= --><div
+    id="deleteModal"><div class="delete-card">
 
-</body>
+    <div class="delete-icon">
+        🗑️
+    </div>
+
+    <div class="delete-title">
+        Delete Comment?
+    </div>
+
+    <div class="delete-desc">
+        This action can't be undone.
+    </div>
+
+
+    <div class="delete-actions">
+
+        <button
+            class="cancel-btn"
+            onclick="
+                closeDeleteModal()
+            ">
+
+            Cancel
+
+        </button>
+
+
+        <button
+            class="confirm-btn"
+            onclick="
+                confirmDelete()
+            ">
+
+            Delete
+
+        </button>
+
+    </div>
+
+</div>
+
+</div></body>
 </html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Music • InsChat</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+<body class="bg-black text-white">
+
+<!-- HEADER -->
+<div class="sticky top-0 bg-black border-b border-gray-800 p-4">
+
+    <div class="flex items-center gap-3">
+
+        <a href="/create/editor?media_path={{ request.args.get('media_path','') }}&mode={{ request.args.get('mode','post') }}{% if request.args.get('music_id') %}&music_id={{ request.args.get('music_id') }}{% endif %}"
+           class="text-cyan-400 text-2xl font-bold">
+            ←
+        </a>
+
+        <h1 class="text-2xl font-bold">
+            🎵 Music
+        </h1>
+
+    </div>
+
+    <form method="GET" action="/music" class="mt-4">
+
+        <input
+            type="text"
+            name="q"
+            value="{{ q }}"
+            placeholder="Search music..."
+            class="w-full rounded-xl bg-zinc-900 p-3 outline-none"
+        >
+
+        <input type="hidden" name="media_path" value="{{ request.args.get('media_path','') }}">
+        <input type="hidden" name="mode" value="{{ request.args.get('mode','post') }}">
+
+    </form>
+
+</div>
+
+<!-- MUSIC LIST -->
+
+<div class="p-4 space-y-3">
+
+{% if music %}
+
+{% for m in music %}
+
+<a
+href="/music/{{ m.id }}?media_path={{ request.args.get('media_path','') }}&mode={{ request.args.get('mode','reel') }}"
+class="flex items-center gap-3 bg-zinc-900 rounded-xl p-3">
+
+{% if m.cover %}
+
+<img
+src="/static/music/covers/{{m.cover}}"
+class="w-16 h-16 rounded-lg object-cover">
+
+{% else %}
+
+<div
+class="w-16 h-16 rounded-lg bg-zinc-700 flex items-center justify-center text-3xl">
+
+🎵
+
+</div>
+
+{% endif %}
+
+<div class="flex-1">
+
+<div class="font-bold">
+
+{{m.title}}
+
+</div>
+
+<div class="text-sm text-gray-400">
+
+{{m.artist}}
+
+</div>
+
+<div class="text-xs text-gray-500 mt-1">
+
+{{m.report_count}} Reports
+
+</div>
+
+</div>
+
+</a>
+
+{% endfor %}
+
+{% else %}
+
+<div class="text-center mt-20 text-gray-400">
+
+No music found.
+
+</div>
+
+{% endif %}
+
+</div>
+
+
+<!-- FLOATING BUTTON -->
+
+<a
+href="/music/upload"
+class="fixed bottom-24 right-5 w-16 h-16 rounded-full bg-cyan-500 flex items-center justify-center text-3xl shadow-lg">
+
++
+
+</a>
+
+</body>
+</html>

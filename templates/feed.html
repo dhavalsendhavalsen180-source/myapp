@@ -286,7 +286,12 @@ async function uploadStoryInstant(event) {
           d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 01-6 0"/>
       </svg>
 
-      <span id="notif-badge"></span>
+      <span
+        id="notif-badge"
+        class="hidden absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1
+               rounded-full bg-red-500 text-white text-[10px] font-bold
+               flex items-center justify-center border-2 border-white">
+      </span>      
     </a>
 
     <!-- MESSAGES (DM) -->
@@ -371,36 +376,56 @@ async function uploadStoryInstant(event) {
     </a>
 
         <!-- DELETE ONLY OWN POST -->
-        {% if post.owner_id == current_user %}
-        <div class="relative">
-          <button onclick="toggleMenu({{ post.id }})"
-                  class="text-2xl text-gray-600">
-            ⋮
-          </button>
+<!-- POST MENU -->
+<div class="relative">
 
-          <div id="menu-{{ post.id }}"
-               class="hidden absolute right-0 top-8 bg-white border rounded-lg shadow-lg w-32 z-50">
+  <button onclick="toggleMenu({{ post.id }})"
+          class="text-2xl text-gray-600">
+    ⋮
+  </button>
 
-            <a href="/posts/{{ post.id }}"
-               class="block px-4 py-2 hover:bg-gray-100">
-              View
-            </a>
+  <div id="menu-{{ post.id }}"
+       class="hidden absolute right-0 top-8 bg-white border rounded-lg shadow-lg w-40 z-50">
 
-            <form method="POST"
-                  action="/posts/delete/{{ post.id }}"
-                  onsubmit="return confirm('Delete this post?')">
+    <a href="/posts/{{ post.id }}"
+       class="block px-4 py-2 hover:bg-gray-100">
+      👁 View
+    </a>
 
-              <button type="submit"
-                      class="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100">
-                Delete
-              </button>
+    {% if post.owner_id == current_user %}
 
-            </form>
+      <form method="POST"
+            action="/posts/delete/{{ post.id }}"
+            onsubmit="return confirm('Delete this post?')">
 
-          </div>
-        </div>
-        {% endif %}
-        </div>
+        <button type="submit"
+                class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
+          🗑 Delete
+        </button>
+
+      </form>
+
+    {% else %}
+
+<form method="GET" action="/report">
+    <input type="hidden" name="target_type" value="post">
+    <input type="hidden" name="target_id" value="{{ post.id }}">
+    <input type="hidden" name="owner_id" value="{{ post.owner_id }}">
+
+    <button type="submit"
+            class="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100">
+        📃 Report
+    </button>
+</form>
+
+    {% endif %}
+
+  </div>
+
+</div>
+
+</div> <!-- END HEADER -->
+
       <!-- IMAGES (CAROUSEL + DOUBLE TAP) -->
       <div class="relative">
 
@@ -433,6 +458,15 @@ async function uploadStoryInstant(event) {
 <div class="heart" id="heart-{{ post.id }}">
     <span class="h h1">💞</span>
 </div>
+
+{% if post.music_file %}
+<audio
+    class="post-audio"
+    src="{{ post.music_file }}"
+    preload="metadata"
+    loop>
+</audio>
+{% endif %}
 
 <!-- ACTION ROW -->
 <div class="px-4 pt-3">
@@ -502,7 +536,7 @@ async function uploadStoryInstant(event) {
 
 </button>
 
-</div> <!-
+</div>
     <!-- RIGHT SIDE SAVE -->
     <button id="save-btn-{{ post.id }}"
             onclick="toggleSave({{ post.id }}, this)">
@@ -740,6 +774,73 @@ window.me = {{ session.get("user_id")|tojson }};
 </script>
 
 <script src="/static/js/global_call.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const audios = document.querySelectorAll(".post-audio");
+
+    audios.forEach(audio => {
+        audio.volume = 1.0;
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+
+        entries.forEach(entry => {
+
+            const audio = entry.target.querySelector(".post-audio");
+            if (!audio) return;
+
+            if (entry.isIntersecting) {
+                audio.play().catch(() => {});
+            } else {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+        });
+
+    }, {
+        threshold: 0.6
+    });
+
+    document.querySelectorAll(".bg-white\\/95").forEach(post => {
+        observer.observe(post);
+    });
+
+});
+</script>
+
+<script>
+async function updateNotificationCount() {
+    try {
+        const res = await fetch("/social/notifications/count");
+        const data = await res.json();
+
+        const badge = document.getElementById("notif-badge");
+
+        if (!badge) return;
+
+        const count = Number(data.count || 0);
+
+        if (count > 0) {
+            badge.textContent = count > 99 ? "99+" : count;
+            badge.classList.remove("hidden");
+        } else {
+            badge.textContent = "";
+            badge.classList.add("hidden");
+        }
+
+    } catch (error) {
+        console.log("Notification count error:", error);
+    }
+}
+
+// Page open hote hi
+updateNotificationCount();
+
+// Har 5 second me count update
+setInterval(updateNotificationCount, 5000);
+</script>
 
 </body>
 </html>

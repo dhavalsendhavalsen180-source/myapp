@@ -16,7 +16,6 @@ def get_conn():
 def allowed_file(fname):
     return "." in fname and fname.rsplit(".", 1)[1].lower() in ALLOWED_EXT
 
-
 # ==============================================================
 # 🔥 LIKE / UNLIKE (AJAX)
 # ==============================================================
@@ -55,7 +54,7 @@ def like_post(post_id):
             meta = json.dumps({"post_id": post_id})
             c.execute(
                 "INSERT INTO notifications (user_id, actor_id, type, meta) VALUES (?, ?, ?, ?)",
-                (owner[0], user_id, "like", meta)
+                (owner[0], user_id, "post_like", meta)
             )
 
         # updated count
@@ -75,7 +74,7 @@ def comment_post(post_id):
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
 
-    text = request.form.get("comment", "").strip()
+    text = request.form.get("post_comment", "").strip()
     if not text:
         return redirect(url_for("posts.feed"))
 
@@ -291,62 +290,179 @@ def stories_feed():
 
     return jsonify({"ok": True, "stories": stories})
 
-
 # ==============================================================
 # 🔔 NOTIFICATIONS
 # ==============================================================
-
 @social_bp.route("/notifications")
 def notifications():
+
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
 
+    uid = session["user_id"]
+
     conn = get_conn()
     c = conn.cursor()
+
+    # ==========================================================
+    # 🔔 LOAD ALL NOTIFICATIONS
+    # ==========================================================
 
     c.execute("""
         SELECT
-        n.id,
-        n.actor_id,
-        u.username,
-        u.photo,
-        n.type,
-        n.meta,
-        n.is_read,
-        n.created_at
+            n.id,
+            n.actor_id,
+            u.username,
+            u.photo,
+            n.type,
+            n.meta,
+            n.is_read,
+            n.created_at,
+
+            -- REEL
+            r.thumbnail AS reel_thumbnail,
+            r.video_path AS reel_video,
+
+            -- POST
+            p.id AS post_id,
+            pi.image_path AS post_image
+
         FROM notifications n
-        JOIN users u ON n.actor_id = u.id
+
+        JOIN users u
+            ON n.actor_id = u.id
+
+        LEFT JOIN reels r
+            ON r.id = json_extract(n.meta, '$.reel_id')
+
+        LEFT JOIN posts p
+            ON p.id = json_extract(n.meta, '$.post_id')
+
+        LEFT JOIN post_images pi
+            ON pi.post_id = p.id
+            AND pi.id = (
+                SELECT MIN(pi2.id)
+                FROM post_images pi2
+                WHERE pi2.post_id = p.id
+            )
+
         WHERE n.user_id=?
+
         ORDER BY n.created_at DESC
-    """, (session["user_id"],))
+    """, (uid,))
 
-    nots = [{
-        "id": r[0],
-        "actor_id": r[1],
-        "actor_username": r[2],
-        "actor_photo": r[3],
-        "type": r[4],
-        "meta": r[5],
-        "is_read": r[6],
-        "created_at": r[7]
-    } for r in c.fetchall()]
+    rows = c.fetchall()
+
+    nots = []
+
+    # ==========================================================
+    # 🔄 BUILD NOTIFICATIONS
+    # ==========================================================
+
+    for r in rows:
+
+        meta = r[5] or "{}"
+
+        try:
+            meta_data = json.loads(meta)
+        except (json.JSONDecodeError, TypeError):
+            meta_data = {}
+
+        # ======================================================
+        # REEL DATA
+        # ======================================================
+
+        reel_id = meta_data.get("reel_id")
+
+        reel_thumbnail = r[8]
+        reel_video = r[9]
+
+        if reel_thumbnail:
+
+            reel_thumbnail = str(reel_thumbnail)
+
+            if reel_thumbnail.startswith("/static/"):
+                pass
+
+            elif reel_thumbnail.startswith("static/"):
+                reel_thumbnail = "/" + reel_thumbnail
+
+            else:
+                reel_thumbnail = (
+                    "/static/uploads/reels/thumbs/"
+                    + reel_thumbnail
+                )
+
+        if reel_video:
+
+            reel_video = str(reel_video)
+
+            if not reel_video.startswith("/"):
+                reel_video = "/" + reel_video
+
+        # ======================================================
+        # POST DATA
+        # ======================================================
+
+        post_id = meta_data.get("post_id")
+
+        post_image = r[11]
+
+        if post_image:
+
+            post_image = str(post_image)
+
+            if post_image.startswith("/static/"):
+                pass
+
+            elif post_image.startswith("static/"):
+                post_image = "/" + post_image
+
+            else:
+                post_image = "/static/uploads/" + post_image
+
+        # ======================================================
+        # NOTIFICATION OBJECT
+        # ======================================================
+
+        nots.append({
+
+            "id": r[0],
+
+            "actor_id": r[1],
+
+            "actor_username": r[2],
+
+            "actor_photo": r[3],
+
+            "type": r[4],
+
+            "meta": meta,
+
+            # POST
+            "post_id": post_id,
+            "post_image": post_image,
+
+            # COMMENT
+            "comment_id": meta_data.get("comment_id"),
+            "parent_id": meta_data.get("parent_id"),
+
+            # REEL
+            "reel_id": reel_id,
+            "reel_thumbnail": reel_thumbnail,
+            "reel_video": reel_video,
+
+            "is_read": r[6],
+
+            "created_at": r[7]
+        })
 
     conn.close()
 
-    return render_template("notifications.html", notifications=nots)
-
-@social_bp.route("/notifications/mark_read/<int:not_id>", methods=["POST"])
-def mark_read(not_id):
-    if "user_id" not in session:
-        return jsonify({"ok": False}), 401
-
-    conn = get_conn()
-    c = conn.cursor()
-    c.execute("UPDATE notifications SET is_read=1 WHERE id=? AND user_id=?", (not_id, session["user_id"]))
-    conn.commit()
-    conn.close()
-    return jsonify({"ok": True})
-
+    return render_template(
+        "notifications.html",
+        notifications=nots
+    )
 
 # ==============================================================
 # 🔍 EXPLORE PAGE
@@ -432,3 +548,36 @@ def notifications_count():
     conn.close()
 
     return jsonify({"ok": True, "count": count})
+# ==============================================================
+# 🔔 MARK NOTIFICATION AS READ
+# ==============================================================
+
+@social_bp.route("/notifications/mark_read/<int:notification_id>", methods=["POST"])
+def mark_notification_read(notification_id):
+
+    if "user_id" not in session:
+        return jsonify({
+            "ok": False,
+            "error": "login_required"
+        }), 401
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    # Sirf apni notification ko read mark kare
+    c.execute("""
+        UPDATE notifications
+        SET is_read=1
+        WHERE id=?
+          AND user_id=?
+    """, (
+        notification_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "ok": True
+    })

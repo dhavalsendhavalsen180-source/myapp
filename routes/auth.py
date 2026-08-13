@@ -128,9 +128,14 @@ def login():
 
         # Username se user fetch karo
         c.execute(
-            "SELECT id, password FROM users WHERE username=?",
+            """
+            SELECT id, password, suspended, banned
+            FROM users
+            WHERE username=?
+            """,
             (username,)
         )
+
         row = c.fetchone()
 
         conn.close()
@@ -141,6 +146,16 @@ def login():
 
         user_id = row[0]
         stored_pass = row[1]
+        suspended = row[2]
+        banned = row[3]
+
+        if banned:
+            flash("Your account has been permanently banned.", "error")
+            return render_template("login.html")
+
+        if suspended:
+            flash("Your account has been suspended.", "error")
+            return render_template("login.html")
 
         # Password verify
         if check_password_hash(stored_pass, password):
@@ -393,16 +408,34 @@ def google_callback():
     c = conn.cursor()
 
     # Agar pehle se account bana hua hai
-    c.execute(
-       "SELECT id FROM users WHERE google_id=?",
-       (google_id,)
-   )
+    c.execute("""
+        SELECT
+            id,
+            suspended,
+            banned
+        FROM users
+        WHERE google_id=?
+    """, (google_id,))
+
     user = c.fetchone()
 
     if user:
+
+        if user[2]:
+            conn.close()
+            flash("Your account has been permanently banned.", "error")
+            return redirect(url_for("auth.login"))
+
+        if user[1]:
+            conn.close()
+            flash("Your account has been suspended due to policy violations.", "error")
+            return redirect(url_for("auth.login"))
+
         conn.close()
+
         session["user_id"] = user[0]
         session.permanent = True
+
         return redirect(url_for("posts.feed"))
 
     # Google info save

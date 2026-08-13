@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Review Report • InsChat Admin</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+<body class="bg-gray-100">
+
+<div class="max-w-3xl mx-auto py-10 px-4">
+
+<div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+
+<div class="bg-black text-white px-6 py-5">
+
+<h1 class="text-3xl font-bold">
+Review Report #{{ report.id }}
+</h1>
+
+<p class="text-gray-300 mt-1">
+Review the reported content before taking action.
+</p>
+
+</div>
+
+
+<div class="p-6">
+
+<div class="bg-gray-50 border rounded-xl p-5 mb-6">
+
+<h2 class="text-xl font-bold mb-4">
+📃 Report Details
+</h2>
+
+<div class="space-y-2">
+
+<p>
+<b>Content Type:</b>
+{{ report.target_type }}
+</p>
+
+<p>
+<b>Target ID:</b>
+#{{ report.target_id }}
+</p>
+
+<p>
+<b>Reporter:</b>
+{{ report.reporter_name }}
+</p>
+
+<p>
+<b>Content Owner:</b>
+{{ report.owner_name }}
+</p>
+
+<p>
+<b>Total Reports:</b>
+{{ total_reports }}
+</p>
+
+<p>
+<b>Reported On:</b>
+{{ report.created_at }}
+</p>
+
+<p>
+<b>Reason:</b>
+{{ report.reason }}
+</p>
+
+<p>
+<b>Additional Details:</b>
+{{ report.details or "No additional details provided." }}
+</p>
+
+</div>
+
+</div>
+
+
+{% if report.target_type == "post" and post %}
+
+<div class="bg-white border rounded-xl overflow-hidden mb-6">
+
+    <div class="flex items-center gap-3 p-4 border-b">
+
+        <img
+        src="{{ post.photo }}"
+        class="w-12 h-12 rounded-full object-cover"
+        onerror="this.src='/static/default_dp.png'">
+
+        <div>
+
+            <h3 class="font-bold">
+                @{{ post.username }}
+            </h3>
+
+            <p class="text-gray-500 text-sm">
+                Post ID #{{ post.id }}
+            </p>
+
+        </div>
+
+    </div>
+
+    {% if images %}
+
+    <div class="grid grid-cols-2 gap-2 p-2">
+
+        {% for img in images %}
+
+        <img
+        src="{{ img.image_path }}"
+        class="w-full rounded-lg border object-cover">
+
+        {% endfor %}
+
+    </div>
+
+    {% elif post.image %}
+
+    <img
+    src="{{ post.image }}"
+    class="w-full object-cover">
+
+    {% endif %}
+
+    <div class="p-4">
+
+        {% if post.caption %}
+
+        <p class="whitespace-pre-line text-gray-800">
+            {{ post.caption }}
+        </p>
+
+        {% else %}
+
+        <p class="text-gray-400 italic">
+            No caption
+        </p>
+
+        {% endif %}
+
+    </div>
+
+    <div class="border-t p-4 flex gap-3">
+
+        <a
+        href="/posts/{{ post.id }}"
+        target="_blank"
+        class="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 font-semibold">
+
+        👁 View Original Post
+
+        </a>
+
+        <a
+        href="/profile/{{ post.user_id }}"
+        target="_blank"
+        class="flex-1 text-center bg-gray-800 hover:bg-black text-white rounded-xl py-3 font-semibold">
+
+        👤 View User Profile
+
+        </a>
+
+    </div>
+
+</div>
+
+{% elif report.target_type == "music" and post %}
+
+<div class="bg-white border rounded-xl p-5 mb-6">
+
+    <h2 class="text-xl font-bold">
+        🎵 {{ post.title }}
+    </h2>
+
+    <p class="text-gray-500 mt-1">
+        {{ post.artist }}
+    </p>
+
+    <div class="mt-5">
+
+        <a
+        href="/profile/{{ report.owner_id }}"
+        target="_blank"
+        class="block w-full text-center bg-gray-800 hover:bg-black text-white rounded-xl py-3 font-semibold">
+
+        👤 View Artist Profile
+
+        </a>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+<div class="bg-white border rounded-xl p-5 mb-6">
+
+    <h2 class="text-xl font-bold mb-4">
+        👤 Content Owner
+    </h2>
+
+    <div class="grid grid-cols-2 gap-4 text-sm">
+
+        <div>
+            <b>Total Posts</b><br>
+            {{ total_posts }}
+        </div>
+
+        <div>
+            <b>Total Reports</b><br>
+            {{ total_reports }}
+        </div>
+
+        <div>
+            <b>Copyright Strikes</b><br>
+            {{ owner_info.copyright_strikes }}
+        </div>
+
+        <div>
+            <b>Suspended</b><br>
+
+            {% if owner_info.suspended %}
+                <span class="text-yellow-600 font-bold">YES</span>
+            {% else %}
+                <span class="text-green-600">NO</span>
+            {% endif %}
+
+        </div>
+
+        <div>
+            <b>Banned</b><br>
+
+            {% if owner_info.banned %}
+                <span class="text-red-600 font-bold">YES</span>
+            {% else %}
+                <span class="text-green-600">NO</span>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="bg-gray-50 border rounded-xl p-5 mb-6">
+
+    <h2 class="text-xl font-bold mb-4">
+        📜 Recent Report History
+    </h2>
+
+    {% if report_history %}
+
+        <div class="space-y-3">
+
+        {% for item in report_history %}
+
+            <div class="border rounded-lg p-3">
+
+                <div><b>Report #{{ item.id }}</b></div>
+
+                <div>Reason: {{ item.reason }}</div>
+
+                <div>Status: {{ item.status }}</div>
+
+                <div class="text-sm text-gray-500">
+                    {{ item.created_at }}
+                </div>
+
+            </div>
+
+        {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <p class="text-gray-500">
+            No previous reports.
+        </p>
+
+    {% endif %}
+
+</div>
+
+<form method="POST" class="space-y-3">
+
+<button
+name="action"
+value="approve"
+class="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl p-4 font-semibold">
+
+✅ Approve Report
+
+</button>
+
+<button
+name="action"
+value="reject"
+class="w-full bg-gray-700 hover:bg-gray-800 text-white rounded-xl p-4 font-semibold">
+
+❌ Reject Report
+
+</button>
+
+<button
+name="action"
+value="suspend"
+class="w-full bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl p-4 font-semibold">
+
+⏸ Suspend User
+
+</button>
+
+<button
+name="action"
+value="ban"
+class="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl p-4 font-semibold">
+
+🚫 Permanent Ban
+
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+
+</body>
+</html>

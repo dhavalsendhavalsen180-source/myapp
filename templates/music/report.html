@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Report Audio • InsChat</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+<body class="bg-black text-white">
+
+<div class="max-w-xl mx-auto p-5">
+
+<a href="/music/{{ song.id }}" class="text-cyan-400 text-lg">
+← Back
+</a>
+
+<h1 class="text-3xl font-bold mt-5">
+🚩 Report Audio
+</h1>
+
+<div class="bg-zinc-900 rounded-xl p-4 mt-6">
+
+<h2 class="text-xl font-bold">
+{{ song.title }}
+</h2>
+
+<p class="text-gray-400 mt-1">
+{{ song.artist }}
+</p>
+
+</div>
+
+<form method="POST" class="mt-6 space-y-5">
+
+<div>
+
+<label class="block mb-2 font-semibold">
+Reason
+</label>
+
+<select
+name="reason"
+required
+class="w-full bg-zinc-900 rounded-xl p-3 outline-none">
+
+<option value="">Select reason</option>
+
+<option value="Copyright">
+Copyright infringement
+</option>
+
+<option value="Spam">
+Spam / Misleading
+</option>
+
+<option value="Violence">
+Violence or harmful content
+</option>
+
+<option value="Adult">
+Adult / Sexual content
+</option>
+
+<option value="Fake Audio">
+Fake Audio
+</option>
+
+<option value="Other">
+Other
+</option>
+
+</select>
+
+</div>
+
+<div>
+
+<label class="block mb-2 font-semibold">
+Additional Details (Optional)
+</label>
+
+<textarea
+name="details"
+rows="5"
+placeholder="Write more details..."
+class="w-full bg-zinc-900 rounded-xl p-3 outline-none resize-none"></textarea>
+
+</div>
+
+<button
+type="submit"
+class="w-full bg-red-500 hover:bg-red-600 rounded-xl p-4 font-bold">
+
+📃 Submit Report
+
+</button>
+
+</form>
+
+</div>
+
+</body>
+</html>

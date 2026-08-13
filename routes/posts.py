@@ -1,8 +1,10 @@
 import os
 import sqlite3
+import json
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from flask import jsonify
 
 posts_bp = Blueprint("posts", __name__, url_prefix="/posts")
 
@@ -147,6 +149,25 @@ def feed():
         ]
 
         print(owner_id, current_user, len(owner_stories), [s.get("viewers", []) for s in owner_stories])
+
+# Load attached music
+        c.execute("""
+            SELECT
+                ma.music_id,
+                ma.original_volume,
+                ma.music_volume,
+                ma.start_time,
+                ma.end_time,
+                m.filename
+            FROM media_audio ma
+            JOIN music m
+                ON ma.music_id = m.id
+            WHERE ma.media_type='post'
+              AND ma.media_id=?
+        """, (post_id,))
+
+        audio = c.fetchone()
+
         posts.append({
             "id": post_id,
             "owner_id": owner_id,
@@ -158,8 +179,17 @@ def feed():
             "liked_by_me": liked_by_me,
             "saved_by_me": saved_by_me,
             "comments": comments,
-
+            "music_file": (
+                "/static/music/uploads/" + audio[5]
+                if audio else None
+            ),
+            "music_start": audio[3] if audio else 0,
+            "music_end": audio[4] if audio else 30,
+            "original_volume": audio[1] if audio else 100,
+            "music_volume": audio[2] if audio else 100,
             "has_story": len(owner_stories) > 0,
+
+
 
     # True sirf tab hoga jab owner's HAR story dekh li ho
             "story_seen": (
@@ -271,53 +301,95 @@ def delete(post_id):
 
 
 # ===============================
-# 💬 COMMENT SYSTEM (FEED)
-# ===============================
-@posts_bp.route("/comment/<int:post_id>", methods=["POST"])
-def comment(post_id):
-    if "user_id" not in session:
-        return redirect(url_for("auth.login"))
-
-    comment_text = request.form.get("comment", "").strip()
-    if not comment_text:
-        return redirect(url_for("posts.feed"))
-
-    conn = sqlite3.connect("database.db")
-    c = conn.cursor()
-
-    c.execute("INSERT INTO comments (post_id, user_id, comment) VALUES (?, ?, ?)",
-              (post_id, session["user_id"], comment_text))
-
-    conn.commit()
-    conn.close()
-    return redirect(url_for("posts.feed"))
-
-
-# ===============================
 # ❤️ LIKE / UNLIKE (FEED)
 # ===============================
 @posts_bp.route("/like/<int:post_id>", methods=["POST"])
 def like(post_id):
+
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
+
+    uid = session["user_id"]
 
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
 
-    c.execute("SELECT id FROM likes WHERE post_id=? AND username=?",
-              (post_id, session["user_id"]))
+    # Get post owner
+    c.execute("""
+        SELECT user_id
+        FROM posts
+        WHERE id=?
+    """, (post_id,))
+
+    post_row = c.fetchone()
+
+    if not post_row:
+        conn.close()
+        return redirect(url_for("posts.feed"))
+
+    post_owner_id = post_row[0]
+
+    # Check existing like
+    c.execute("""
+        SELECT id
+        FROM likes
+        WHERE post_id=?
+          AND username=?
+    """, (post_id, uid))
+
     liked = c.fetchone()
 
     if liked:
-        c.execute("DELETE FROM likes WHERE id=?", (liked[0],))
+
+        # UNLIKE
+        c.execute("""
+            DELETE FROM likes
+            WHERE id=?
+        """, (liked[0],))
+
     else:
-        c.execute("INSERT INTO likes (post_id, username) VALUES (?, ?)",
-                  (post_id, session["user_id"]))
+
+        # LIKE
+        c.execute("""
+            INSERT INTO likes
+            (
+                post_id,
+                username
+            )
+            VALUES (?, ?)
+        """, (
+            post_id,
+            uid
+        ))
+
+        # 🔔 POST LIKE NOTIFICATION
+        # Apne hi post ko like karne par notification nahi
+        if post_owner_id != uid:
+
+            meta = {
+                "post_id": post_id
+            }
+
+            c.execute("""
+                INSERT INTO notifications
+                (
+                    user_id,
+                    actor_id,
+                    type,
+                    meta
+                )
+                VALUES (?, ?, ?, ?)
+            """, (
+                post_owner_id,
+                uid,
+                "post_like",
+                json.dumps(meta)
+            ))
 
     conn.commit()
     conn.close()
-    return redirect(url_for("posts.feed"))
 
+    return redirect(url_for("posts.feed"))
 
 # ===============================
 # 👁 VIEW SINGLE POST
@@ -329,40 +401,168 @@ def view_post(post_id):
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    # POST DATA
-    c.execute("""
-        SELECT posts.id, posts.caption, posts.user_id, users.username
-        FROM posts
-        JOIN users ON posts.user_id = users.id
-        WHERE posts.id=?
-    """, (post_id,))
-    post = c.fetchone()
+    # POSTS DATA (Clicked post first, then all posts)
 
-    if not post:
+    # Get clicked post owner
+    c.execute(
+        "SELECT user_id FROM posts WHERE id=?",
+        (post_id,)
+    )
+
+    row = c.fetchone()
+
+    if not row:
         conn.close()
         return "Post not found", 404
 
-    # IMAGES
-    c.execute("SELECT image_path FROM post_images WHERE post_id=?", (post_id,))
-    images = [r["image_path"] for r in c.fetchall()]
+    owner_id = row["user_id"]
 
-    # LIKES COUNT
-    c.execute("SELECT COUNT(*) as total FROM likes WHERE post_id=?", (post_id,))
-    likes = c.fetchone()["total"]
+    # Load only this owner's posts
+    c.execute("""
+        SELECT
+            posts.id,
+            posts.caption,
+            posts.user_id,
+            users.username,
+            users.photo
+        FROM posts
+        JOIN users
+            ON posts.user_id = users.id
+        WHERE posts.user_id=?
+        ORDER BY
+            CASE WHEN posts.id=? THEN 0 ELSE 1 END,
+            posts.id DESC
+    """, (owner_id, post_id))
 
-    # CHECK CURRENT USER LIKED OR NOT
-    liked_by_me = False
-    if "user_id" in session:
-        c.execute("SELECT 1 FROM likes WHERE post_id=? AND username=?",
-                  (post_id, session["user_id"]))
-        liked_by_me = c.fetchone() is not None
+    all_posts = c.fetchall()
 
-    # CHECK SAVED OR NOT
-    saved_by_me = False
-    if "user_id" in session:
-        c.execute("SELECT 1 FROM post_saves WHERE post_id=? AND user_id=?",
-                  (post_id, session["user_id"]))
-        saved_by_me = c.fetchone() is not None
+    post = all_posts[0]
+
+    # IMAGES + LIKES + SAVE FOR ALL POSTS
+    posts = []
+
+    for p in all_posts:
+
+        pid = p["id"]
+
+        # Images
+        c.execute(
+            "SELECT image_path FROM post_images WHERE post_id=?",
+            (pid,)
+        )
+        images = [x["image_path"] for x in c.fetchall()]
+
+        # Likes
+        c.execute(
+            "SELECT COUNT(*) AS total FROM likes WHERE post_id=?",
+            (pid,)
+        )
+        likes = c.fetchone()["total"]
+
+        # Liked
+        liked = False
+        if "user_id" in session:
+            c.execute(
+                "SELECT 1 FROM likes WHERE post_id=? AND username=?",
+                (pid, session["user_id"])
+            )
+            liked = c.fetchone() is not None
+
+        # Saved
+        saved = False
+        if "user_id" in session:
+            c.execute(
+                "SELECT 1 FROM post_saves WHERE post_id=? AND user_id=?",
+                (pid, session["user_id"])
+            )
+            saved = c.fetchone() is not None
+
+        posts.append({
+            **dict(p),
+            "images": images,
+            "likes": likes,
+            "liked_by_me": liked,
+            "saved_by_me": saved
+        })
+
+    post = posts[0]
+
+    # MUSIC
+    c.execute("""
+        SELECT
+            ma.music_id,
+            ma.original_volume,
+            ma.music_volume,
+            ma.start_time,
+            ma.end_time,
+            m.filename
+        FROM media_audio ma
+        JOIN music m
+            ON ma.music_id = m.id
+        WHERE ma.media_type='post'
+          AND ma.media_id=?
+    """, (post["id"],))
+
+    audio = c.fetchone()
+
+    owner_id = post["user_id"]
+
+    # OWNER POSTS
+    c.execute("""
+        SELECT id, caption
+        FROM posts
+        WHERE user_id=?
+        ORDER BY id DESC
+    """, (owner_id,))
+
+    owner_posts = []
+
+    for p in c.fetchall():
+
+        c.execute(
+            "SELECT image_path FROM post_images WHERE post_id=?",
+            (p["id"],)
+        )
+
+        imgs = [x["image_path"] for x in c.fetchall()]
+
+        owner_posts.append({
+            "id": p["id"],
+            "caption": p["caption"],
+            "images": imgs
+        })
+
+    liked_by_me = post["liked_by_me"]
+    saved_by_me = post["saved_by_me"]
+
+    # OWNER REELS
+
+    owner_id = post["user_id"]
+
+    # OWNER REELS
+    c.execute("""
+        SELECT
+            id,
+            caption,
+            video_path,
+            thumbnail,
+            views
+        FROM reels
+        WHERE user_id=?
+        ORDER BY id DESC
+    """, (owner_id,))
+
+    owner_reels = []
+
+    for r in c.fetchall():
+
+        owner_reels.append({
+            "id": r["id"],
+            "caption": r["caption"],
+            "video_path": r["video_path"],
+            "thumbnail": r["thumbnail"],
+            "views": r["views"]
+        })
 
     # COMMENTS (FIXED WITH COMMENT ID + USER ID)
     c.execute("""
@@ -379,19 +579,51 @@ def view_post(post_id):
         "comment": r["comment"]
     } for r in c.fetchall()]
 
+    # ADD THIS
+    post["music_file"] = (
+        "/static/music/uploads/" + audio["filename"]
+        if audio else None
+    )
+
+    # Current user profile photo
+    current_user_photo = "/static/default_dp.png"
+
+    if "user_id" in session:
+        c.execute(
+            "SELECT photo FROM users WHERE id=?",
+            (session["user_id"],)
+        )
+
+        row = c.fetchone()
+
+        if row and row["photo"]:
+            current_user_photo = row["photo"]
+
     conn.close()
 
     return render_template(
-        "post_view.html",
-        post=post,
-        images=images,
-        likes=likes,
-        comments=comments,
-        liked_by_me=liked_by_me,
-        saved_by_me=saved_by_me,
-        current_user=session.get("user_id")
-    )
+            "post_view.html",
+            posts=posts,
+            post=post,
+            images=images,
+            likes=likes,
+            comments=comments,
+            liked_by_me=liked_by_me,
+            saved_by_me=saved_by_me,
 
+            current_user=session.get("user_id"),
+            current_user_photo=current_user_photo,
+
+            music_file=(
+               "/static/music/uploads/" + audio["filename"]
+                if audio else None
+            ),
+            music_start=audio["start_time"] if audio else 0,
+            music_end=audio["end_time"] if audio else 30,
+            music_volume=audio["music_volume"] if audio else 100,
+            owner_posts=owner_posts,
+            owner_reels=owner_reels
+        )
 
 # ===============================
 # ❤️ LIKE / UNLIKE FROM POST VIEW
@@ -402,25 +634,86 @@ def like_toggle(post_id):
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
 
+    uid = session["user_id"]
+
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
 
-    # Check if already liked
-    c.execute("SELECT id FROM likes WHERE post_id=? AND username=?",
-              (post_id, session["user_id"]))
+    # Get post owner
+    c.execute("""
+        SELECT user_id
+        FROM posts
+        WHERE id=?
+    """, (post_id,))
+
+    post_row = c.fetchone()
+
+    if not post_row:
+        conn.close()
+        return redirect(f"/posts/{post_id}")
+
+    post_owner_id = post_row[0]
+
+    # Check existing like
+    c.execute("""
+        SELECT id
+        FROM likes
+        WHERE post_id=?
+          AND username=?
+    """, (post_id, uid))
+
     liked = c.fetchone()
 
     if liked:
-        c.execute("DELETE FROM likes WHERE id=?", (liked[0],))
+
+        # UNLIKE
+        c.execute("""
+            DELETE FROM likes
+            WHERE id=?
+        """, (liked[0],))
+
     else:
-        c.execute("INSERT INTO likes (post_id, username) VALUES (?, ?)",
-                  (post_id, session["user_id"]))
+
+        # LIKE
+        c.execute("""
+            INSERT INTO likes
+            (
+                post_id,
+                username
+            )
+            VALUES (?, ?)
+        """, (
+            post_id,
+            uid
+        ))
+
+        # 🔔 POST LIKE NOTIFICATION
+        if post_owner_id != uid:
+
+            meta = {
+                "post_id": post_id
+            }
+
+            c.execute("""
+                INSERT INTO notifications
+                (
+                    user_id,
+                    actor_id,
+                    type,
+                    meta
+                )
+                VALUES (?, ?, ?, ?)
+            """, (
+                post_owner_id,
+                uid,
+                "post_like",
+                json.dumps(meta)
+            ))
 
     conn.commit()
     conn.close()
 
     return redirect(f"/posts/{post_id}")
-
 
 # ===============================
 # 💬 COMMENT FROM POST VIEW
@@ -515,7 +808,7 @@ def get_followers():
 
 
 # ===============================
-# 📤 SHARE POST TO USER (SEND IN DM)
+# 📤 SHARE POST TO USER
 # ===============================
 @posts_bp.route("/share_to_user", methods=["POST"])
 def share_to_user():
@@ -524,7 +817,8 @@ def share_to_user():
         return {"ok": False, "error": "login required"}
 
     from_user = session["user_id"]
-    data = request.get_json()
+
+    data = request.get_json() or {}
 
     to_user_id = data.get("to_user_id")
     post_id = data.get("post_id")
@@ -532,23 +826,203 @@ def share_to_user():
     if not to_user_id or not post_id:
         return {"ok": False, "error": "missing data"}
 
-    # message text (post link)
-    msg = f"📌 Shared a post: /posts/{post_id}"
-
     conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    # INSERT into messages table
+    # Check post exists
+    c.execute(
+        "SELECT id FROM posts WHERE id=?",
+        (post_id,)
+    )
+
+    post = c.fetchone()
+
+    if not post:
+        conn.close()
+        return {"ok": False, "error": "post not found"}
+
+    # Find/create DM chat
     c.execute("""
-        INSERT INTO messages (sender_id, receiver_id, message, timestamp, seen)
-        VALUES (?, ?, ?, datetime('now'), 0)
-    """, (from_user, to_user_id, msg))
+        SELECT id
+        FROM chats
+        WHERE (user1=? AND user2=?)
+           OR (user1=? AND user2=?)
+    """, (from_user, to_user_id, to_user_id, from_user))
+
+    chat = c.fetchone()
+
+    if chat:
+        chat_id = chat["id"]
+    else:
+        c.execute("""
+            INSERT INTO chats(user1, user2)
+            VALUES (?, ?)
+        """, (from_user, to_user_id))
+
+        chat_id = c.lastrowid
+
+    # Special message format
+    msg = f"__SHARED_POST__:{int(post_id)}"
+
+    c.execute("""
+        INSERT INTO messages
+        (chat_id, sender_id, msg, attachment, created_at)
+        VALUES (?, ?, ?, NULL, datetime('now'))
+    """, (
+        chat_id,
+        from_user,
+        msg
+    ))
+
+    message_id = c.lastrowid
 
     conn.commit()
     conn.close()
 
-    return {"ok": True}
+    # Real-time message if receiver is currently inside chat
+    socketio.emit(
+        "new_message",
+        {
+            "chat_id": chat_id,
+            "message": {
+                "id": message_id,
+                "sender_id": from_user,
+                "msg": msg,
+                "attachment": None,
+                "deleted": 0,
+                "seen": 0,
+                "created_at": datetime.utcnow().strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+            }
+        },
+        room=f"chat_{chat_id}"
+    )
 
+    return {
+        "ok": True,
+        "chat_id": chat_id,
+        "message_id": message_id
+    }
+
+    # ------------------------------------------------
+    # FIND / CREATE EXISTING CHAT
+    # ------------------------------------------------
+
+    c.execute("""
+        SELECT id
+        FROM chats
+        WHERE (user1=? AND user2=?)
+           OR (user1=? AND user2=?)
+        LIMIT 1
+    """, (
+        from_user,
+        to_user_id,
+        to_user_id,
+        from_user
+    ))
+
+    chat = c.fetchone()
+
+    if chat:
+        chat_id = chat["id"]
+
+    else:
+        c.execute("""
+            INSERT INTO chats(user1,user2)
+            VALUES(?,?)
+        """, (
+            from_user,
+            to_user_id
+        ))
+
+        conn.commit()
+        chat_id = c.lastrowid
+
+    # ------------------------------------------------
+    # POST SHARE DATA
+    # ------------------------------------------------
+
+    import json
+
+    attachment = json.dumps({
+        "type": "post",
+        "post_id": int(post_id)
+    })
+
+    # Small message shown if old client doesn't understand card
+    msg = "📌 Shared a post"
+
+    # ------------------------------------------------
+    # INSERT INTO YOUR EXISTING MESSAGES TABLE
+    # ------------------------------------------------
+
+    c.execute("""
+        INSERT INTO messages
+        (
+            chat_id,
+            sender_id,
+            msg,
+            attachment,
+            created_at
+        )
+        VALUES (
+            ?, ?, ?, ?, datetime('now')
+        )
+    """, (
+        chat_id,
+        from_user,
+        msg,
+        attachment
+    ))
+
+    conn.commit()
+
+    message_id = c.lastrowid
+
+    # Get inserted message
+    c.execute("""
+        SELECT
+            id,
+            sender_id,
+            msg,
+            attachment,
+            created_at,
+            edited,
+            deleted
+        FROM messages
+        WHERE id=?
+    """, (message_id,))
+
+    row = c.fetchone()
+
+    conn.close()
+
+    message = dict(row)
+
+    message["seen"] = 0
+
+    # ------------------------------------------------
+    # REAL-TIME MESSAGE
+    # ------------------------------------------------
+
+    from socketio_init import socketio
+
+    socketio.emit(
+        "new_message",
+        {
+            "chat_id": chat_id,
+            "message": message
+        },
+        room=f"chat_{chat_id}"
+    )
+
+    return jsonify({
+        "ok": True,
+        "chat_id": chat_id,
+        "message_id": message_id
+    })
 
 # ===============================
 # 🔖 SAVE / UNSAVE POST
@@ -579,6 +1053,8 @@ def save_toggle(post_id):
 
     return {"ok": True, "action": action}
 ############ comment ##################
+############ POST COMMENT SYSTEM ##################
+
 @posts_bp.route("/comments/<int:post_id>")
 def comments_page(post_id):
 
@@ -590,8 +1066,8 @@ def comments_page(post_id):
         post_id=post_id,
         current_user=session["user_id"]
     )
-#####################################
-#####################################
+
+
 @posts_bp.route("/comments_api/<int:post_id>")
 def comments_api(post_id):
 
@@ -599,29 +1075,601 @@ def comments_api(post_id):
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
+    # -----------------------------
+    # MAIN COMMENTS
+    # -----------------------------
     c.execute("""
-        SELECT comments.id,
-               comments.user_id,
-               comments.comment,
-               users.username,
-               users.photo
+        SELECT
+            comments.id,
+            comments.user_id,
+            comments.comment,
+            comments.created_at,
+            users.username,
+            users.photo
         FROM comments
-        JOIN users ON comments.user_id = users.id
+        JOIN users
+            ON comments.user_id = users.id
         WHERE comments.post_id=?
+          AND comments.reply_to IS NULL
         ORDER BY comments.id DESC
     """, (post_id,))
 
+    main_comments = c.fetchall()
+
     comments = []
 
-    for r in c.fetchall():
+    for r in main_comments:
+
+        # -------------------------
+        # COMMENT LIKES
+        # -------------------------
+        c.execute("""
+            SELECT COUNT(*)
+            FROM reel_comment_likes
+            WHERE comment_id=?
+        """, (r["id"],))
+
+        likes = c.fetchone()[0]
+
+        liked = False
+
+        if "user_id" in session:
+
+            c.execute("""
+                SELECT 1
+                FROM reel_comment_likes
+                WHERE comment_id=?
+                  AND user_id=?
+            """, (
+                r["id"],
+                session["user_id"]
+            ))
+
+            liked = c.fetchone() is not None
+
+        # -------------------------
+        # REPLIES
+        # -------------------------
+        c.execute("""
+            SELECT
+                comments.id,
+                comments.user_id,
+                comments.comment,
+                comments.created_at,
+                users.username,
+                users.photo
+            FROM comments
+            JOIN users
+                ON comments.user_id = users.id
+            WHERE comments.post_id=?
+              AND comments.reply_to=?
+            ORDER BY comments.id ASC
+        """, (
+            post_id,
+            r["id"]
+        ))
+
+        replies = []
+
+        for rr in c.fetchall():
+
+            c.execute("""
+                SELECT COUNT(*)
+                FROM reel_comment_likes
+                WHERE comment_id=?
+            """, (rr["id"],))
+
+            reply_likes = c.fetchone()[0]
+
+            reply_liked = False
+
+            if "user_id" in session:
+
+                c.execute("""
+                    SELECT 1
+                    FROM reel_comment_likes
+                    WHERE comment_id=?
+                      AND user_id=?
+                """, (
+                    rr["id"],
+                    session["user_id"]
+                ))
+
+                reply_liked = c.fetchone() is not None
+
+            replies.append({
+
+                "id": rr["id"],
+
+                "user_id": rr["user_id"],
+
+                "username": rr["username"],
+
+                "profile":
+                    rr["photo"]
+                    or "/static/default_dp.png",
+
+                "text":
+                    rr["comment"],
+
+                "likes":
+                    reply_likes,
+
+                "liked":
+                    reply_liked
+
+            })
+
         comments.append({
-            "id": r["id"],
-            "user_id": r["user_id"],
-            "username": r["username"],
-            "text": r["comment"],
-            "profile": r["photo"]
+
+            "id":
+                r["id"],
+
+            "user_id":
+                r["user_id"],
+
+            "username":
+                r["username"],
+
+            "profile":
+                r["photo"]
+                or "/static/default_dp.png",
+
+            "text":
+                r["comment"],
+
+            "likes":
+                likes,
+
+            "liked":
+                liked,
+
+            "replies":
+                replies
+
         })
 
     conn.close()
 
-    return {"comments": comments}
+    return {
+        "comments": comments
+    }
+
+
+# -----------------------------
+# POST COMMENT / REPLY
+# -----------------------------
+@posts_bp.route(
+    "/comment/<int:post_id>",
+    methods=["POST"]
+)
+def post_comment(post_id):
+
+    if "user_id" not in session:
+        return {
+            "ok": False,
+            "error": "login required"
+        }, 401
+
+    uid = session["user_id"]
+
+    text = request.form.get(
+        "comment",
+        ""
+    ).strip()
+
+    if not text:
+        return {
+            "ok": False,
+            "error": "empty comment"
+        }, 400
+
+    reply_to = request.form.get("reply_to")
+
+    if reply_to:
+        try:
+            reply_to = int(reply_to)
+        except:
+            reply_to = None
+
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+
+    # --------------------------------
+    # GET POST OWNER
+    # --------------------------------
+    c.execute("""
+        SELECT user_id
+        FROM posts
+        WHERE id=?
+    """, (post_id,))
+
+    post_row = c.fetchone()
+
+    if not post_row:
+        conn.close()
+
+        return {
+            "ok": False,
+            "error": "post not found"
+        }, 404
+
+    post_owner_id = post_row[0]
+
+    # --------------------------------
+    # REPLY PARENT VERIFY
+    # --------------------------------
+    parent_owner_id = None
+
+    if reply_to:
+
+        c.execute("""
+            SELECT user_id
+            FROM comments
+            WHERE id=?
+              AND post_id=?
+        """, (
+            reply_to,
+            post_id
+        ))
+
+        parent = c.fetchone()
+
+        if parent:
+
+            parent_owner_id = parent[0]
+
+        else:
+
+            reply_to = None
+
+    # --------------------------------
+    # INSERT COMMENT / REPLY
+    # --------------------------------
+    c.execute("""
+        INSERT INTO comments
+        (
+            post_id,
+            user_id,
+            comment,
+            reply_to
+        )
+        VALUES (?, ?, ?, ?)
+    """, (
+        post_id,
+        uid,
+        text,
+        reply_to
+    ))
+
+    comment_id = c.lastrowid
+
+    # --------------------------------
+    # 🔔 NOTIFICATION
+    # --------------------------------
+
+    # REPLY
+    if reply_to is not None:
+
+        # Reply ki notification parent comment
+        # ke owner ko jayegi
+        if parent_owner_id and parent_owner_id != uid:
+
+            meta = {
+                "post_id": post_id,
+                "comment_id": comment_id,
+                "parent_id": reply_to
+            }
+
+            c.execute("""
+                INSERT INTO notifications
+                (
+                    user_id,
+                    actor_id,
+                    type,
+                    meta
+                )
+                VALUES (?, ?, ?, ?)
+            """, (
+                parent_owner_id,
+                uid,
+                "post_reply",
+                json.dumps(meta)
+            ))
+
+    # NORMAL COMMENT
+    else:
+
+        # Post owner ko notification
+        # apne post par khud comment kare to nahi
+        if post_owner_id != uid:
+
+            meta = {
+                "post_id": post_id,
+                "comment_id": comment_id
+            }
+
+            c.execute("""
+                INSERT INTO notifications
+                (
+                    user_id,
+                    actor_id,
+                    type,
+                    meta
+                )
+                VALUES (?, ?, ?, ?)
+            """, (
+                post_owner_id,
+                uid,
+                "post_comment",
+                json.dumps(meta)
+            ))
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "ok": True,
+        "comment_id": comment_id
+    }
+
+# -----------------------------
+# DELETE POST COMMENT
+# -----------------------------
+@posts_bp.route(
+    "/comment_delete/<int:comment_id>",
+    methods=["POST"]
+)
+def delete_post_comment(comment_id):
+
+    if "user_id" not in session:
+        return {
+            "ok": False,
+            "error": "login required"
+        }, 401
+
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT user_id
+        FROM comments
+        WHERE id=?
+    """, (comment_id,))
+
+    row = c.fetchone()
+
+    if not row:
+        conn.close()
+
+        return {
+            "ok": False,
+            "error": "comment not found"
+        }, 404
+
+    if row[0] != session["user_id"]:
+        conn.close()
+
+        return {
+            "ok": False,
+            "error": "not allowed"
+        }, 403
+
+    # Delete likes
+    c.execute("""
+        DELETE FROM reel_comment_likes
+        WHERE comment_id=?
+    """, (comment_id,))
+
+    # Delete replies
+    c.execute("""
+        DELETE FROM comments
+        WHERE reply_to=?
+    """, (comment_id,))
+
+    # Delete comment
+    c.execute("""
+        DELETE FROM comments
+        WHERE id=?
+    """, (comment_id,))
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "ok": True
+    }
+
+
+# ===============================
+# ❤️ LIKE / UNLIKE POST COMMENT
+# ===============================
+@posts_bp.route(
+    "/comment_like/<int:comment_id>",
+    methods=["POST"]
+)
+def post_comment_like(comment_id):
+
+    if "user_id" not in session:
+        return {
+            "ok": False,
+            "error": "login required"
+        }
+
+    uid = session.get("user_id")
+
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    # ==========================================
+    # CHECK COMMENT
+    # ==========================================
+    c.execute("""
+        SELECT
+            id,
+            user_id,
+            post_id,
+            reply_to
+        FROM comments
+        WHERE id=?
+    """, (comment_id,))
+
+    comment = c.fetchone()
+
+    if not comment:
+        conn.close()
+
+        return {
+            "ok": False,
+            "error": "comment not found"
+        }
+
+    comment_owner_id = comment["user_id"]
+    post_id = comment["post_id"]
+    parent_id = comment["reply_to"]
+
+    # ==========================================
+    # CHECK EXISTING LIKE
+    # ==========================================
+    c.execute("""
+        SELECT id
+        FROM reel_comment_likes
+        WHERE comment_id=?
+          AND user_id=?
+    """, (comment_id, uid))
+
+    existing = c.fetchone()
+
+    # ==========================================
+    # ❤️ UNLIKE
+    # ==========================================
+    if existing:
+
+        c.execute("""
+            DELETE FROM reel_comment_likes
+            WHERE comment_id=?
+              AND user_id=?
+        """, (
+            comment_id,
+            uid
+        ))
+
+        liked = False
+
+    # ==========================================
+    # ❤️ LIKE
+    # ==========================================
+    else:
+
+        c.execute("""
+            INSERT OR IGNORE INTO reel_comment_likes
+            (
+                comment_id,
+                user_id
+            )
+            VALUES (?, ?)
+        """, (
+            comment_id,
+            uid
+        ))
+
+        liked = True
+
+        # ======================================
+        # 🔔 COMMENT LIKE NOTIFICATION
+        # ======================================
+
+        # Khud ke comment ko like kare
+        # to notification nahi jayegi
+        if comment_owner_id != uid:
+
+            meta = {
+                "post_id": post_id,
+                "comment_id": comment_id
+            }
+
+            # Agar ye reply hai
+            if parent_id is not None:
+                meta["parent_id"] = parent_id
+
+            c.execute("""
+                INSERT INTO notifications
+                (
+                    user_id,
+                    actor_id,
+                    type,
+                    meta
+                )
+                VALUES (?, ?, ?, ?)
+            """, (
+                comment_owner_id,
+                uid,
+                "post_comment_like",
+                json.dumps(meta)
+            ))
+
+    # ==========================================
+    # GET TOTAL LIKES
+    # ==========================================
+    c.execute("""
+        SELECT COUNT(*) AS total
+        FROM reel_comment_likes
+        WHERE comment_id=?
+    """, (comment_id,))
+
+    row = c.fetchone()
+
+    likes = row["total"] if row else 0
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "ok": True,
+        "liked": liked,
+        "likes": likes
+    }
+# ===============================
+# 🖼️ SHARED POST THUMBNAIL
+# ===============================
+@posts_bp.route("/shared_post/<int:post_id>")
+def shared_post_info(post_id):
+
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT image_path
+        FROM post_images
+        WHERE post_id=?
+        ORDER BY id ASC
+        LIMIT 1
+    """, (post_id,))
+
+    row = c.fetchone()
+
+    conn.close()
+
+    if not row:
+        return {
+            "ok": False,
+            "image": "/static/default_post.png"
+        }
+
+    image = row["image_path"]
+
+    if not image:
+        image = "/static/default_post.png"
+
+    elif image.startswith("static/"):
+        image = "/" + image
+
+    elif not image.startswith("/"):
+        image = "/static/uploads/" + image
+
+    return {
+        "ok": True,
+        "image": image
+    }
