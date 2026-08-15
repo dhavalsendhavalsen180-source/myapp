@@ -1,10 +1,12 @@
 active_calls = {}
 import sqlite3, os
+import uuid
 from flask import Blueprint, render_template, session, redirect, request, jsonify, current_app
 from flask_socketio import emit, join_room, leave_room
 from datetime import datetime, timedelta
 from threading import Timer
 from socketio_init import socketio
+from werkzeug.utils import secure_filename
 
 messages_bp = Blueprint("messages_bp", __name__, url_prefix="/messages")
 
@@ -88,6 +90,267 @@ def typing_stop(chat_id, user_id):
 
 def is_ghost(user_id):
     return user_is_ghost(user_id)
+
+# ============================================================
+# ACTUAL MESSAGE MEDIA UPLOAD
+# ============================================================
+
+MESSAGE_UPLOAD_DIR = os.path.join(
+    "static",
+    "uploads",
+    "messages"
+)
+
+MESSAGE_ALLOWED_EXTENSIONS = {
+    "jpg",
+    "jpeg",
+    "png",
+    "webp",
+    "gif",
+    "mp4",
+    "webm",
+    "mov",
+    "mp3",
+    "wav",
+    "ogg",
+    "m4a"
+}
+
+MESSAGE_ALLOWED_MIMETYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "video/mp4",
+    "video/webm",
+    "video/quicktime",
+    "audio/webm",
+    "audio/mp3",
+    "audio/mpeg",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/ogg",
+    "audio/mp4"
+}
+
+MESSAGE_MAX_SIZE = 50 * 1024 * 1024
+
+
+def user_in_chat(user_id, chat_id):
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT id
+        FROM chats
+        WHERE id=?
+          AND (user1=? OR user2=?)
+    """, (
+        chat_id,
+        user_id,
+        user_id
+    ))
+
+    row = c.fetchone()
+
+    conn.close()
+
+    return row is not None
+
+
+@messages_bp.route("/upload/<int:chat_id>", methods=["POST"])
+def upload_message_media(chat_id):
+
+    me = session.get("user_id")
+
+    if not me:
+        return jsonify({
+            "ok": False,
+            "error": "Login required"
+        }), 401
+
+
+    # --------------------------------------------------------
+    # CHAT ACCESS CHECK
+    # --------------------------------------------------------
+
+    if not user_in_chat(me, chat_id):
+
+        return jsonify({
+            "ok": False,
+            "error": "You are not a member of this chat"
+        }), 403
+
+
+    # --------------------------------------------------------
+    # FILE
+    # --------------------------------------------------------
+
+    file = request.files.get("file")
+
+    if not file:
+
+        return jsonify({
+            "ok": False,
+            "error": "No file selected"
+        }), 400
+
+
+    if not file.filename:
+
+        return jsonify({
+            "ok": False,
+            "error": "Invalid filename"
+        }), 400
+
+
+    original_name = secure_filename(file.filename)
+
+    if not original_name:
+
+        return jsonify({
+            "ok": False,
+            "error": "Invalid filename"
+        }), 400
+
+
+    # --------------------------------------------------------
+    # EXTENSION + MIME
+    # --------------------------------------------------------
+
+    if "." not in original_name:
+
+        return jsonify({
+            "ok": False,
+            "error": "File extension missing"
+        }), 400
+
+
+    ext = original_name.rsplit(".", 1)[1].lower()
+
+    mime = (file.mimetype or "").lower()
+
+
+    if ext not in MESSAGE_ALLOWED_EXTENSIONS:
+
+        return jsonify({
+            "ok": False,
+            "error": "File type not allowed"
+        }), 400
+
+
+    if mime not in MESSAGE_ALLOWED_MIMETYPES:
+
+        return jsonify({
+            "ok": False,
+            "error": "Invalid media type"
+        }), 400
+
+
+    # --------------------------------------------------------
+    # SIZE
+    # --------------------------------------------------------
+
+    file.seek(0, os.SEEK_END)
+
+    size = file.tell()
+
+    file.seek(0)
+
+
+    if size <= 0:
+
+        return jsonify({
+            "ok": False,
+            "error": "Empty file"
+        }), 400
+
+
+    if size > MESSAGE_MAX_SIZE:
+
+        return jsonify({
+            "ok": False,
+            "error": "Maximum file size is 50 MB"
+        }), 413
+
+
+    # --------------------------------------------------------
+    # DIRECTORY
+    # --------------------------------------------------------
+
+    upload_dir = os.path.join(
+        current_app.root_path,
+        MESSAGE_UPLOAD_DIR
+    )
+
+    os.makedirs(
+        upload_dir,
+        exist_ok=True
+    )
+
+
+    # --------------------------------------------------------
+    # UNIQUE NAME
+    # --------------------------------------------------------
+
+    new_name = (
+        uuid.uuid4().hex
+        + "."
+        + ext
+    )
+
+
+    full_path = os.path.join(
+        upload_dir,
+        new_name
+    )
+
+
+    # --------------------------------------------------------
+    # SAVE
+    # --------------------------------------------------------
+
+    try:
+
+        file.save(full_path)
+
+    except Exception:
+
+        current_app.logger.exception(
+            "MESSAGE MEDIA UPLOAD FAILED"
+        )
+
+        return jsonify({
+            "ok": False,
+            "error": "Upload failed"
+        }), 500
+
+
+    # --------------------------------------------------------
+    # URL
+    # --------------------------------------------------------
+
+    url = (
+        "/static/uploads/messages/"
+        + new_name
+    )
+
+
+    print(
+        "MESSAGE MEDIA SAVED:",
+        url,
+        size,
+        mime
+    )
+
+
+    return jsonify({
+        "ok": True,
+        "url": url,
+        "filename": new_name,
+        "mime": mime,
+        "size": size
+    })
 
 # ----------------- ROUTES -----------------
 @messages_bp.route("/")
@@ -298,35 +561,108 @@ def typing_event(data):
 #--------------------------- send -----------------------#
 @socketio.on("send_message")
 def send_message(data):
+
     print("SEND MESSAGE:", data)
 
     me = session.get("user_id")
     chat_id = data.get("chat_id")
 
+    if not me or not chat_id:
+        return
+
+    # --------------------------------------------------------
+    # CHAT ACCESS
+    # --------------------------------------------------------
+
+    if not user_in_chat(me, chat_id):
+        print(
+            "BLOCKED MESSAGE: user not in chat",
+            me,
+            chat_id
+        )
+        return
+
+    # --------------------------------------------------------
+    # MESSAGE DATA
+    # --------------------------------------------------------
+
     text = (data.get("msg") or "").strip()
     attachment = data.get("attachment_url")
 
-    if not me or not chat_id or (not text and not attachment):
+    # --------------------------------------------------------
+    # ONLY OUR OWN UPLOAD URL
+    # --------------------------------------------------------
+
+    if attachment:
+
+        attachment = str(attachment)
+
+        if not attachment.startswith(
+            "/static/uploads/messages/"
+        ):
+            print(
+                "BLOCKED INVALID ATTACHMENT:",
+                attachment
+            )
+            attachment = None
+
+    # Empty message + no attachment
+    if not text and not attachment:
         return
+
+    # --------------------------------------------------------
+    # SAVE MESSAGE — ONLY ONCE
+    # --------------------------------------------------------
 
     conn = get_db()
     c = conn.cursor()
 
     c.execute("""
         INSERT INTO messages
-        (chat_id, sender_id, msg, attachment, created_at)
+        (
+            chat_id,
+            sender_id,
+            msg,
+            attachment,
+            created_at
+        )
         VALUES (?, ?, ?, ?, datetime('now'))
-    """, (chat_id, me, text, attachment))
+    """, (
+        chat_id,
+        me,
+        text,
+        attachment
+    ))
 
     conn.commit()
+
     mid = c.lastrowid
 
+    # --------------------------------------------------------
+    # GET SAVED MESSAGE
+    # --------------------------------------------------------
+
     c.execute("""
-        SELECT id, sender_id, msg, attachment, created_at
-        FROM messages WHERE id=?
+        SELECT
+            id,
+            sender_id,
+            msg,
+            attachment,
+            created_at
+        FROM messages
+        WHERE id=?
     """, (mid,))
+
     r = c.fetchone()
+
     conn.close()
+
+    if not r:
+        return
+
+    # --------------------------------------------------------
+    # MESSAGE OBJECT
+    # --------------------------------------------------------
 
     m = {
         "id": r["id"],
@@ -338,11 +674,19 @@ def send_message(data):
         "created_at": r["created_at"]
     }
 
+    # --------------------------------------------------------
+    # REALTIME — ONLY ONCE
+    # --------------------------------------------------------
+
     socketio.emit(
         "new_message",
-        {"chat_id": chat_id, "message": m},
+        {
+            "chat_id": chat_id,
+            "message": m
+        },
         room=f"chat_{chat_id}"
     )
+
 
 #--------------------------- seen -----------------------#
 @socketio.on("seen")

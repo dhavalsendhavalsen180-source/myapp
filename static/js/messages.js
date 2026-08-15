@@ -490,16 +490,26 @@ else if(
 }
 
 /* ================= ATTACHMENT ================= */
+
 else if(m.attachment){
 
     const attachment = String(m.attachment);
 
+    const lower = attachment.toLowerCase();
+
+
     /* ================= IMAGE ================= */
-    if(attachment.startsWith("data:image/")){
+
+    if(
+        lower.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/)
+        ||
+        lower.startsWith("data:image/")
+    ){
 
         const img = document.createElement("img");
 
         img.src = attachment;
+
         img.className = "chat-photo";
 
         img.style.display = "block";
@@ -514,14 +524,20 @@ else if(m.attachment){
         };
 
         img.onerror = () => {
-            console.error("IMAGE LOAD ERROR");
+            console.error("IMAGE LOAD ERROR:", attachment);
         };
 
         bubble.appendChild(img);
     }
 
+
     /* ================= VIDEO ================= */
-    else if(attachment.startsWith("data:video/")){
+
+    else if(
+        lower.match(/\.(mp4|webm|mov)(\?.*)?$/)
+        ||
+        lower.startsWith("data:video/")
+    ){
 
         const video = document.createElement("video");
 
@@ -541,9 +557,10 @@ else if(m.attachment){
         video.style.borderRadius = "14px";
         video.style.background = "#000";
 
-        video.addEventListener("loadedmetadata", () => {
-            scrollBottom();
-        });
+        video.addEventListener(
+            "loadedmetadata",
+            scrollBottom
+        );
 
         video.onerror = () => {
             console.error(
@@ -555,13 +572,20 @@ else if(m.attachment){
         bubble.appendChild(video);
     }
 
+
     /* ================= AUDIO ================= */
-    else if(attachment.startsWith("data:audio/")){
+
+    else if(
+        lower.match(/\.(mp3|wav|ogg|m4a)(\?.*)?$/)
+        ||
+        lower.startsWith("data:audio/")
+    ){
 
         const audio = document.createElement("audio");
 
         audio.controls = true;
         audio.preload = "metadata";
+
         audio.src = attachment;
 
         audio.style.width = "230px";
@@ -570,22 +594,27 @@ else if(m.attachment){
         bubble.appendChild(audio);
     }
 
-    /* ================= UNKNOWN ATTACHMENT ================= */
+
+    /* ================= OTHER FILE ================= */
+
     else{
 
-        console.error(
-            "UNKNOWN ATTACHMENT TYPE:",
-            attachment.substring(0, 100)
-        );
+        const link = document.createElement("a");
 
-        const errorText = document.createElement("div");
+        link.href = attachment;
 
-        errorText.innerText = "Unable to display this file";
-        errorText.style.color = "#999";
-        errorText.style.fontSize = "13px";
+        link.target = "_blank";
 
-        bubble.appendChild(errorText);
+        link.rel = "noopener noreferrer";
+
+        link.innerText = "📎 Open file";
+
+        link.style.display = "inline-block";
+        link.style.marginTop = "5px";
+
+        bubble.appendChild(link);
     }
+
 
     /* ================= CAPTION ================= */
 
@@ -713,56 +742,164 @@ else{
         });
     }
 
-    /* ================= SEND ================= */
-    let pendingAttachment = null;
+/* ================= SEND + REAL UPLOAD ================= */
 
-    if(attachBtn && attachInput){
-        attachBtn.onclick = ()=> attachInput.click();
+/* ================= ATTACHMENT SELECT ================= */
 
-        attachInput.onchange = e=>{
-            const file = e.target.files[0];
-            if(!file) return;
-            const r = new FileReader();
-            r.onload = ()=> pendingAttachment = r.result;
-            r.readAsDataURL(file);
-        };
-    }
+if(attachBtn && attachInput){
 
-    if(sendBtn && msgInput){
-        sendBtn.onclick = ()=>{
-            const text = msgInput.value.trim();
-            if(!text && !pendingAttachment) return;
+    attachBtn.onclick = () => {
+        attachInput.click();
+    };
 
-    if(editingMessageId){
+attachInput.onchange = async e => {
 
-        socket.emit("message_edit", {
-            chat_id,
-            message_id: editingMessageId,
-            new_text: text
-        });
+    const file = e.target.files[0];
 
-        editingMessageId = null;
-        msgInput.value = "";
+    if(!file){
+        console.log("ATTACHMENT: No file selected");
         return;
     }
 
-            socket.emit("send_message", {
+    console.log("ATTACHMENT SELECTED:", {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        sizeMB: (file.size / 1024 / 1024).toFixed(2)
+    });
+
+    try {
+
+        /* ================= UPLOAD ================= */
+
+        const formData = new FormData();
+
+        formData.append("file", file);
+
+        const response = await fetch(
+            `/messages/upload/${Number(chat_id)}`,
+            {
+                method: "POST",
+                body: formData,
+                credentials: "include"
+            }
+        );
+
+        if(!response.ok){
+
+            throw new Error(
+                "Upload failed: HTTP " + response.status
+            );
+
+        }
+
+        const result = await response.json();
+
+        console.log("AUTO UPLOAD RESULT:", result);
+
+        if(!result.ok || !result.url){
+
+            throw new Error(
+                result.error || "Upload failed"
+            );
+
+        }
+
+        /* ================= DIRECT SEND ================= */
+
+        socket.emit("send_message", {
+
+            chat_id: Number(chat_id),
+
+            msg: "",
+
+            attachment_url: result.url
+
+        });
+
+        console.log("PHOTO SENT DIRECTLY:", result.url);
+
+    }
+    catch(err){
+
+        console.error("AUTO UPLOAD ERROR:", err);
+
+        alert("Photo send failed. Please try again.");
+
+    }
+
+    /* ================= RESET ================= */
+
+    attachInput.value = "";
+
+};
+
+}   // <-- YE MISSING THA
+
+/* ================= SEND ================= */
+
+if(sendBtn && msgInput){
+
+    sendBtn.onclick = async () => {
+
+        const text = msgInput.value.trim();
+
+        /* EDIT MESSAGE */
+        if(editingMessageId){
+
+            if(!text){
+                return;
+            }
+
+            socket.emit("message_edit", {
                 chat_id,
-                msg: text,
-                attachment_url: pendingAttachment
+                message_id: editingMessageId,
+                new_text: text
             });
 
+            editingMessageId = null;
             msgInput.value = "";
-            pendingAttachment = null;
+
+            return;
+        }
+
+
+        /* NOTHING TO SEND */
+        if(!text){
+            return;
+        }
+
+
+        /* ================= SEND MESSAGE ================= */
+
+        socket.emit("send_message", {
+
+            chat_id: Number(chat_id),
+
+            msg: text,
+
+            attachment_url: null
+        });
+
+
+        /* ================= RESET ================= */
+
+        msgInput.value = "";
+
         };
 
-        msgInput.addEventListener("keydown", e=>{
-            if(e.key === "Enter"){
-                e.preventDefault();
-                sendBtn.click();
-            }
-        });
-    }
+    /* ENTER = SEND */
+
+    msgInput.addEventListener("keydown", e => {
+
+        if(e.key === "Enter"){
+
+            e.preventDefault();
+
+            sendBtn.click();
+        }
+    });
+}
 
     /* ================= RECEIVE ================= */
     socket.on("new_message", d=>{
@@ -863,94 +1000,301 @@ socket.on("deleted_for_me", d=>{
         }
     });
 
-    /* ================= VOICE ================= */
-    let mediaRecorder, audioChunks = [];
+/* ================= VOICE ================= */
 
-    if(voiceBtn && navigator.mediaDevices){
-        voiceBtn.onclick = async ()=>{
-            try{
-                if(mediaRecorder && mediaRecorder.state === "recording"){
-                    mediaRecorder.stop();
-                    voiceBtn.innerText = "🎤";
-                    return;
-                }
-                const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
+let mediaRecorder = null;
+let audioChunks = [];
+let voiceStream = null;
 
-                mediaRecorder.ondataavailable = e=> audioChunks.push(e.data);
-                mediaRecorder.onstop = ()=>{
-                    const blob = new Blob(audioChunks,{type:"audio/webm"});
-                    const r = new FileReader();
-                    r.onload = ()=> socket.emit("send_message", {
-                        chat_id,
-                        attachment_url: r.result
-                    });
-                    r.readAsDataURL(blob);
-                };
+if(voiceBtn && navigator.mediaDevices){
 
-                mediaRecorder.start();
-                voiceBtn.innerText = "⏹";
-            }catch(err){
-                console.error(err);
+    voiceBtn.onclick = async () => {
+
+        try{
+
+            /* STOP RECORDING */
+            if(
+                mediaRecorder &&
+                mediaRecorder.state === "recording"
+            ){
+
+                mediaRecorder.stop();
+
+                voiceBtn.innerText = "🎤";
+
+                return;
             }
-        };
-    }
 
 
-    if(deleteMeBtn){
-        deleteMeBtn.onclick = () => {
+            /* MICROPHONE */
+            voiceStream =
+                await navigator.mediaDevices.getUserMedia({
+                    audio: true
+                });
 
-            socket.emit("delete_for_me", {
-                chat_id,
-                message_id: selectedMessageId
-            });
-
-           msgMenu.classList.remove("show");
-        };
-   }
-
-    if(deleteAllBtn){
-        deleteAllBtn.onclick = () => {
-
-            socket.emit("message_delete", {
-                chat_id,
-                message_id: selectedMessageId
-            });
-
-            msgMenu.classList.remove("show");
-        };
-    }
+            audioChunks = [];
 
 
-if(editMsgBtn){
+            /* RECORDER */
+            mediaRecorder =
+                new MediaRecorder(voiceStream);
 
-editMsgBtn.onclick = () => {
 
-    const row = document.querySelector(
-        `.msg-row[data-id="${selectedMessageId}"]`
-    );
+            mediaRecorder.ondataavailable = e => {
 
-    if(!row) return;
+                if(e.data && e.data.size > 0){
+                    audioChunks.push(e.data);
+                }
 
-    const oldText =
-        row.querySelector(".msg-bubble").innerText;
+            };
 
-    msgInput.value = oldText;
 
-    editingMessageId = selectedMessageId;
+            /* STOP */
+            mediaRecorder.onstop = async () => {
 
-    msgInput.focus();
+                try{
 
-    msgMenu.classList.remove("show");
-};
+                    /* MIC BAND */
+                    if(voiceStream){
+
+                        voiceStream
+                            .getTracks()
+                            .forEach(track => track.stop());
+
+                    }
+
+
+                    /* AUDIO FILE */
+                    const blob =
+                        new Blob(
+                            audioChunks,
+                            {type: "audio/webm"}
+                        );
+
+
+                    if(!blob.size){
+
+                        console.error(
+                            "VOICE: Empty recording"
+                        );
+
+                        return;
+                    }
+
+
+                    /* ================= UPLOAD ================= */
+
+                    const formData = new FormData();
+
+                    formData.append(
+                        "file",
+                        blob,
+                        "voice_" +
+                        Date.now() +
+                        ".webm"
+                    );
+
+
+                    const response =
+                        await fetch(
+                            `/messages/upload/${Number(chat_id)}`,
+                            {
+                                method: "POST",
+                                body: formData,
+                                credentials: "include"
+                            }
+                        );
+
+
+                    if(!response.ok){
+
+                        throw new Error(
+                            "Voice upload HTTP " +
+                            response.status
+                        );
+
+                    }
+
+
+                    const result =
+                        await response.json();
+
+
+                    console.log(
+                        "VOICE UPLOAD:",
+                        result
+                    );
+
+
+                    if(!result.ok || !result.url){
+
+                        throw new Error(
+                            result.error ||
+                            "Voice upload failed"
+                        );
+
+                    }
+
+
+                    /* ================= SEND ================= */
+
+                    socket.emit(
+                        "send_message",
+                        {
+                            chat_id: Number(chat_id),
+                            msg: "",
+                            attachment_url: result.url
+                        }
+                    );
+
+
+                }catch(err){
+
+                    console.error(
+                        "VOICE SEND ERROR:",
+                        err
+                    );
+
+                    alert(
+                        "Voice message send failed."
+                    );
+
+                }
+
+            };
+
+
+            /* START */
+            mediaRecorder.start();
+
+            voiceBtn.innerText = "⏹";
+
+            console.log(
+                "VOICE RECORDING STARTED"
+            );
+
+        }catch(err){
+
+            console.error(
+                "MIC ERROR:",
+                err
+            );
+
+            alert(
+                "Microphone permission required."
+            );
+
+        }
+
+    };
 
 }
 
+/* ================= MESSAGE ACTIONS ================= */
+
+/* DELETE FOR ME */
+if(deleteMeBtn){
+
+    deleteMeBtn.onclick = () => {
+
+        if(!selectedMessageId){
+            return;
+        }
+
+        socket.emit("delete_for_me", {
+            chat_id: Number(chat_id),
+            message_id: Number(selectedMessageId)
+        });
+
+        msgMenu.classList.remove("show");
+
+    };
+
+}
+
+
+/* DELETE FOR EVERYONE */
+if(deleteAllBtn){
+
+    deleteAllBtn.onclick = () => {
+
+        if(!selectedMessageId){
+            return;
+        }
+
+        socket.emit("message_delete", {
+            chat_id: Number(chat_id),
+            message_id: Number(selectedMessageId)
+        });
+
+        msgMenu.classList.remove("show");
+
+    };
+
+}
+
+
+/* EDIT MESSAGE */
+if(editMsgBtn){
+
+    editMsgBtn.onclick = () => {
+
+        if(!selectedMessageId){
+            return;
+        }
+
+        const row = document.querySelector(
+            `.msg-row[data-id="${selectedMessageId}"]`
+        );
+
+        if(!row){
+            msgMenu.classList.remove("show");
+            return;
+        }
+
+        const bubble = row.querySelector(".msg-bubble");
+
+        if(!bubble){
+            return;
+        }
+
+        /*
+         * Meta/time/ticks hata kar actual message text nikalo
+         */
+        const clone = bubble.cloneNode(true);
+
+        const meta = clone.querySelector(".meta");
+
+        if(meta){
+            meta.remove();
+        }
+
+        const oldText = clone.innerText.trim();
+
+        msgInput.value = oldText;
+
+        editingMessageId = selectedMessageId;
+
+        msgInput.focus();
+
+        msgMenu.classList.remove("show");
+
+    };
+
+}
+
+
+/* CANCEL MENU */
 if(cancelMenuBtn){
-cancelMenuBtn.onclick = () => {
-msgMenu.classList.remove("show");
-};
+
+    cancelMenuBtn.onclick = () => {
+
+        msgMenu.classList.remove("show");
+
+        selectedMessageId = null;
+
+    };
+
 }
 
 /* ================= LEAVE ================= */
