@@ -299,7 +299,10 @@ body::after{
     );
 }
 
-</style></head><body><!-- =========================================================
+</style>
+</head>
+
+<body><!-- =========================================================
      TOP BRAND LINE
 ========================================================= --><div class="top-brand-line"></div><!-- =========================================================
      TOP BAR
@@ -319,44 +322,120 @@ body::after{
 
 </div>
 
-</div><div class="max-w-xl mx-auto pb-32"><!-- =========================================================
-     FOLLOW REQUESTS
-========================================================= --><div class="px-4 py-4 border-b border-[#161616] flex items-center gap-3"><div class="relative">
+</div><div class="max-w-xl mx-auto pb-32">
 
-    <div class="flex -space-x-3">
+<!-- =========================================================
+     🔒 FOLLOW REQUESTS
+========================================================= -->
 
-        <img
-            src="/static/default_dp.png"
-            class="w-10 h-10 rounded-full border-2 border-black object-cover">
+{% if follow_requests and follow_requests|length > 0 %}
 
-        <img
-            src="/static/default_dp.png"
-            class="w-10 h-10 rounded-full border-2 border-black object-cover">
+<div class="section-title">
+    Follow requests
+</div>
+
+{% for req in follow_requests %}
+
+<div id="follow-request-{{ req.id }}"
+     class="px-4 py-4 border-b border-[#121212]">
+
+    <div class="flex items-center gap-3">
+
+        <!-- PROFILE -->
+        <a href="/profile/{{ req.sender_id }}">
+
+            <div class="story-ring rounded-full p-[2px]">
+
+                <img
+                    src="{{ req.photo }}"
+                    onerror="this.src='/static/default_dp.png'"
+                    class="w-14 h-14 rounded-full object-cover bg-[#111]">
+
+            </div>
+
+        </a>
+
+        <!-- USER INFO -->
+        <div class="flex-1 min-w-0">
+
+            <a href="/profile/{{ req.sender_id }}"
+               class="font-semibold text-[15px]">
+
+                {{ req.username }}
+
+            </a>
+
+            <div class="text-gray-400 text-sm mt-1">
+
+                wants to follow you
+
+            </div>
+
+            <div class="text-gray-600 text-xs mt-1">
+
+                {{ req.created_at }}
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ACTION BUTTONS -->
+
+    <div class="flex gap-2 mt-3 ml-[58px]">
+
+        <button
+            onclick="acceptFollowRequest({{ req.id }})"
+            class="flex-1 py-2 rounded-xl
+                   bg-gradient-to-r
+                   from-cyan-400
+                   via-blue-500
+                   to-purple-600
+                   text-white
+                   text-sm
+                   font-bold">
+
+            ✓ Accept
+
+        </button>
+
+
+        <button
+            onclick="rejectFollowRequest({{ req.id }})"
+            class="flex-1 py-2 rounded-xl
+                   bg-[#18181b]
+                   border border-[#333]
+                   text-gray-300
+                   text-sm
+                   font-bold">
+
+            ✕ Delete
+
+        </button>
 
     </div>
 
 </div>
 
+{% endfor %}
 
-<div class="flex-1">
+{% endif %}
 
-    <div class="font-semibold text-[15px]">
-        Follow requests
-    </div>
-
-    <div class="text-gray-400 text-sm">
-        Approve or ignore requests
-    </div>
-
-</div>
-
-</div><!-- =========================================================
+<!-- =========================================================
      TODAY
-========================================================= --><div class="section-title">
+========================================================= -->
+
+<div class="section-title">
     Today
-</div><!-- =========================================================
+</div>
+
+<!-- =========================================================
      NOTIFICATIONS
-========================================================= -->{% for n in notifications %}
+========================================================= -->
+
+{% for n in notifications %}
 
 <div class="notify-card px-4 py-4 flex items-center gap-3 border-b border-[#121212]"><!-- =====================================================
      PROFILE
@@ -398,6 +477,9 @@ body::after{
 
             started following you 👤
 
+        {% elif n.type == "follow_accepted" %}
+
+            accepted your follow request ✅
 
         {% elif n.type == "post_like" %}
 
@@ -590,6 +672,21 @@ body::after{
 
         </button>
 
+{% elif n.type == "follow_accepted" %}
+
+    <div
+        class="w-12 h-12 rounded-xl
+               bg-gradient-to-br
+               from-cyan-400
+               via-blue-500
+               to-purple-600
+               flex items-center justify-center
+               text-xl font-bold
+               shadow-lg">
+
+        ✓
+
+    </div>
 
     {% elif n.type == "like" %}
 
@@ -678,9 +775,107 @@ body::after{
 
 </button>
 
-</div></div><!-- =========================================================
-     AUTO MARK READ
-========================================================= --><script>
+</div>
+
+</div>
+
+<!-- =========================================================
+     FOLLOW REQUEST ACTIONS + AUTO MARK READ
+========================================================= -->
+
+<script>
+
+async function acceptFollowRequest(requestId){
+
+    const card = document.getElementById(
+        "follow-request-" + requestId
+    );
+
+    try {
+
+        const response = await fetch(
+            `/social/follow-request/${requestId}/accept`,
+            {
+                method: "POST"
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.ok) {
+
+            if (card) {
+
+                card.style.transition = "0.25s";
+                card.style.opacity = "0";
+                card.style.transform = "translateX(30px)";
+
+                setTimeout(() => {
+                    card.remove();
+                }, 250);
+
+            }
+
+        } else {
+
+            alert("Request already handled.");
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+        alert("Network error");
+
+    }
+}
+
+
+async function rejectFollowRequest(requestId){
+
+    const card = document.getElementById(
+        "follow-request-" + requestId
+    );
+
+    try {
+
+        const response = await fetch(
+            `/social/follow-request/${requestId}/reject`,
+            {
+                method: "POST"
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.ok) {
+
+            if (card) {
+
+                card.style.transition = "0.25s";
+                card.style.opacity = "0";
+                card.style.transform = "translateX(-30px)";
+
+                setTimeout(() => {
+                    card.remove();
+                }, 250);
+
+            }
+
+        } else {
+
+            alert("Request already handled.");
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+        alert("Network error");
+
+    }
+}
+
 
 async function autoRead(){
 
@@ -691,7 +886,7 @@ async function autoRead(){
             fetch(
                 "/social/notifications/mark_read/{{ n.id }}",
                 {
-                    method:"POST"
+                    method: "POST"
                 }
             );
 
@@ -703,9 +898,4 @@ async function autoRead(){
 
 autoRead();
 
-</script><script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script><script>
-
-window.me = {{ session.get("user_id")|tojson }};
-
-</script><script src="/static/js/global_call.js"></script></body>
-</html>
+</script>

@@ -89,6 +89,17 @@ def profile(user_id):
         """, (current, user_id))
 
         is_following = c.fetchone() is not None
+    # -------- FOLLOW REQUEST CHECK --------
+    follow_requested = False
+
+    if current and current != user_id:
+        c.execute("""
+            SELECT 1
+            FROM follow_requests
+            WHERE sender_id=? AND receiver_id=?
+        """, (current, user_id))
+
+        follow_requested = c.fetchone() is not None
 
     # PRIVATE ACCOUNT CHECK
     can_view = True
@@ -96,6 +107,21 @@ def profile(user_id):
     if profile_data["is_private"] == 1:
         if current != user_id and not is_following:
             can_view = False
+
+# CHAT BUTTON PERMISSION
+# Public account -> Chat allowed
+# Private account -> Chat only if already following
+    can_chat = False
+
+    if current and current != user_id:
+
+        if profile_data["is_private"] == 0:
+        # PUBLIC ACCOUNT
+            can_chat = True
+
+        elif is_following:
+        # PRIVATE ACCOUNT + FOLLOW ACCEPTED
+            can_chat = True
 
     # POSTS
     posts = []
@@ -172,8 +198,10 @@ def profile(user_id):
         followers=followers,
         following=following,
         is_following=is_following,
+        follow_requested=follow_requested,
         current_user=current,
         can_view=can_view,
+        can_chat=can_chat,
         has_story=has_story,
         story_seen=story_seen
 

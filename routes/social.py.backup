@@ -1,0 +1,876 @@
+import os
+import json
+import sqlite3
+from flask import Blueprint, request, session, redirect, url_for, jsonify, render_template, flash
+from werkzeug.utils import secure_filename
+
+social_bp = Blueprint("social", __name__, url_prefix="/social")
+
+UPLOAD_FOLDER = "static/uploads"
+ALLOWED_EXT = {"png", "jpg", "jpeg", "gif", "mp4"}
+
+# -------------------- DB Helper --------------------
+def get_conn():
+    return sqlite3.connect("database.db")
+
+def allowed_file(fname):
+    return "." in fname and fname.rsplit(".", 1)[1].lower() in ALLOWED_EXT
+
+# ==============================================================
+# 🔥 LIKE / UNLIKE (AJAX)
+# ==============================================================
+
+@social_bp.route("/posts/like/<int:post_id>", methods=["POST"])
+def like_post(post_id):
+    if "user_id" not in session:
+        return jsonify({"ok": False, "error": "login_required"}), 401
+
+    user_id = session["user_id"]
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute("SELECT id FROM likes WHERE post_id=? AND user_id=?", (post_id, user_id))
+    row = c.fetchone()
+
+    if row:
+        c.execute("DELETE FROM likes WHERE id=?", (row[0],))
+
+        # new updated count
+        c.execute("SELECT COUNT(*) FROM likes WHERE post_id=?", (post_id,))
+        like_count = c.fetchone()[0]
+
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": True, "action": "unliked", "count": like_count})
+
+    else:
+        c.execute("INSERT INTO likes (post_id, user_id, username) VALUES (?, ?, ?)",
+                  (post_id, user_id, session.get("user_id")))
+
+        # owner notification
+        c.execute("SELECT user_id FROM posts WHERE id=?", (post_id,))
+        owner = c.fetchone()
+        if owner and owner[0] != user_id:
+            meta = json.dumps({"post_id": post_id})
+            c.execute(
+                "INSERT INTO notifications (user_id, actor_id, type, meta) VALUES (?, ?, ?, ?)",
+                (owner[0], user_id, "post_like", meta)
+            )
+
+        # updated count
+        c.execute("SELECT COUNT(*) FROM likes WHERE post_id=?", (post_id,))
+        like_count = c.fetchone()[0]
+
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": True, "action": "liked", "count": like_count})
+
+# ==============================================================
+# 💬 COMMENT
+# ==============================================================
+
+@social_bp.route("/posts/comment/<int:post_id>", methods=["POST"])
+def comment_post(post_id):
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    text = request.form.get("post_comment", "").strip()
+    if not text:
+        return redirect(url_for("posts.feed"))
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute(
+        "INSERT INTO comments (post_id, user_id, username, comment) VALUES (?, ?, ?, ?)",
+        (post_id, session["user_id"], session["user_id"], text)
+    )
+    comment_id = c.lastrowid
+
+    # Notify post owner
+    c.execute("SELECT user_id FROM posts WHERE id=?", (post_id,))
+    owner = c.fetchone()
+    if owner and owner[0] != session["user_id"]:
+        meta = json.dumps({"post_id": post_id, "comment_id": comment_id})
+        c.execute(
+            "INSERT INTO notifications (user_id, actor_id, type, meta) VALUES (?, ?, ?, ?)",
+            (owner[0], session["user_id"], "comment", meta)
+        )
+
+    conn.commit()
+    conn.close()
+    return redirect(url_for("posts.feed"))
+
+# ==============================================================
+# 👤 FOLLOW / UNFOLLOW
+# ==============================================================
+
+@social_bp.route("/follow/<int:target_id>", methods=["POST"])
+def follow_toggle(target_id):
+
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    me = session["user_id"]
+
+    if me == target_id:
+        return redirect(url_for("profile_bp.profile", user_id=target_id))
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    # ----------------------------------------------------------
+    # CHECK EXISTING FOLLOW
+    # ----------------------------------------------------------
+
+    c.execute("""
+        SELECT id
+        FROM follows
+        WHERE follower_id=? AND following_id=?
+    """, (me, target_id))
+
+    row = c.fetchone()
+
+    if row:
+
+        # UNFOLLOW
+        c.execute("""
+            DELETE FROM follows
+            WHERE id=?
+        """, (row[0],))
+
+        # Remove old request also
+        c.execute("""
+            DELETE FROM follow_requests
+            WHERE sender_id=? AND receiver_id=?
+        """, (me, target_id))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(
+            url_for("profile_bp.profile", user_id=target_id)
+        )
+
+    # ----------------------------------------------------------
+    # CHECK PRIVATE ACCOUNT
+    # ----------------------------------------------------------
+
+    c.execute("""
+        SELECT is_private
+        FROM users
+        WHERE id=?
+    """, (target_id,))
+
+    private_user = c.fetchone()
+
+    # User doesn't exist
+    if not private_user:
+        conn.close()
+        return redirect(url_for("explore.explore"))
+
+    # ----------------------------------------------------------
+    # PRIVATE ACCOUNT
+    # ----------------------------------------------------------
+
+    if private_user[0] == 1:
+
+        # Already requested?
+        c.execute("""
+            SELECT id
+            FROM follow_requests
+            WHERE sender_id=? AND receiver_id=?
+        """, (me, target_id))
+
+        request_row = c.fetchone()
+
+        if request_row:
+            # Cancel request
+            c.execute("""
+                DELETE FROM follow_requests
+                WHERE id=?
+            """, (request_row[0],))
+
+        else:
+            # New request
+            c.execute("""
+                INSERT INTO follow_requests
+                (sender_id, receiver_id)
+                VALUES (?, ?)
+            """, (me, target_id))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(
+            url_for("profile_bp.profile", user_id=target_id)
+        )
+
+    # ----------------------------------------------------------
+    # PUBLIC ACCOUNT
+    # ----------------------------------------------------------
+
+    c.execute("""
+        INSERT INTO follows
+        (follower_id, following_id)
+        VALUES (?, ?)
+    """, (me, target_id))
+
+    # Notification
+    c.execute("""
+        INSERT INTO notifications
+        (user_id, actor_id, type, meta)
+        VALUES (?, ?, ?, ?)
+    """, (
+        target_id,
+        me,
+        "follow",
+        json.dumps({})
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect(
+        url_for("profile_bp.profile", user_id=target_id)
+    )
+
+# ==============================================================
+# 📸 PROFILE PAGE (username)
+# ==============================================================
+
+@social_bp.route("/u/<username>")
+def profile(username):
+    conn = get_conn()
+    c = conn.cursor()
+
+    # User
+    c.execute("""
+        SELECT id, username, is_private, photo, bio
+        FROM users
+        WHERE username=?
+    """, (username,))
+
+    u = c.fetchone()
+
+    if not u:
+        conn.close()
+        return "User not found", 404
+
+    user_id = u[0]
+    username = u[1]
+    is_private = bool(u[2])
+    photo = u[3] or "/static/default_dp.png"
+    bio = u[4] or ""
+
+    me = session.get("user_id", 0)
+
+    # -----------------------------------------
+    # CHECK FOLLOWING
+    # -----------------------------------------
+
+    c.execute("""
+        SELECT id
+        FROM follows
+        WHERE follower_id=?
+          AND following_id=?
+    """, (me, user_id))
+
+    is_following = bool(c.fetchone())
+
+    # -----------------------------------------
+    # CHECK PENDING FOLLOW REQUEST
+    # -----------------------------------------
+
+    c.execute("""
+        SELECT id
+        FROM follow_requests
+        WHERE sender_id=?
+          AND receiver_id=?
+    """, (me, user_id))
+
+    follow_requested = bool(c.fetchone())
+
+    # -----------------------------------------
+    # POSTS
+    # -----------------------------------------
+
+    c.execute("""
+        SELECT id, caption
+        FROM posts
+        WHERE user_id=?
+        ORDER BY id DESC
+    """, (user_id,))
+
+    rows = c.fetchall()
+
+    posts = []
+
+    for pid, caption in rows:
+
+        c.execute("""
+            SELECT image_path
+            FROM post_images
+            WHERE post_id=?
+        """, (pid,))
+
+        images = [x[0] for x in c.fetchall()]
+
+        c.execute("""
+            SELECT COUNT(*)
+            FROM likes
+            WHERE post_id=?
+        """, (pid,))
+
+        likes = c.fetchone()[0]
+
+        posts.append({
+            "id": pid,
+            "caption": caption,
+            "images": images,
+            "likes": likes
+        })
+
+    # -----------------------------------------
+    # CAN VIEW CONTENT
+    # -----------------------------------------
+
+    can_view = (
+        not is_private
+        or is_following
+        or me == user_id
+    )
+
+    conn.close()
+
+    return render_template(
+        "profile.html",
+
+        profile={
+            "id": user_id,
+            "username": username,
+            "is_private": is_private,
+            "photo": photo,
+            "bio": bio
+        },
+
+        posts=posts,
+
+        is_following=is_following,
+
+        follow_requested=follow_requested,
+
+        can_view=can_view
+    )
+
+# ==============================================================
+# 🟧 STORIES (UPLOAD + FEED)
+# ==============================================================
+
+@social_bp.route("/stories/upload", methods=["GET", "POST"])
+def upload_story():
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    if request.method == "POST":
+        if "story" not in request.files:
+            flash("No media_path selected", "error")
+            return redirect(url_for("social.upload_story"))
+
+        f = request.files["story"]
+
+        if allowed_file(f.filename):
+            filename = secure_filename(f.filename)
+            save_path = os.path.join(UPLOAD_FOLDER, filename)
+            f.save(save_path)
+
+            conn = get_conn()
+            c = conn.cursor()
+
+            c.execute("""
+              INSERT INTO stories (user_id, media_path, expires_at)
+              VALUES (?, ?, datetime('now','+1 day'))
+            """, (session["user_id"], save_path))
+
+            conn.commit()
+            conn.close()
+
+            flash("Story uploaded!", "success")
+            return redirect(url_for("social.upload_story"))
+
+    return render_template("upload_story.html")
+
+
+@social_bp.route("/stories")
+def stories_feed():
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT stories.id, users.username, stories.media_path, stories.created_at
+        FROM stories
+        JOIN users ON stories.user_id = users.id
+        WHERE datetime('now') < stories.expires_at
+        ORDER BY stories.created_at DESC
+    """)
+
+    rows = c.fetchall()
+    conn.close()
+
+    stories = [{
+        "id": r[0],
+        "user_id": r[1],
+        "media": r[2],
+        "created_at": r[3]
+    } for r in rows]
+
+    return jsonify({"ok": True, "stories": stories})
+
+# ==============================================================
+# 🔔 NOTIFICATIONS
+# ==============================================================
+@social_bp.route("/notifications")
+def notifications():
+
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    uid = session["user_id"]
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    # ==========================================================
+    # 🔒 PRIVATE FOLLOW REQUESTS
+    # ==========================================================
+
+    c.execute("""
+        SELECT
+            fr.id,
+            fr.sender_id,
+            u.username,
+            u.photo,
+            fr.created_at
+        FROM follow_requests fr
+        JOIN users u
+            ON u.id = fr.sender_id
+        WHERE fr.receiver_id=?
+        ORDER BY fr.created_at DESC
+    """, (uid,))
+
+    follow_requests = []
+
+    for fr in c.fetchall():
+
+        photo = fr[3]
+
+        if not photo:
+            photo = "/static/default_dp.png"
+
+        elif not str(photo).startswith("/"):
+            photo = "/" + str(photo)
+
+        follow_requests.append({
+            "id": fr[0],
+            "sender_id": fr[1],
+            "username": fr[2],
+            "photo": photo,
+            "created_at": fr[4]
+        })
+
+    # ==========================================================
+    # 🔔 LOAD ALL NOTIFICATIONS
+    # ==========================================================
+
+    c.execute("""
+        SELECT
+            n.id,
+            n.actor_id,
+            u.username,
+            u.photo,
+            n.type,
+            n.meta,
+            n.is_read,
+            n.created_at,
+
+            -- REEL
+            r.thumbnail AS reel_thumbnail,
+            r.video_path AS reel_video,
+
+            -- POST
+            p.id AS post_id,
+            pi.image_path AS post_image
+
+        FROM notifications n
+
+        JOIN users u
+            ON n.actor_id = u.id
+
+        LEFT JOIN reels r
+            ON r.id = json_extract(n.meta, '$.reel_id')
+
+        LEFT JOIN posts p
+            ON p.id = json_extract(n.meta, '$.post_id')
+
+        LEFT JOIN post_images pi
+            ON pi.post_id = p.id
+            AND pi.id = (
+                SELECT MIN(pi2.id)
+                FROM post_images pi2
+                WHERE pi2.post_id = p.id
+            )
+
+        WHERE n.user_id=?
+
+        ORDER BY n.created_at DESC
+    """, (uid,))
+
+    rows = c.fetchall()
+
+    nots = []
+
+    # ==========================================================
+    # 🔄 BUILD NOTIFICATIONS
+    # ==========================================================
+
+    for r in rows:
+
+        meta = r[5] or "{}"
+
+        try:
+            meta_data = json.loads(meta)
+        except (json.JSONDecodeError, TypeError):
+            meta_data = {}
+
+        # ======================================================
+        # REEL DATA
+        # ======================================================
+
+        reel_id = meta_data.get("reel_id")
+
+        reel_thumbnail = r[8]
+        reel_video = r[9]
+
+        if reel_thumbnail:
+
+            reel_thumbnail = str(reel_thumbnail)
+
+            if reel_thumbnail.startswith("/static/"):
+                pass
+
+            elif reel_thumbnail.startswith("static/"):
+                reel_thumbnail = "/" + reel_thumbnail
+
+            else:
+                reel_thumbnail = (
+                    "/static/uploads/reels/thumbs/"
+                    + reel_thumbnail
+                )
+
+        if reel_video:
+
+            reel_video = str(reel_video)
+
+            if not reel_video.startswith("/"):
+                reel_video = "/" + reel_video
+
+        # ======================================================
+        # POST DATA
+        # ======================================================
+
+        post_id = meta_data.get("post_id")
+
+        post_image = r[11]
+
+        if post_image:
+
+            post_image = str(post_image)
+
+            if post_image.startswith("/static/"):
+                pass
+
+            elif post_image.startswith("static/"):
+                post_image = "/" + post_image
+
+            else:
+                post_image = "/static/uploads/" + post_image
+
+        # ======================================================
+        # NOTIFICATION OBJECT
+        # ======================================================
+
+        nots.append({
+
+            "id": r[0],
+
+            "actor_id": r[1],
+
+            "actor_username": r[2],
+
+            "actor_photo": r[3],
+
+            "type": r[4],
+
+            "meta": meta,
+
+            # POST
+            "post_id": post_id,
+            "post_image": post_image,
+
+            # COMMENT
+            "comment_id": meta_data.get("comment_id"),
+            "parent_id": meta_data.get("parent_id"),
+
+            # REEL
+            "reel_id": reel_id,
+            "reel_thumbnail": reel_thumbnail,
+            "reel_video": reel_video,
+
+            "is_read": r[6],
+
+            "created_at": r[7]
+        })
+
+    conn.close()
+
+    return render_template(
+        "notifications.html",
+        notifications=nots,
+        follow_requests=follow_requests
+    )
+
+# ==============================================================
+# 🔍 EXPLORE PAGE
+# ==============================================================
+
+@social_bp.route("/explore")
+def explore():
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute("""
+       SELECT posts.id, users.username, posts.caption, COUNT(likes.id) as likecount
+       FROM posts
+       LEFT JOIN likes ON posts.id = likes.post_id
+       JOIN users ON posts.user_id = users.id
+       GROUP BY posts.id
+       ORDER BY likecount DESC, posts.id DESC
+       LIMIT 50
+    """)
+
+    rows = c.fetchall()
+    conn.close()
+
+    posts = [{
+        "id": r[0],
+        "user_id": r[1],
+        "caption": r[2],
+        "likes": r[3]
+    } for r in rows]
+
+    return render_template("explore.html", posts=posts)
+
+
+#follow keliye
+
+@social_bp.route("/suggestions")
+def suggestions():
+    if "user_id" not in session:
+        return jsonify({"ok": False}), 401
+
+    me = session["user_id"]
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    # Already following list
+    c.execute("SELECT following_id FROM follows WHERE follower_id=?", (me,))
+    following_ids = [row[0] for row in c.fetchall()]
+
+    # Suggest users NOT followed + NOT me
+    c.execute("""
+        SELECT id, username FROM users
+        WHERE id != ?
+        AND id NOT IN (
+            SELECT following_id FROM follows WHERE follower_id=?
+        )
+        ORDER BY RANDOM()
+        LIMIT 10
+    """, (me, me))
+
+    rows = c.fetchall()
+    conn.close()
+
+    suggestions = [{"id": r[0], "username": r[1]} for r in rows]
+
+    return jsonify({"ok": True, "users": suggestions})
+
+
+# notification ikon pe 123 dikhe ush kelye
+
+@social_bp.route("/notifications/count")
+def notifications_count():
+    if "user_id" not in session:
+        return jsonify({"ok": False, "count": 0})
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    c.execute("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0",
+              (session["user_id"],))
+
+    count = c.fetchone()[0]
+    conn.close()
+
+    return jsonify({"ok": True, "count": count})
+# ==============================================================
+# 🔔 MARK NOTIFICATION AS READ
+# ==============================================================
+
+@social_bp.route("/notifications/mark_read/<int:notification_id>", methods=["POST"])
+def mark_notification_read(notification_id):
+
+    if "user_id" not in session:
+        return jsonify({
+            "ok": False,
+            "error": "login_required"
+        }), 401
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    # Sirf apni notification ko read mark kare
+    c.execute("""
+        UPDATE notifications
+        SET is_read=1
+        WHERE id=?
+          AND user_id=?
+    """, (
+        notification_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "ok": True
+    })
+
+# ==============================================================
+# 🔒 PRIVATE ACCOUNT — FOLLOW REQUEST
+# ==============================================================
+
+@social_bp.route("/follow-request/<int:request_id>/accept", methods=["POST"])
+def accept_follow_request(request_id):
+
+    if "user_id" not in session:
+        return jsonify({"ok": False, "error": "login_required"}), 401
+
+    me = session["user_id"]
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    # Request sirf receiver ki honi chahiye
+    c.execute("""
+        SELECT sender_id, receiver_id
+        FROM follow_requests
+        WHERE id=? AND receiver_id=?
+    """, (request_id, me))
+
+    req = c.fetchone()
+
+    if not req:
+        conn.close()
+        return jsonify({
+            "ok": False,
+            "error": "request_not_found"
+        }), 404
+
+    sender_id = req[0]
+
+    # Already following? duplicate avoid karo
+    c.execute("""
+        SELECT id
+        FROM follows
+        WHERE follower_id=? AND following_id=?
+    """, (sender_id, me))
+
+    already_following = c.fetchone()
+
+    if not already_following:
+        c.execute("""
+            INSERT INTO follows
+            (follower_id, following_id)
+            VALUES (?, ?)
+        """, (sender_id, me))
+
+    # Request remove
+    c.execute("""
+        DELETE FROM follow_requests
+        WHERE id=? AND receiver_id=?
+    """, (request_id, me))
+
+    # Notification sender ko
+    c.execute("""
+        INSERT INTO notifications
+        (user_id, actor_id, type, meta)
+        VALUES (?, ?, ?, ?)
+    """, (
+        sender_id,
+        me,
+        "follow_accepted",
+        json.dumps({})
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "action": "accepted"
+    })
+
+
+@social_bp.route("/follow-request/<int:request_id>/reject", methods=["POST"])
+def reject_follow_request(request_id):
+
+    if "user_id" not in session:
+        return jsonify({"ok": False, "error": "login_required"}), 401
+
+    me = session["user_id"]
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    # Sirf receiver apni request reject kar sakta hai
+    c.execute("""
+        SELECT sender_id
+        FROM follow_requests
+        WHERE id=? AND receiver_id=?
+    """, (request_id, me))
+
+    req = c.fetchone()
+
+    if not req:
+        conn.close()
+        return jsonify({
+            "ok": False,
+            "error": "request_not_found"
+        }), 404
+
+    sender_id = req[0]
+
+    c.execute("""
+        DELETE FROM follow_requests
+        WHERE id=? AND receiver_id=?
+    """, (request_id, me))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "action": "rejected"
+    })
