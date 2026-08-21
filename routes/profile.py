@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, session
-import sqlite3, os
+import sqlite3
+import os
 from werkzeug.utils import secure_filename
 from routes.stories import load_stories_for_feed
 
@@ -21,6 +22,7 @@ def allowed_file(filename):
 def my_profile():
     if "user_id" not in session:
         return redirect("/auth/login")
+
     return redirect(f"/profile/{session['user_id']}")
 
 
@@ -53,9 +55,8 @@ def profile(user_id):
         "is_private": u["is_private"] if "is_private" in u.keys() else 0,
     }
 
-# CURRENT USER
+    # CURRENT USER
     current = session.get("user_id")
-
     # -------- STORY STATUS --------
     stories = load_stories_for_feed()
 

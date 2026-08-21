@@ -487,6 +487,7 @@ def load_stories_for_feed():
     return bar
 
 def get_storybar_for_user(current_user):
+
     cleanup_expired()
     stories = load_stories()
 
@@ -497,43 +498,113 @@ def get_storybar_for_user(current_user):
     grouped = {}
 
     for s in stories:
+
         uid = s.get("user_id")
+
         if not uid:
             continue
 
-        if uid not in grouped or s.get("timestamp", 0) > grouped[uid].get("timestamp", 0):
+        if (
+            uid not in grouped
+            or
+            s.get("timestamp", 0)
+            > grouped[uid].get("timestamp", 0)
+        ):
             grouped[uid] = s
 
     bar = []
 
     for uid, s in grouped.items():
 
+        # Apni story skip
         if str(uid) == str(current_user):
             continue
 
-        c.execute(
-            "SELECT username, photo FROM users WHERE id=?",
-            (uid,)
-        )
+        # User information
+        c.execute("""
+            SELECT
+                username,
+                photo,
+                is_private
+            FROM users
+            WHERE id=?
+        """, (uid,))
 
         u = c.fetchone()
 
         username = str(uid)
         photo = "/static/default_dp.png"
+        is_private = False
 
         if u:
+
             username = u["username"]
+
             if u["photo"]:
                 photo = u["photo"]
 
+            is_private = bool(u["is_private"])
+
+        # --------------------------------
+        # CHECK FOLLOW PERMISSION
+        # --------------------------------
+
+        can_view = False
+
+        # Public account
+        if not is_private:
+            can_view = True
+
+        # Private account
+        else:
+
+            # Check accepted follow
+            if current_user:
+
+                c.execute("""
+                    SELECT 1
+                    FROM follows
+                    WHERE follower_id=?
+                      AND following_id=?
+                    LIMIT 1
+                """, (
+                    current_user,
+                    uid
+                ))
+
+                following = c.fetchone()
+
+                if following:
+                    can_view = True
+
+        # --------------------------------
+        # ADD STORY TO BAR
+        # --------------------------------
+
         bar.append({
+
             "user_id": uid,
+
             "username": username,
+
             "last_img": photo,
-            "seen": str(current_user) in [str(x) for x in (s.get("viewers") or [])]
+
+            "seen": (
+                str(current_user)
+                in [
+                    str(x)
+                    for x in (s.get("viewers") or [])
+                ]
+            ),
+
+            "is_private": is_private,
+
+            "can_view": can_view
+
         })
 
     conn.close()
+
     return bar
 
 ######################################################

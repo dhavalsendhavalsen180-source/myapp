@@ -436,10 +436,10 @@ body{
 
     <div class="px-5 pb-5">
 
-      <!-- DP -->
 <!-- DP -->
 <div class="-mt-12 flex justify-center">
 
+<<<<<<< HEAD
 <div
     onclick="openProfileMenu()"
     class="cursor-pointer p-1 rounded-full shadow-xl
@@ -452,90 +452,165 @@ body{
     {% else %}
         bg-gray-200
     {% endif %}">
+=======
+    <div
+        onclick="openProfileMenu()"
+        class="
+            cursor-pointer
+            p-1 rounded-full shadow-xl
+>>>>>>> 0f36247 (Update app)
 
-    <div class="bg-white rounded-full p-1">
+            {% if has_story %}
+                {% if story_seen %}
+                    bg-gray-300
+                {% else %}
+                    story-ring-blink
+                {% endif %}
+            {% else %}
+                bg-gray-200
+            {% endif %}
+        ">
 
-        <img src="{{ profile.photo }}"
-             class="w-24 h-24 rounded-full object-cover"
-             onerror="this.src='/static/default_dp.png'">
+        <div class="bg-white rounded-full p-1">
+
+            <img src="{{ profile.photo }}"
+                 class="w-24 h-24 rounded-full object-cover"
+                 onerror="this.src='/static/default_dp.png'">
+
+        </div>
 
     </div>
 
 </div>
 
-</div>
-
 <!-- Hint -->
 <div class="mt-2 text-center">
-{% if has_story %}
-    <span class="text-xs font-semibold text-cyan-600">
-        ✨ Story Available
-    </span>
-{% else %}
+
+{% if can_view and has_story %}
+
+    <button
+        type="button"
+        onclick="openStory({{ profile.id }})"
+        class="text-xs font-semibold text-cyan-600 hover:text-blue-600 active:scale-95 transition">
+        ✨ Watch Story
+    </button>
+
+{% elif can_view %}
+
     <span class="text-xs font-semibold text-gray-500">
         👤 View Profile Photo
     </span>
+
+{% else %}
+
+    <span class="text-xs font-semibold text-gray-500">
+        🔒 Private Account
+    </span>
+
 {% endif %}
+
 </div>
 
-      <!-- USERNAME -->
-      <div class="mt-3 text-center">
+<!-- USERNAME -->
+<div class="mt-3 text-center">
 
-        <h2 class="text-2xl font-extrabold text-slate-800 tracking-wide">
-          {{ profile.username }}
-        </h2>
+    <h2 class="text-2xl font-extrabold text-slate-800 tracking-wide">
+        {{ profile.username }}
+    </h2>
 
-        <div class="mt-2 text-sm text-slate-500">
+    <div class="mt-2 text-sm text-slate-500">
 
-          {{ profile.bio or "Welcome to InsChat ✨" }}
+        {{ profile.bio or "Welcome to InsChat ✨" }}
 
+    </div>
+
+</div>
+
+
+<!-- STATS -->
+<div class="grid grid-cols-3 gap-3 mt-5">
+
+    <!-- POSTS -->
+    <a href="#posts"
+       class="rounded-2xl bg-cyan-50 py-3 text-center">
+
+        <div class="text-xl font-bold text-cyan-600">
+            {{ posts|length }}
         </div>
 
-      </div>
-
-      <!-- STATS -->
-      <div class="grid grid-cols-3 gap-3 mt-5">
-
-        <a href="#posts"
-           class="rounded-2xl bg-cyan-50 py-3 text-center">
-
-          <div class="text-xl font-bold text-cyan-600">
-            {{ posts|length }}
-          </div>
-
-          <div class="text-xs text-slate-500">
+        <div class="text-xs text-slate-500">
             Posts
-          </div>
+        </div>
 
-        </a>
+    </a>
+
+
+    <!-- FOLLOWERS -->
+    {% if can_view %}
 
         <a href="/profile/{{ profile.id }}/followers"
            class="rounded-2xl bg-blue-50 py-3 text-center">
 
-          <div class="text-xl font-bold text-blue-600">
-            {{ followers }}
-          </div>
+            <div class="text-xl font-bold text-blue-600">
+                {{ followers }}
+            </div>
 
-          <div class="text-xs text-slate-500">
-            🤝 Allies
-          </div>
+            <div class="text-xs text-slate-500">
+                🤝 Allies
+            </div>
 
         </a>
+
+    {% else %}
+
+        <div class="rounded-2xl bg-blue-50 py-3 text-center">
+
+            <div class="text-xl font-bold text-blue-600">
+                🔒
+            </div>
+
+            <div class="text-xs text-slate-500">
+                Allies
+            </div>
+
+        </div>
+
+    {% endif %}
+
+
+    <!-- FOLLOWING -->
+    {% if can_view %}
 
         <a href="/profile/{{ profile.id }}/following"
            class="rounded-2xl bg-purple-50 py-3 text-center">
 
-          <div class="text-xl font-bold text-purple-600">
-            {{ following }}
-          </div>
+            <div class="text-xl font-bold text-purple-600">
+                {{ following }}
+            </div>
 
-          <div class="text-xs text-slate-500">
-            ✨ Allied
-          </div>
+            <div class="text-xs text-slate-500">
+                ✨ Allied
+            </div>
 
         </a>
 
-      </div>
+    {% else %}
+
+        <div class="rounded-2xl bg-purple-50 py-3 text-center">
+
+            <div class="text-xl font-bold text-purple-600">
+                🔒
+            </div>
+
+            <div class="text-xs text-slate-500">
+                Allied
+            </div>
+
+        </div>
+
+    {% endif %}
+
+</div>
 
 <!-- BUTTON -->
 <div class="mt-5">
@@ -617,6 +692,7 @@ body{
                 {% if follow_requested %}
 
                     <!-- CANCEL FOLLOW REQUEST -->
+<<<<<<< HEAD
                     <button
                         type="button"
                         id="privateRequestBtn"
@@ -635,6 +711,25 @@ body{
 
                     </button>
 
+=======
+<!-- CANCEL FOLLOW REQUEST -->
+                    <button
+                    type="button"
+                    id="privateRequestBtn"
+                    class="w-full max-w-[260px] py-3 rounded-full
+                           font-bold text-white
+                           shadow-lg
+                           transition-all duration-300
+                           bg-gradient-to-r
+                           from-amber-400
+                           via-orange-500
+                           to-purple-600
+                           ally-requested">
+
+                   ⏳ Requested
+
+                </button>
+>>>>>>> 0f36247 (Update app)
 
                 {% else %}
 
@@ -642,7 +737,10 @@ body{
                     <button
                         type="button"
                         id="privateFollowBtn"
+<<<<<<< HEAD
                         onclick="sendFollowRequest({{ profile.id }})"
+=======
+>>>>>>> 0f36247 (Update app)
                         class="w-full max-w-[260px] py-3 rounded-full
                                font-bold text-white
                                shadow-lg
@@ -1352,73 +1450,87 @@ videos.forEach(v => observer.observe(v));
 
 {% endif %}
 
-
-<!-- profile phto or story -->
+<!-- profile photo or story -->
 
 <div id="profileMenu"
 class="fixed inset-0 hidden z-50 bg-black/40 backdrop-blur-md flex items-center justify-center">
 
-<div class="w-[320px] rounded-3xl bg-white/15 backdrop-blur-xl border border-white/20 shadow-2xl p-6">
+    <div class="w-[320px] rounded-3xl bg-white/15 backdrop-blur-xl border border-white/20 shadow-2xl p-6">
 
-<div class="flex justify-center mb-5">
+        <!-- PROFILE PHOTO -->
+        <div class="flex justify-center mb-5">
 
-<img src="{{ profile.photo }}"
-class="w-28 h-28 rounded-full object-cover border-4 border-cyan-400">
+            <img src="{{ profile.photo }}"
+                 class="w-28 h-28 rounded-full object-cover border-4 border-cyan-400">
+
+        </div>
+
+
+        <!-- WATCH STORY -->
+        {% if has_story and can_view %}
+
+        <button
+            type="button"
+            onclick="window.location.href='/stories/view/{{ profile.id }}'"
+            class="w-full mb-3 py-3 rounded-2xl
+                   bg-gradient-to-r
+                   from-cyan-400
+                   via-blue-500
+                   to-purple-600
+                   text-white font-bold">
+
+            ✨ Watch Story
+
+        </button>
+
+        {% endif %}
+
+
+        <!-- VIEW PROFILE PHOTO -->
+        <button
+            type="button"
+            onclick="openProfilePhoto()"
+            class="w-full py-3 rounded-2xl bg-white/20 text-white font-bold border border-white/20">
+
+            👤 View Profile Photo
+
+        </button>
+
+
+        <!-- REPORT PROFILE -->
+        {% if current_user and (current_user != profile.id) %}
+
+        <form method="GET" action="/report" class="mt-3">
+
+            <input type="hidden" name="target_type" value="profile">
+            <input type="hidden" name="target_id" value="{{ profile.id }}">
+            <input type="hidden" name="owner_id" value="{{ profile.id }}">
+
+            <button
+                type="submit"
+                class="w-full py-3 rounded-2xl bg-red-600 text-white font-bold">
+
+                🧾 Report Profile
+
+            </button>
+
+        </form>
+
+        {% endif %}
+
+    </div>
 
 </div>
 
-{% if has_story %}
 
-<button
-onclick="window.location='/stories/view/{{ profile.id }}'"
-class="w-full mb-3 py-3 rounded-2xl bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 text-white font-bold">
+<!-- photo viewer -->
 
-✨ Watch Story
-
-</button>
-
-{% endif %}
-
-<button
-onclick="openProfilePhoto()"
-class="w-full py-3 rounded-2xl bg-white/20 text-white font-bold border border-white/20">
-
-👤 View Profile Photo
-
-</button>
-
-{% if current_user and (current_user != profile.id) %}
-
-<form method="GET" action="/report" class="mt-3">
-
-    <input type="hidden" name="target_type" value="profile">
-    <input type="hidden" name="target_id" value="{{ profile.id }}">
-    <input type="hidden" name="owner_id" value="{{ profile.id }}">
-
-    <button
-        type="submit"
-        class="w-full py-3 rounded-2xl bg-red-600 text-white font-bold">
-
-        🧾 Report Profile
-
-    </button>
-
-</form>
-
-{% endif %}
-
-</div>
-
-</div>
-
-
-<!-- photo wiewer -->
 <div id="photoViewer"
 class="fixed inset-0 hidden bg-black/90 z-[60] flex items-center justify-center">
 
-<img
-src="{{ profile.photo }}"
-class="max-w-[95%] max-h-[90%] rounded-3xl">
+    <img
+        src="{{ profile.photo }}"
+        class="max-w-[95%] max-h-[90%] rounded-3xl">
 
 </div>
 
@@ -1457,6 +1569,136 @@ window.me = {{ session.get("user_id")|tojson }};
 </script>
 
 <script src="/static/js/global_call.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const btn = document.getElementById("privateFollowBtn");
+
+    if (!btn) {
+        console.log("PRIVATE BUTTON NOT FOUND");
+        return;
+    }
+
+    btn.addEventListener("click", async function () {
+
+        const targetId = {{ profile.id }};
+
+        if (btn.disabled) return;
+
+        btn.disabled = true;
+
+        const oldText = btn.innerText;
+        btn.innerText = "⏳ Sending...";
+
+        try {
+
+            const response = await fetch(
+                `/social/follow/${targetId}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                }
+            );
+
+            const text = await response.text();
+
+            const data = JSON.parse(text);
+
+            if (
+                response.ok &&
+                data.ok &&
+                data.action === "requested"
+            ) {
+                window.location.reload();
+                return;
+            }
+
+            btn.innerText = oldText;
+
+        } catch (error) {
+
+            console.error("FOLLOW REQUEST ERROR:", error);
+
+            btn.innerText = oldText;
+
+        } finally {
+
+            btn.disabled = false;
+
+        }
+
+    });
+
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const btn = document.getElementById("privateRequestBtn");
+
+    if (!btn) return;
+
+    btn.addEventListener("click", async function () {
+
+        const targetId = {{ profile.id }};
+
+        if (btn.disabled) return;
+
+        btn.disabled = true;
+
+        const oldText = btn.innerText;
+        btn.innerText = "⏳ Cancelling...";
+
+        try {
+
+            const response = await fetch(
+                `/social/follow/${targetId}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                }
+            );
+
+            const text = await response.text();
+
+            const data = JSON.parse(text);
+
+            if (
+                response.ok &&
+                data.ok &&
+                data.action === "cancelled"
+            ) {
+
+                window.location.reload();
+
+                return;
+            }
+
+            btn.innerText = oldText;
+
+        } catch (error) {
+
+            console.error("CANCEL REQUEST ERROR:", error);
+
+            btn.innerText = oldText;
+
+        } finally {
+
+            btn.disabled = false;
+
+        }
+
+    });
+
+});
+</script>
+
 
 </body>
 </html>

@@ -312,7 +312,6 @@ async function uploadStoryInstant(event) {
   <!-- YOUR STORY -->
   <div class="story-item my-story-wrapper">
 
-    <!-- OPEN STORY -->
     <div class="story-ring2 {% if has_my_story and my_story_seen %}seen{% elif has_my_story %}my-story{% endif %}"
          onclick="openStory('{{ current_user }}')">
 
@@ -320,7 +319,6 @@ async function uploadStoryInstant(event) {
            onerror="this.src='/static/default_dp.png'">
     </div>
 
-    <!-- PLUS BUTTON ONLY UPLOAD -->
     <div class="add-story-btn"
          onclick="document.getElementById('storyPicker').click()">
       ✦
@@ -329,24 +327,52 @@ async function uploadStoryInstant(event) {
     <div class="story-label">Your Story</div>
   </div>
 
-  <!-- OTHER USERS -->
+
+<!-- OTHER USERS -->
 {% for s in stories_bar %}
+
   {% if s.user_id != current_user %}
 
-    <div class="story-item" onclick="openStory('{{ s.user_id }}')">
-      <div class="story-ring2 {% if s.seen %}seen{% else %}my-story{% endif %}">
-        <img src="{{ s.last_img }}" onerror="this.src='/static/default_dp.png'">
+    <!--
+    Story sirf tab dikhegi:
+    1. Account public ho
+    2. Ya current user owner ka accepted follower ho
+    -->
+    {% if not s.is_private or s.can_view %}
+
+      <div class="story-item"
+           onclick="openStory('{{ s.user_id }}')">
+
+        <div class="story-ring2
+             {% if s.seen %}
+                seen
+             {% else %}
+                my-story
+             {% endif %}">
+
+          <img src="{{ s.last_img }}"
+               onerror="this.src='/static/default_dp.png'">
+
+        </div>
+
+        <div class="story-label">
+          {{ s.username }}
+        </div>
+
       </div>
-      <div class="story-label">{{ s.username }}</div>
-    </div>
+
+    {% endif %}
 
   {% endif %}
+
 {% endfor %}
+
 </div>
 <!-- FEED -->
   <div class="max-w-xl mx-auto mt-4 space-y-6 pb-24">
 
     {% for post in posts %}
+    {% if not post.is_private or post.is_following or post.owner_id == current_user %}
     <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/30">
 
 
@@ -565,6 +591,59 @@ async function uploadStoryInstant(event) {
 </div> <!-- END flex items-center justify-between -->
 
 </div> <!-- END ACTION ROW -->
+
+<!-- yaha existing post ka visible content khatam -->
+
+{% else %}
+
+<div class="min-h-[360px]
+            flex flex-col
+            items-center
+            justify-center
+            text-center
+            px-6
+            bg-gradient-to-br
+            from-slate-50
+            via-cyan-50
+            to-purple-50">
+
+    <div class="w-20 h-20
+                rounded-full
+                bg-white
+                shadow-lg
+                flex
+                items-center
+                justify-center
+                text-4xl
+                mb-5">
+        🔒
+    </div>
+
+    <h3 class="text-xl font-extrabold text-slate-800">
+        This Post Is Private
+    </h3>
+
+    <p class="mt-2 text-sm text-slate-500 max-w-xs">
+        @{{ post.username }}'s post is only available
+        to approved allies.
+    </p>
+
+    <a href="/profile/{{ post.owner_id }}"
+       class="mt-5 px-5 py-2.5
+              rounded-full
+              text-white
+              font-bold
+              bg-gradient-to-r
+              from-cyan-500
+              via-blue-500
+              to-purple-600
+              shadow-lg">
+        View Profile
+    </a>
+
+</div>
+
+{% endif %}
 
 </div> <!-- END POST CARD -->
 

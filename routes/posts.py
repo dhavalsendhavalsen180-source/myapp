@@ -100,24 +100,67 @@ def feed():
 
     # ✅ FIXED QUERY (NOW FETCHES OWNER ID ALSO)
     c.execute("""
-        SELECT posts.id, posts.user_id, users.username, users.photo, posts.caption
+        SELECT
+            posts.id,
+            posts.user_id,
+            users.username,
+            users.photo,
+            posts.caption,
+            users.is_private
         FROM posts
-        JOIN users ON posts.user_id = users.id
+        JOIN users
+            ON posts.user_id = users.id
+
+        WHERE
+
+            -- Apne khud ke posts
+            posts.user_id = ?
+
+            OR
+
+            -- Public account ki post
+            users.is_private = 0
+
+            OR
+
+            -- Private account, lekin current user
+            -- accepted follower hai
+            (
+                users.is_private = 1
+
+                AND EXISTS (
+                    SELECT 1
+                    FROM follows
+                    WHERE follows.follower_id = ?
+                      AND follows.following_id = posts.user_id
+                )
+            )
+
         ORDER BY posts.id DESC
-    """)
+    """, (
+        current_user,
+        current_user
+    ))
     rows = c.fetchall()
 
     posts = []
-    for row in rows:
-        post_id, owner_id, username, user_photo, caption = row
 
-        c.execute("SELECT image_path FROM post_images WHERE post_id=?", (post_id,))
+    for row in rows:
+        post_id, owner_id, username, user_photo, caption, is_private = row
+
+        c.execute(
+            "SELECT image_path FROM post_images WHERE post_id=?",
+            (post_id,)
+        )
         images = [r[0] for r in c.fetchall()]
 
-        c.execute("SELECT COUNT(*) FROM likes WHERE post_id=?", (post_id,))
+        c.execute(
+            "SELECT COUNT(*) FROM likes WHERE post_id=?",
+            (post_id,)
+        )
         likes = c.fetchone()[0]
 
-        #feed post like #
+        # feed post like
         c.execute("""
             SELECT 1
             FROM likes

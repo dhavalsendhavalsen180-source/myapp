@@ -26,6 +26,7 @@ def like_post(post_id):
         return jsonify({"ok": False, "error": "login_required"}), 401
 
     user_id = session["user_id"]
+
     conn = get_conn()
     c = conn.cursor()
 
@@ -104,15 +105,22 @@ def comment_post(post_id):
 # ==============================================================
 # 👤 FOLLOW / UNFOLLOW
 # ==============================================================
-# ==============================================================
-# 👤 FOLLOW / UNFOLLOW
-# ==============================================================
 
 @social_bp.route("/follow/<int:target_id>", methods=["POST"])
 def follow_toggle(target_id):
 
+    is_ajax = (
+        request.headers.get("X-Requested-With")
+        == "XMLHttpRequest"
+    )
+
+    # ----------------------------------------------------------
+    # LOGIN CHECK
+    # ----------------------------------------------------------
+
     if "user_id" not in session:
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+
+        if is_ajax:
             return jsonify({
                 "ok": False,
                 "error": "login_required"
@@ -122,26 +130,29 @@ def follow_toggle(target_id):
 
     me = session["user_id"]
 
+    # ----------------------------------------------------------
+    # SELF FOLLOW BLOCK
+    # ----------------------------------------------------------
+
     if me == target_id:
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+
+        if is_ajax:
             return jsonify({
                 "ok": False,
                 "error": "cannot_follow_self"
             }), 400
 
-        return redirect(url_for("profile_bp.profile", user_id=target_id))
+        return redirect(url_for("social.profile", username=""))
 
     conn = get_conn()
     c = conn.cursor()
 
-    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
-
     # ----------------------------------------------------------
-    # GET TARGET USERNAME
+    # GET TARGET USER
     # ----------------------------------------------------------
 
     c.execute("""
-        SELECT username
+        SELECT username, is_private
         FROM users
         WHERE id=?
     """, (target_id,))
@@ -149,6 +160,7 @@ def follow_toggle(target_id):
     target_user = c.fetchone()
 
     if not target_user:
+
         conn.close()
 
         if is_ajax:
@@ -157,37 +169,35 @@ def follow_toggle(target_id):
                 "error": "user_not_found"
             }), 404
 
-        return redirect(url_for("explore.explore"))
+        return redirect(url_for("social.explore"))
 
     target_username = target_user[0]
-
+    is_private = bool(target_user[1])
 
     # ----------------------------------------------------------
-    # CHECK EXISTING FOLLOW
+    # CHECK ALREADY FOLLOWING
     # ----------------------------------------------------------
 
     c.execute("""
         SELECT id
         FROM follows
-        WHERE follower_id=? AND following_id=?
+        WHERE follower_id=?
+          AND following_id=?
     """, (me, target_id))
 
-    row = c.fetchone()
+    follow_row = c.fetchone()
 
-    if row:
+    # ----------------------------------------------------------
+    # ALREADY FOLLOWING → UNFOLLOW
+    # ----------------------------------------------------------
 
-        # UNFOLLOW
+    if follow_row:
+
         c.execute("""
             DELETE FROM follows
             WHERE id=?
-        """, (row[0],))
+        """, (follow_row[0],))
 
-        # Remove old request too
-        c.execute("""
-            DELETE FROM follow_requests
-            WHERE sender_id=?
-              AND receiver_id=?
-        """, (me, target_id))
         conn.commit()
         conn.close()
 
@@ -198,52 +208,49 @@ def follow_toggle(target_id):
             })
 
         return redirect(
-            url_for("social.profile", username=target_username)
+            url_for(
+                "social.profile",
+                username=target_username
+            )
         )
-    # ----------------------------------------------------------
-    # CHECK USER
-    # ----------------------------------------------------------
-
-    c.execute("""
-        SELECT is_private
-        FROM users
-        WHERE id=?
-    """, (target_id,))
-
-    private_user = c.fetchone()
-
-    if not private_user:
-        conn.close()
-
-        if is_ajax:
-            return jsonify({
-                "ok": False,
-                "error": "user_not_found"
-            }), 404
-
-        return redirect(url_for("explore.explore"))
 
     # ----------------------------------------------------------
     # PRIVATE ACCOUNT
     # ----------------------------------------------------------
 
-    if private_user[0] == 1:
+    if is_private:
 
+        # Check existing request
         c.execute("""
             SELECT id
             FROM follow_requests
-            WHERE sender_id=? AND receiver_id=?
+            WHERE sender_id=?
+              AND receiver_id=?
         """, (me, target_id))
 
         request_row = c.fetchone()
 
+        # ------------------------------------------------------
+        # REQUEST EXISTS → CANCEL REQUEST
+        # ------------------------------------------------------
+
         if request_row:
 
-            # CANCEL REQUEST
             c.execute("""
                 DELETE FROM follow_requests
                 WHERE id=?
             """, (request_row[0],))
+
+            # Remove request notification
+            c.execute("""
+                DELETE FROM notifications
+                WHERE user_id=?
+                  AND actor_id=?
+                  AND type='follow_request'
+            """, (
+                target_id,
+                me
+            ))
 
             conn.commit()
             conn.close()
@@ -254,42 +261,90 @@ def follow_toggle(target_id):
                     "action": "cancelled"
                 })
 
-        else:
+            return redirect(
+                url_for(
+                    "social.profile",
+                    username=target_username
+                )
+            )
 
-            # NEW REQUEST
-            c.execute("""
-                INSERT INTO follow_requests
-                (sender_id, receiver_id)
-                VALUES (?, ?)
-            """, (me, target_id))
+        # ------------------------------------------------------
+        # SEND NEW FOLLOW REQUEST
+        # ------------------------------------------------------
 
-            conn.commit()
-            conn.close()
+        c.execute("""
+            INSERT INTO follow_requests
+            (
+                sender_id,
+                receiver_id
+            )
+            VALUES (?, ?)
+        """, (
+            me,
+            target_id
+        ))
 
-            if is_ajax:
-                return jsonify({
-                    "ok": True,
-                    "action": "requested"
-                })
+        # Follow request notification
+        c.execute("""
+            INSERT INTO notifications
+            (
+                user_id,
+                actor_id,
+                type,
+                meta,
+                is_read
+            )
+            VALUES (?, ?, ?, ?, 0)
+        """, (
+            target_id,
+            me,
+            "follow_request",
+            json.dumps({
+                "sender_id": me
+            })
+        ))
+
+        conn.commit()
+        conn.close()
+
+        if is_ajax:
+            return jsonify({
+                "ok": True,
+                "action": "requested"
+            })
 
         return redirect(
-            url_for("social.profile", username=target_username)
+            url_for(
+                "social.profile",
+                username=target_username
+            )
         )
 
     # ----------------------------------------------------------
-    # PUBLIC ACCOUNT
+    # PUBLIC ACCOUNT → FOLLOW
     # ----------------------------------------------------------
 
     c.execute("""
         INSERT INTO follows
-        (follower_id, following_id)
+        (
+            follower_id,
+            following_id
+        )
         VALUES (?, ?)
-    """, (me, target_id))
+    """, (
+        me,
+        target_id
+    ))
 
-    # Notification
+    # Follow notification
     c.execute("""
         INSERT INTO notifications
-        (user_id, actor_id, type, meta)
+        (
+            user_id,
+            actor_id,
+            type,
+            meta
+        )
         VALUES (?, ?, ?, ?)
     """, (
         target_id,
@@ -301,7 +356,6 @@ def follow_toggle(target_id):
     conn.commit()
     conn.close()
 
-    # 🔥 AJAX PUBLIC FOLLOW RESPONSE
     if is_ajax:
         return jsonify({
             "ok": True,
@@ -309,7 +363,10 @@ def follow_toggle(target_id):
         })
 
     return redirect(
-        url_for("social.profile", username=get_username(target_id))
+        url_for(
+            "social.profile",
+            username=target_username
+        )
     )
 
 # ==============================================================
