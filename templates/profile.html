@@ -439,37 +439,18 @@ body{
 <!-- DP -->
 <div class="-mt-12 flex justify-center">
 
-<<<<<<< HEAD
-<div
-    onclick="openProfileMenu()"
-    class="cursor-pointer p-1 rounded-full shadow-xl
-    {% if has_story %}
-        {% if story_seen %}
-            bg-gray-300
-        {% else %}
-            story-ring-blink
-        {% endif %}
-    {% else %}
-        bg-gray-200
-    {% endif %}">
-=======
     <div
         onclick="openProfileMenu()"
-        class="
-            cursor-pointer
-            p-1 rounded-full shadow-xl
->>>>>>> 0f36247 (Update app)
-
-            {% if has_story %}
-                {% if story_seen %}
-                    bg-gray-300
-                {% else %}
-                    story-ring-blink
-                {% endif %}
+        class="cursor-pointer p-1 rounded-full shadow-xl
+        {% if has_story %}
+            {% if story_seen %}
+                bg-gray-300
             {% else %}
-                bg-gray-200
+                story-ring-blink
             {% endif %}
-        ">
+        {% else %}
+            bg-gray-200
+        {% endif %}">
 
         <div class="bg-white rounded-full p-1">
 
@@ -692,7 +673,6 @@ body{
                 {% if follow_requested %}
 
                     <!-- CANCEL FOLLOW REQUEST -->
-<<<<<<< HEAD
                     <button
                         type="button"
                         id="privateRequestBtn"
@@ -711,36 +691,13 @@ body{
 
                     </button>
 
-=======
-<!-- CANCEL FOLLOW REQUEST -->
-                    <button
-                    type="button"
-                    id="privateRequestBtn"
-                    class="w-full max-w-[260px] py-3 rounded-full
-                           font-bold text-white
-                           shadow-lg
-                           transition-all duration-300
-                           bg-gradient-to-r
-                           from-amber-400
-                           via-orange-500
-                           to-purple-600
-                           ally-requested">
-
-                   ⏳ Requested
-
-                </button>
->>>>>>> 0f36247 (Update app)
-
                 {% else %}
 
                     <!-- SEND FOLLOW REQUEST -->
                     <button
                         type="button"
                         id="privateFollowBtn"
-<<<<<<< HEAD
                         onclick="sendFollowRequest({{ profile.id }})"
-=======
->>>>>>> 0f36247 (Update app)
                         class="w-full max-w-[260px] py-3 rounded-full
                                font-bold text-white
                                shadow-lg
