@@ -1,5 +1,7 @@
-#import eventlet
-#eventlet.monkey_patch()
+import os
+os.environ["EVENTLET_NO_GREENDNS"] = "yes"
+import eventlet
+eventlet.monkey_patch()
 from flask import Flask, send_from_directory, render_template
 from flask_cors import CORS
 from flask_socketio import SocketIO

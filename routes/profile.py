@@ -1,7 +1,8 @@
-from flask import Blueprint, render_template, request, redirect, session
+from flask import Blueprint, render_template, request, redirect, session, url_for, flash
 import sqlite3
 import os
 from werkzeug.utils import secure_filename
+from werkzeug.security import check_password_hash, generate_password_hash
 from routes.stories import load_stories_for_feed
 
 profile_bp = Blueprint("profile_bp", __name__, url_prefix="/profile")
@@ -463,3 +464,148 @@ def privacy_page():
         "privacy.html",
         profile=profile
     )
+# ------------------ ACCOUNT CENTER ------------------ #
+@profile_bp.route("/account_center")
+def account_center():
+
+    if "user_id" not in session:
+        return redirect("/auth/login")
+
+    uid = session["user_id"]
+
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT id, username, email, phone
+        FROM users
+        WHERE id=?
+    """, (uid,))
+
+    user = c.fetchone()
+
+    conn.close()
+
+    if not user:
+        session.clear()
+        return redirect("/auth/login")
+
+    return render_template(
+        "account_center.html",
+        user=user
+    )
+
+
+# ------------------ CHANGE PASSWORD PAGE ------------------ #
+@profile_bp.route("/change-password", methods=["GET", "POST"])
+def change_password():
+
+    if "user_id" not in session:
+        return redirect("/auth/login")
+
+    uid = session["user_id"]
+
+    if request.method == "POST":
+
+        current_password = request.form.get(
+            "current_password",
+            ""
+        ).strip()
+
+        new_password = request.form.get(
+            "new_password",
+            ""
+        ).strip()
+
+        confirm_password = request.form.get(
+            "confirm_password",
+            ""
+        ).strip()
+
+        if not current_password:
+            flash("Please enter your current password.", "error")
+            return redirect(url_for("profile_bp.change_password"))
+
+        if not new_password:
+            flash("Please enter a new password.", "error")
+            return redirect(url_for("profile_bp.change_password"))
+
+        if len(new_password) < 8:
+            flash(
+                "New password must be at least 8 characters.",
+                "error"
+            )
+            return redirect(url_for("profile_bp.change_password"))
+
+        if new_password != confirm_password:
+            flash(
+                "New passwords do not match.",
+                "error"
+            )
+            return redirect(url_for("profile_bp.change_password"))
+
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+
+        c.execute("""
+            SELECT password
+            FROM users
+            WHERE id=?
+        """, (uid,))
+
+        row = c.fetchone()
+
+        if not row:
+            conn.close()
+
+            session.clear()
+
+            flash("Account not found. Please login again.", "error")
+
+            return redirect("/auth/login")
+
+        stored_password = row[0]
+
+        if not check_password_hash(
+            stored_password,
+            current_password
+        ):
+
+            conn.close()
+
+            flash(
+                "Current password is incorrect.",
+                "error"
+            )
+
+            return redirect(
+                url_for("profile_bp.change_password")
+            )
+
+        new_hashed_password = generate_password_hash(
+            new_password
+        )
+
+        c.execute("""
+            UPDATE users
+            SET password=?
+            WHERE id=?
+        """, (
+            new_hashed_password,
+            uid
+        ))
+
+        conn.commit()
+        conn.close()
+
+        flash(
+            "Password changed successfully.",
+            "success"
+        )
+
+        return redirect(
+            url_for("profile_bp.account_center")
+        )
+
+    return render_template("change_password.html")

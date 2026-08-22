@@ -110,10 +110,27 @@ InsChat
 """
     }
 
-    r = requests.post(url, json=data, headers=headers)
+    try:
+        r = requests.post(
+            url,
+            json=data,
+            headers=headers,
+            timeout=20
+        )
 
-    return r.status_code == 201
+        print("========== BREVO RESPONSE ==========")
+        print("STATUS CODE:", r.status_code)
+        print("RESPONSE:", r.text)
+        print("====================================")
 
+        return r.status_code in [200, 201]
+
+    except requests.exceptions.RequestException as e:
+        print("========== BREVO ERROR ==========")
+        print("ERROR:", repr(e))
+        print("=================================")
+
+        return False
 
 # ---------------- Login ----------------
 @auth_bp.route("/login", methods=["GET", "POST"])
