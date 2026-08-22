@@ -1008,3 +1008,120 @@ def reject_follow_request(request_id):
         "ok": True,
         "action": "rejected"
     })
+
+# ==============================================================
+# 🗑️ REMOVE FOLLOWER / ALLY
+# ==============================================================
+
+@social_bp.route("/remove-follower/<int:follower_id>", methods=["POST"])
+def remove_follower(follower_id):
+
+    if "user_id" not in session:
+        return jsonify({
+            "ok": False,
+            "error": "login_required"
+        }), 401
+
+    me = session["user_id"]
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    # Check:
+    # follower_id mujhe follow kar raha hai?
+    c.execute("""
+        SELECT id
+        FROM follows
+        WHERE follower_id=?
+          AND following_id=?
+    """, (
+        follower_id,
+        me
+    ))
+
+    row = c.fetchone()
+
+    if not row:
+
+        conn.close()
+
+        return jsonify({
+            "ok": False,
+            "error": "ally_not_found"
+        }), 404
+
+    # Remove follower
+    c.execute("""
+        DELETE FROM follows
+        WHERE follower_id=?
+          AND following_id=?
+    """, (
+        follower_id,
+        me
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "action": "removed"
+    })
+
+# ==============================================================
+# 🤝 UNALLY / REMOVE FOLLOWING
+# ==============================================================
+
+@social_bp.route("/remove-following/<int:following_id>", methods=["POST"])
+def remove_following(following_id):
+
+    if "user_id" not in session:
+        return jsonify({
+            "ok": False,
+            "error": "login_required"
+        }), 401
+
+    me = session["user_id"]
+
+    conn = get_conn()
+    c = conn.cursor()
+
+    # Check: kya main is user ko follow karta hu?
+    c.execute("""
+        SELECT id
+        FROM follows
+        WHERE follower_id=?
+          AND following_id=?
+    """, (
+        me,
+        following_id
+    ))
+
+    row = c.fetchone()
+
+    if not row:
+
+        conn.close()
+
+        return jsonify({
+            "ok": False,
+            "error": "not_following"
+        }), 404
+
+    # Unally / unfollow
+    c.execute("""
+        DELETE FROM follows
+        WHERE follower_id=?
+          AND following_id=?
+    """, (
+        me,
+        following_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "action": "unfollowed"
+    })

@@ -1,39 +1,1038 @@
 <!doctype html>
 <html>
+
 <head>
+
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Followers</title>
+
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1">
+
+  <title>Allies</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
+
 </head>
 
-<body class="bg-gray-100 min-h-screen">
 
-  <div class="p-4 bg-white shadow flex items-center justify-between">
-    <a href="/profile/{{ user.id }}" class="text-xl">⬅ Back</a>
-    <h2 class="font-bold text-lg">{{ user.username }} Followers</h2>
-    <div></div>
+<body class="min-h-screen bg-gradient-to-b from-cyan-50 via-white to-purple-50">
+
+
+<!-- =========================
+     TOP HEADER
+========================= -->
+
+<div class="sticky top-0 z-40
+            px-4 py-4
+            bg-white/80
+            backdrop-blur-xl
+            border-b border-cyan-100
+            shadow-sm">
+
+  <div class="max-w-xl mx-auto
+              flex items-center justify-between">
+
+
+    <!-- BACK -->
+
+    <a href="/profile/{{ user.id }}"
+       class="w-11 h-11
+              rounded-2xl
+              bg-white
+              border border-cyan-100
+              shadow
+              flex items-center justify-center
+              text-xl
+              active:scale-95
+              transition">
+
+      ←
+
+    </a>
+
+
+    <!-- TITLE -->
+
+    <div class="text-center">
+
+      <h2 class="font-extrabold
+                 text-lg
+                 text-slate-800">
+
+        🤝 Allies
+
+      </h2>
+
+      <div class="text-xs text-slate-500">
+
+        {{ user.username }}
+
+      </div>
+
+    </div>
+
+
+    <!-- COUNT -->
+
+    <div id="allyCount"
+         class="min-w-11 h-11
+                px-3
+                rounded-2xl
+                bg-gradient-to-br
+                from-cyan-400
+                to-blue-600
+                text-white
+                font-bold
+                flex items-center justify-center
+                shadow-lg">
+
+      {{ followers|length }}
+
+    </div>
+
+
   </div>
 
-  <div class="max-w-xl mx-auto mt-4 space-y-2 px-3">
-    {% for f in followers %}
-      <a href="/profile/{{ f.id }}" class="flex items-center gap-3 bg-white p-3 rounded shadow">
-        <img src="{{ f.photo or '/static/default_dp.png' }}" class="w-12 h-12 rounded-full object-cover">
-        <div class="font-semibold">{{ f.username }}</div>
-      </a>
-    {% else %}
-      <div class="text-center text-gray-500 mt-10">No followers yet</div>
-    {% endfor %}
+</div>
+
+
+
+<!-- =========================
+     FOLLOWERS LIST
+========================= -->
+
+<div id="followersList"
+     class="max-w-xl mx-auto
+            mt-5
+            px-3
+            space-y-3">
+
+
+  {% for f in followers %}
+
+
+  <!-- ALLY CARD -->
+
+  <div class="ally-card
+              flex items-center gap-3
+              bg-white
+              p-3
+              rounded-2xl
+              border border-cyan-100
+              shadow-lg
+              shadow-cyan-100/30
+              transition-all duration-300">
+
+
+    <!-- =====================
+         PROFILE
+    ====================== -->
+
+    <a href="/profile/{{ f.id }}"
+       class="flex items-center
+              gap-3
+              flex-1
+              min-w-0">
+
+
+      <!-- PHOTO -->
+
+      <div class="relative shrink-0">
+
+        <img
+          src="{{ f.photo or '/static/default_dp.png' }}"
+          class="w-14 h-14
+                 rounded-full
+                 object-cover
+                 border-2 border-cyan-300
+                 shadow"
+          onerror="this.src='/static/default_dp.png'">
+
+
+        <!-- GREEN DOT -->
+
+        <div class="absolute
+                    bottom-0
+                    right-0
+                    w-4 h-4
+                    rounded-full
+                    bg-emerald-400
+                    border-2 border-white">
+
+        </div>
+
+      </div>
+
+
+      <!-- USERNAME -->
+
+      <div class="min-w-0">
+
+        <div class="font-bold
+                    text-slate-800
+                    truncate">
+
+          {{ f.username }}
+
+        </div>
+
+        <div class="text-xs
+                    text-slate-400
+                    mt-1">
+
+          🤝 Your Ally
+
+        </div>
+
+      </div>
+
+
+    </a>
+
+    <!-- =====================
+         REMOVE BUTTON
+         ONLY PROFILE OWNER
+    ====================== -->
+
+    {% if session.get("user_id") == user.id %}
+
+    <button
+      type="button"
+      onclick="openRemoveModal({{ f.id }}, this)"
+      class="remove-btn
+             shrink-0
+             px-4 py-2.5
+             rounded-xl
+             bg-gradient-to-r
+             from-red-500
+             to-rose-600
+             text-white
+             font-bold
+             text-sm
+             shadow-md
+             shadow-red-200
+             active:scale-95
+             transition-all">
+
+      Remove
+
+    </button>
+
+    {% endif %}
+
+
   </div>
+
+
+  {% else %}
+
+
+  <!-- =====================
+       EMPTY STATE
+  ====================== -->
+
+  <div id="emptyState"
+       class="mt-14
+              bg-white
+              rounded-3xl
+              p-10
+              text-center
+              shadow-xl
+              border border-cyan-100">
+
+
+    <div class="text-6xl mb-5">
+
+      🤝
+
+    </div>
+
+
+    <h3 class="font-extrabold
+               text-xl
+               text-slate-800">
+
+      No Allies Yet
+
+    </h3>
+
+
+    <p class="text-sm
+              text-slate-500
+              mt-2">
+
+      When someone allies with you,
+      they will appear here.
+
+    </p>
+
+
+  </div>
+
+
+  {% endfor %}
+
+
+</div>
+
+
+
+<!-- =========================
+     CUSTOM REMOVE MODAL
+========================= -->
+
+<div id="removeModal"
+     class="fixed inset-0
+            hidden
+            items-end
+            sm:items-center
+            justify-center
+            z-[999]
+            bg-black/50
+            backdrop-blur-sm
+            p-3">
+
+
+  <div id="removeModalBox"
+       class="w-full
+              max-w-md
+              bg-white
+              rounded-3xl
+              p-6
+              shadow-2xl
+              border border-red-100
+              transform
+              translate-y-full
+              transition-transform
+              duration-300">
+
+
+    <!-- ICON -->
+
+    <div class="w-16 h-16
+                mx-auto
+                rounded-full
+                bg-gradient-to-br
+                from-red-100
+                to-rose-100
+                flex items-center
+                justify-center
+                text-3xl">
+
+      🤝
+
+    </div>
+
+
+    <!-- TITLE -->
+
+    <h3 class="text-center
+               text-xl
+               font-extrabold
+               text-slate-800
+               mt-5">
+
+      Remove Ally?
+
+    </h3>
+
+
+    <!-- MESSAGE -->
+
+    <p class="text-center
+              text-sm
+              text-slate-500
+              mt-2">
+
+      Are you sure you want to remove this person from your Allies?
+
+    </p>
+
+
+    <!-- BUTTONS -->
+
+    <div class="grid
+                grid-cols-2
+                gap-3
+                mt-6">
+
+
+      <!-- CANCEL -->
+
+      <button
+        type="button"
+        onclick="closeRemoveModal()"
+        class="py-3
+               rounded-2xl
+               bg-slate-100
+               text-slate-700
+               font-bold
+               active:scale-95
+               transition">
+
+        Cancel
+
+      </button>
+
+
+      <!-- CONFIRM REMOVE -->
+
+      <button
+        type="button"
+        id="confirmRemoveBtn"
+        class="py-3
+               rounded-2xl
+               bg-gradient-to-r
+               from-red-500
+               to-rose-600
+               text-white
+               font-bold
+               shadow-lg
+               shadow-red-200
+               active:scale-95
+               transition">
+
+        Remove
+
+      </button>
+
+
+    </div>
+
+
+  </div>
+
+
+</div>
+
+
+
+<!-- =========================
+     CUSTOM ERROR / SUCCESS TOAST
+========================= -->
+
+<div id="toast"
+     class="fixed
+            left-1/2
+            -translate-x-1/2
+            bottom-6
+            z-[1000]
+            hidden
+            max-w-[90%]
+            px-5 py-3
+            rounded-2xl
+            text-white
+            font-semibold
+            text-sm
+            shadow-2xl
+            transition-all">
+
+</div>
+
+
+
+<!-- =========================
+     SCRIPTS
+========================= -->
+
+<script>
+
+
+let pendingFollowerId = null;
+
+let pendingRemoveButton = null;
+
+
+/* =========================
+   OPEN MODAL
+========================= */
+
+function openRemoveModal(followerId, btn) {
+
+
+    if (btn.disabled) {
+
+        return;
+
+    }
+
+
+    pendingFollowerId = followerId;
+
+    pendingRemoveButton = btn;
+
+
+    const modal = document.getElementById(
+        "removeModal"
+    );
+
+
+    const modalBox = document.getElementById(
+        "removeModalBox"
+    );
+
+
+    modal.classList.remove(
+        "hidden"
+    );
+
+
+    modal.classList.add(
+        "flex"
+    );
+
+
+    setTimeout(() => {
+
+        modalBox.classList.remove(
+            "translate-y-full"
+        );
+
+    }, 20);
+
+
+}
+
+
+
+/* =========================
+   CLOSE MODAL
+========================= */
+
+function closeRemoveModal() {
+
+
+    const modal = document.getElementById(
+        "removeModal"
+    );
+
+
+    const modalBox = document.getElementById(
+        "removeModalBox"
+    );
+
+
+    modalBox.classList.add(
+        "translate-y-full"
+    );
+
+
+    setTimeout(() => {
+
+
+        modal.classList.add(
+            "hidden"
+        );
+
+
+        modal.classList.remove(
+            "flex"
+        );
+
+
+    }, 300);
+
+
+    pendingFollowerId = null;
+
+    pendingRemoveButton = null;
+
+
+}
+
+
+
+/* =========================
+   CONFIRM REMOVE
+========================= */
+
+document
+.getElementById("confirmRemoveBtn")
+.addEventListener(
+    "click",
+    function() {
+
+
+        if (
+            pendingFollowerId === null ||
+            !pendingRemoveButton
+        ) {
+
+            return;
+
+        }
+
+
+        const followerId = pendingFollowerId;
+
+        const btn = pendingRemoveButton;
+
+
+        closeRemoveModal();
+
+
+        removeFollower(
+            followerId,
+            btn
+        );
+
+
+    }
+);
+
+
+
+/* =========================
+   REMOVE FOLLOWER
+========================= */
+
+async function removeFollower(
+    followerId,
+    btn
+) {
+
+
+    if (btn.disabled) {
+
+        return;
+
+    }
+
+
+    const oldText =
+        btn.innerText;
+
+
+    btn.disabled = true;
+
+
+    btn.innerText =
+        "Removing...";
+
+
+    const card =
+        btn.closest(
+            ".ally-card"
+        );
+
+
+    try {
+
+
+        const response = await fetch(
+
+            `/social/remove-follower/${followerId}`,
+
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "X-Requested-With":
+                    "XMLHttpRequest"
+
+                }
+
+            }
+
+        );
+
+
+        let data;
+
+
+        try {
+
+
+            data =
+                await response.json();
+
+
+        }
+
+        catch (jsonError) {
+
+
+            console.error(
+                "SERVER RESPONSE IS NOT JSON"
+            );
+
+
+            showToast(
+                "Server error",
+                "error"
+            );
+
+
+            btn.disabled = false;
+
+
+            btn.innerText =
+                oldText;
+
+
+            return;
+
+        }
+
+
+        /* ERROR */
+
+        if (
+
+            !response.ok ||
+
+            !data.ok
+
+        ) {
+
+
+            console.error(
+                "REMOVE ERROR:",
+                data
+            );
+
+
+            showToast(
+
+                data.error ||
+                "Could not remove ally",
+
+                "error"
+
+            );
+
+
+            btn.disabled = false;
+
+
+            btn.innerText =
+                oldText;
+
+
+            return;
+
+        }
+
+
+        /* SUCCESS */
+
+        showToast(
+            "Ally removed successfully",
+            "success"
+        );
+
+
+        if (card) {
+
+
+            card.style.transition =
+                "all 0.4s ease";
+
+
+            card.style.height =
+                card.offsetHeight + "px";
+
+
+            card.style.opacity =
+                "0";
+
+
+            card.style.transform =
+                "translateX(60px)";
+
+
+            setTimeout(() => {
+
+
+                card.style.margin =
+                    "0";
+
+
+                card.style.paddingTop =
+                    "0";
+
+
+                card.style.paddingBottom =
+                    "0";
+
+
+                card.style.height =
+                    "0";
+
+
+                card.style.overflow =
+                    "hidden";
+
+
+            }, 180);
+
+
+            setTimeout(() => {
+
+
+                card.remove();
+
+
+                updateAllyCount();
+
+
+            }, 500);
+
+
+        }
+
+
+    }
+
+    catch (error) {
+
+
+        console.error(
+            "REMOVE ALLY ERROR:",
+            error
+        );
+
+
+        showToast(
+            "Something went wrong",
+            "error"
+        );
+
+
+        btn.disabled = false;
+
+
+        btn.innerText =
+            oldText;
+
+
+    }
+
+
+}
+
+
+
+/* =========================
+   UPDATE ALLY COUNT
+========================= */
+
+function updateAllyCount() {
+
+
+    const cards =
+        document.querySelectorAll(
+            ".ally-card"
+        );
+
+
+    const count =
+        cards.length;
+
+
+    const countBox =
+        document.getElementById(
+            "allyCount"
+        );
+
+
+    if (countBox) {
+
+        countBox.innerText =
+            count;
+
+    }
+
+
+    /* EMPTY STATE */
+
+    if (count === 0) {
+
+
+        const list =
+            document.getElementById(
+                "followersList"
+            );
+
+
+        if (list) {
+
+
+            list.innerHTML = `
+
+                <div id="emptyState"
+                     class="mt-14
+                            bg-white
+                            rounded-3xl
+                            p-10
+                            text-center
+                            shadow-xl
+                            border border-cyan-100">
+
+                    <div class="text-6xl mb-5">
+
+                        🤝
+
+                    </div>
+
+
+                    <h3 class="font-extrabold
+                               text-xl
+                               text-slate-800">
+
+                        No Allies Yet
+
+                    </h3>
+
+
+                    <p class="text-sm
+                              text-slate-500
+                              mt-2">
+
+                        No allies are currently following you.
+
+                    </p>
+
+
+                </div>
+
+            `;
+
+
+        }
+
+
+    }
+
+
+}
+
+
+
+/* =========================
+   CUSTOM TOAST
+========================= */
+
+function showToast(
+    message,
+    type = "success"
+) {
+
+
+    const toast =
+        document.getElementById(
+            "toast"
+        );
+
+
+    toast.innerText =
+        message;
+
+
+    toast.classList.remove(
+        "hidden",
+        "bg-emerald-500",
+        "bg-red-500",
+        "bg-slate-700"
+    );
+
+
+    if (type === "success") {
+
+
+        toast.classList.add(
+            "bg-emerald-500"
+        );
+
+
+    }
+
+    else if (type === "error") {
+
+
+        toast.classList.add(
+            "bg-red-500"
+        );
+
+
+    }
+
+    else {
+
+
+        toast.classList.add(
+            "bg-slate-700"
+        );
+
+
+    }
+
+
+    setTimeout(() => {
+
+
+        toast.classList.add(
+            "hidden"
+        );
+
+
+    }, 2500);
+
+
+}
+
+
+
+/* =========================
+   CLICK OUTSIDE MODAL
+========================= */
+
+document
+.getElementById("removeModal")
+.addEventListener(
+    "click",
+    function(event) {
+
+
+        if (
+            event.target === this
+        ) {
+
+
+            closeRemoveModal();
+
+
+        }
+
+
+    }
+);
+
+
+</script>
+
+
+
+<!-- =========================
+     SOCKET
+========================= -->
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
+
 <script>
-window.me = {{ session.get("user_id")|tojson }};
+
+window.me =
+{{ session.get("user_id")|tojson }};
+
 </script>
+
 
 <script src="/static/js/global_call.js"></script>
 
-</body>
-</html>
 
+</body>
+
+</html>

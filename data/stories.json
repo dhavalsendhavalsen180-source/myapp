@@ -1,24 +1,16 @@
 [
   {
-    "id": 2,
-    "user_id": "1",
-    "filename": "1_1787300402_1000613596.jpg",
-    "timestamp": 1787300402,
-    "viewers": [
-      1
-    ],
-    "likes": [],
-    "reactions": {}
-  },
-  {
     "id": 3,
     "user_id": "2",
     "filename": "2_1787303069_1000613596.jpg",
     "timestamp": 1787303069,
     "viewers": [
-      2
+      2,
+      24
     ],
-    "likes": [],
+    "likes": [
+      "24"
+    ],
     "reactions": {}
   }
 ]

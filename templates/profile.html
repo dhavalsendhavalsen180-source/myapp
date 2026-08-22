@@ -299,7 +299,67 @@ body{
     animation: alliedPop .5s cubic-bezier(.2,.8,.2,1);
 }
 
-  </style>
+/* =========================
+   CLEAN ROTATING SETTINGS
+========================= */
+
+.settings-btn{
+    width:44px;
+    height:44px;
+
+    border-radius:50% !important;
+
+    background:#ffffff;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    flex-shrink:0;
+
+    box-shadow:
+        0 0 10px rgba(6,182,212,.35),
+        0 4px 15px rgba(37,99,235,.18);
+
+    transition:transform .25s ease;
+}
+
+/* Hover / tap */
+.settings-btn:active{
+    transform:scale(.90);
+}
+
+
+/* SIRF ANDAR WALA CHAKRA GHUMEGA */
+
+.settings-btn svg{
+    width:23px;
+    height:23px;
+
+    filter:
+        drop-shadow(0 0 2px #06b6d4)
+        drop-shadow(0 0 5px rgba(124,58,237,.6));
+
+    animation:
+        gearSpin 3s linear infinite;
+}
+
+
+/* GEAR ROTATION */
+
+@keyframes gearSpin{
+
+    from{
+        transform:rotate(0deg);
+    }
+
+    to{
+        transform:rotate(360deg);
+    }
+
+}
+
+</style>
 
 </head>
 
@@ -403,7 +463,7 @@ body{
 
       <!-- SETTINGS -->
       <a href="/profile/settings"
-         class="w-11 h-11 rounded-2xl bg-white shadow border border-cyan-100 flex items-center justify-center">
+         class="settings-btn">
 
         <svg width="21"
              height="21"
@@ -414,7 +474,7 @@ body{
 
           <circle cx="12" cy="12" r="3"/>
 
-          <path d="M19 12l2-1-1-3-2 .3a7 7 0 0 0-1.2-1.2l.3-2-3-1-1 2a7 7 0 0 0-1.6 0l-1-2-3 1 .3 2A7 7 0 0 0 6 8.3L4 8l-1 3 2 1a7 7 0 0 0 0 2l-2 1 1 3 2-.3A7 7 0 0 0 7.2 19l-.3 2 3 1 1-2a7 7 0 0 0 1.6 0l1 2 3-1-.3-2A7 7 0 0 0 18 15.7l2 .3 1-3-2-1a7 7 0 0 0 0-2z"/>
+        <path d="M19 12l2-1-1-3-2 .3a7 7 0 0 0-1.2-1.2l.3-2-3-1-1 2a7 7 0 0 0-1.6 0l-1-2-3 1 .3 2A7 7 0 0 0 6 8.3L4 8l-1 3 2 1a7 7 0 0 0 0 2l-2 1 1 3 2-.3A7 7 0 0 0 7.2 19l-.3 2 3 1 1-2a7 7 0 0 0 1.6 0l1 2 3-1-.3-2A7 7 0 0 0 18 15.7l2 .3 1-3-2-1a7 7 0 0 0 0-2z"/>
 
         </svg>
 
