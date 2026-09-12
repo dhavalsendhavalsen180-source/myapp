@@ -24,19 +24,28 @@ body{margin:0;background:#0b0b0b;color:#fff;font-family:Inter,system-ui,Arial}
 
   <h2 class="text-2xl font-bold mt-3">Editor</h2>
 
-<!-- MUSIC -->
+<!-- 🎵 MUSIC / ORIGINAL AUDIO -->
 <div class="mt-4 flex items-center gap-3">
 
-<a href="/music?media_path={{ media_path }}&mode={{ mode }}"
-   class="px-4 py-2 rounded-xl bg-violet-600 text-white font-semibold">
-    🎵 Select Music
+<a
+href="/music?media_path={{ media_path | urlencode }}&mode={{ mode | urlencode }}{% if request.args.get('music_id') %}&music_id={{ request.args.get('music_id') | urlencode }}{% endif %}{% if request.args.get('original_audio_id') %}&original_audio_id={{ request.args.get('original_audio_id') | urlencode }}{% endif %}"
+class="px-4 py-2 rounded-xl bg-violet-600 text-white font-semibold">
+
+    🎵 Select Song
+
 </a>
 
-  {% if request.args.get("music_id") %}
-  <span class="text-green-400 font-semibold">
-      ✅ Music Selected
-  </span>
-  {% endif %}
+{% if request.args.get("music_id") %}
+<span class="text-green-400 font-semibold">
+    🎵 Song Selected
+</span>
+{% endif %}
+
+{% if request.args.get("original_audio_id") %}
+<span class="text-cyan-400 font-semibold">
+    🎙 Original Audio Selected
+</span>
+{% endif %}
 
 </div>
 
@@ -248,6 +257,8 @@ txt.oninput=()=>{
 
     const musicId = new URLSearchParams(window.location.search).get("music_id") || "";
 
+    const originalAudioId = new URLSearchParams(window.location.search).get("original_audio_id") || "";
+
     const mediaPath = new URLSearchParams(window.location.search).get("media_path") || "";
 
     const originalVolume = document.getElementById("originalVolume")?.value || 100;
@@ -257,6 +268,7 @@ txt.oninput=()=>{
     "/create/editor?mode={{ mode }}" +
     "&media_path=" + encodeURIComponent(mediaPath) +
     "&music_id=" + encodeURIComponent(musicId) +
+    "&original_audio_id=" + encodeURIComponent(originalAudioId) +
     "&original_volume=" + encodeURIComponent(originalVolume) +
     "&music_volume=" + encodeURIComponent(musicVolume),
     {

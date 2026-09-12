@@ -40,6 +40,7 @@ def get_user_id():
     if isinstance(uid, dict):
         return uid.get("id", 0)
     return uid
+
 # ===============================
 # 🎵 MIX VIDEO + MUSIC (PART 1)
 # ===============================
@@ -71,8 +72,10 @@ def mix_audio_with_video(
 
     output_path = os.path.splitext(video_path)[0] + "_mixed.mp4"
 
+    # ===============================
+    # 🎚 PARSE AUDIO SETTINGS
+    # ===============================
     try:
-
         original_volume = float(original_volume) / 100.0
         music_volume = float(music_volume) / 100.0
 
@@ -80,33 +83,66 @@ def mix_audio_with_video(
         music_end = float(music_end)
 
     except Exception as e:
-
-        print("Volume parse error:", e)
+        print("Audio values parse error:", e)
 
         original_volume = 1.0
         music_volume = 0.7
         music_start = 0
         music_end = 30
-        command = [
+
+    # Safety
+    if music_end <= music_start:
+        music_end = music_start + 30
+
+    # ===============================
+    # 🎬 FFMPEG COMMAND
+    # ===============================
+    command = [
         "ffmpeg",
         "-y",
+
+        # Original video
         "-i", video_path,
+
+        # Selected music
         "-ss", str(music_start),
         "-to", str(music_end),
         "-i", music_path,
+
+        # Mix original + music
         "-filter_complex",
         (
             f"[0:a]volume={original_volume}[a0];"
             f"[1:a]volume={music_volume}[a1];"
             "[a0][a1]amix=inputs=2:duration=first[aout]"
         ),
+
+        # Video
         "-map", "0:v",
+
+        # Mixed audio
         "-map", "[aout]",
+
+        # Keep original video quality
         "-c:v", "copy",
+
+        # Encode mixed audio
         "-c:a", "aac",
+
+        # Finish with video duration
         "-shortest",
+
         output_path
     ]
+
+    # ===============================
+    # 🚀 RUN FFMPEG
+    # ===============================
+    try:
+        print("🎵 Mixing music with video...")
+        print("Video:", video_path)
+        print("Music:", music_path)
+
         subprocess.run(
             command,
             check=True,
@@ -114,23 +150,157 @@ def mix_audio_with_video(
             stderr=subprocess.PIPE
         )
 
+        # Replace original video with mixed video
         if os.path.exists(output_path):
             os.replace(output_path, video_path)
+            print("✅ Music mixed successfully")
 
         return video_path
 
     except subprocess.CalledProcessError as e:
-
-        print("FFmpeg Error:")
+        print("❌ FFmpeg Error:")
         print(e.stderr.decode(errors="ignore"))
 
         return video_path
 
     except Exception as e:
-
-        print("Audio Mix Error:", e)
+        print("❌ Audio Mix Error:", e)
 
         return video_path
+
+# ===============================
+# 🎙 ORIGINAL AUDIO EXTRACT
+# ===============================
+
+ORIGINAL_AUDIO_DIR = os.path.join(
+    "static",
+    "uploads",
+    "original_audio"
+)
+
+os.makedirs(
+    ORIGINAL_AUDIO_DIR,
+    exist_ok=True
+)
+
+
+def extract_original_audio(
+    video_path,
+    user_id,
+    source_type,
+    source_media_id
+):
+    """
+    Video se original audio extract karega
+    aur original_audio table me save karega.
+    """
+
+    # Unique audio filename
+    audio_filename = (
+        f"{uuid.uuid4().hex}_original.m4a"
+    )
+
+    audio_path = os.path.join(
+        ORIGINAL_AUDIO_DIR,
+        audio_filename
+    )
+
+    try:
+
+        command = [
+            "ffmpeg",
+            "-y",
+
+            "-i",
+            video_path,
+
+            # Video nahi, sirf audio
+            "-vn",
+
+            # AAC audio
+            "-c:a",
+            "aac",
+
+            "-b:a",
+            "128k",
+
+            audio_path
+        ]
+
+        subprocess.run(
+            command,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        # Audio file bana ya nahi
+        if not os.path.exists(audio_path):
+            print(
+                "❌ Original audio extraction failed"
+            )
+            return None
+
+        # Database save
+        conn = get_conn()
+        c = conn.cursor()
+
+        title = (
+            f"Original audio by user {user_id}"
+        )
+
+        c.execute("""
+            INSERT INTO original_audio
+            (
+                user_id,
+                source_type,
+                source_media_id,
+                audio_file,
+                title
+            )
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            source_type,
+            source_media_id,
+            audio_filename,
+            title
+        ))
+
+        original_audio_id = c.lastrowid
+
+        conn.commit()
+        conn.close()
+
+        print(
+            "✅ Original audio extracted:",
+            original_audio_id
+        )
+
+        return original_audio_id
+
+    except subprocess.CalledProcessError as e:
+
+        print(
+            "❌ FFmpeg Original Audio Error:"
+        )
+
+        print(
+            e.stderr.decode(
+                errors="ignore"
+            )
+        )
+
+        return None
+
+    except Exception as e:
+
+        print(
+            "❌ Original Audio Error:",
+            e
+        )
+
+        return None
 
 # ===============================
 # 🎥 CREATE HOME (CAMERA UI)
@@ -164,9 +334,15 @@ def editor():
         save_path = os.path.join(EDITOR_TEMP_DIR, newname)
         f.save(save_path)
 
-        return redirect(url_for("create.editor", media_path=newname, mode=request.args.get("mode","post")))
+        return redirect(
+            url_for(
+                "create.editor",
+                media_path=newname,
+                mode=request.args.get("mode", "post")
+            )
+        )
 
-    # Exported final media_path from editor
+    # Exported final media from editor
     if request.method == "POST" and request.files.get("export"):
         f = request.files.get("export")
         filename = secure_filename(f.filename) or "export.webm"
@@ -175,14 +351,24 @@ def editor():
         save_path = os.path.join(EDITOR_TEMP_DIR, newname)
         f.save(save_path)
 
+        # 🎵 Keep music + original audio + volume settings while opening Publish page
         return redirect(
             url_for(
                 "create.publish",
                 media_path=newname,
                 mode=request.args.get("mode", "post"),
+
+                # 🎵 Music
                 music_id=request.args.get("music_id", ""),
                 music_start=request.args.get("music_start", 0),
-                music_end=request.args.get("music_end", 30)
+                music_end=request.args.get("music_end", 30),
+
+                # 🎙 Original Audio
+                original_audio_id=request.args.get("original_audio_id", ""),
+
+                # 🎚 Volume
+                original_volume=request.args.get("original_volume", 100),
+                music_volume=request.args.get("music_volume", 70)
             )
         )
 
@@ -190,18 +376,25 @@ def editor():
     mode = request.args.get("mode", "post")
 
     music = None
-
     music_id = request.args.get("music_id")
 
     if music_id:
         conn = sqlite3.connect(DB_NAME)
         conn.row_factory = sqlite3.Row
-        music = conn.execute("SELECT * FROM music WHERE id=?", (music_id,)).fetchone()
+
+        music = conn.execute(
+            "SELECT * FROM music WHERE id=?",
+            (music_id,)
+        ).fetchone()
+
         conn.close()
 
-
-    return render_template("create/editor.html", media_path=media_path, mode=mode, music=music)
-
+    return render_template(
+        "create/editor.html",
+        media_path=media_path,
+        mode=mode,
+        music=music
+    )
 
 # ===============================
 # 🚀 PUBLISH PAGE
@@ -223,6 +416,9 @@ def publish():
         music_id = request.form.get("music_id")
         music_start = request.form.get("music_start", 0)
         music_end = request.form.get("music_end", 30)
+
+        # 🎙 Selected Original Audio
+        original_audio_id = request.form.get("original_audio_id", "").strip()
 
         original_volume = request.form.get("original_volume", 100)
         music_volume = request.form.get("music_volume", 70)
@@ -335,6 +531,51 @@ def publish():
 
             reel_id = c.lastrowid
 
+            # 🎙 REEL KA ORIGINAL AUDIO EXTRACT KARO
+            original_audio_id = None
+
+            if dest.lower().endswith((
+                ".mp4",
+                ".mov",
+                ".webm",
+                ".mkv",
+                ".avi",
+                ".m4v"
+            )):
+                conn.commit()
+
+                original_audio_id = extract_original_audio(
+                    dest,
+                    user_id,
+                    "reel",
+                    reel_id
+                )
+
+                if original_audio_id:
+                    c.execute("""
+                        INSERT INTO media_audio
+                        (
+                            media_type,
+                            media_id,
+                            music_id,
+                            original_audio_id,
+                            start_time,
+                            end_time,
+                            original_volume,
+                            music_volume
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        "reel",
+                        reel_id,
+                        music_id if music_id else None,
+                        original_audio_id,
+                        music_start,
+                        music_end,
+                        original_volume,
+                        music_volume
+                    ))
+
             if music_id:
                 c.execute("""
                     INSERT INTO reel_audio
@@ -384,23 +625,46 @@ def publish():
 
             save_stories(stories)
 
-            if music_id:
+            # 🎙 STORY KA ORIGINAL AUDIO EXTRACT KARO
+            original_audio_id = None
+
+            if dest.lower().endswith((
+                ".mp4",
+                ".mov",
+                ".webm",
+                ".mkv",
+                ".avi",
+                ".m4v"
+            )):
+                conn.commit()
+
+                original_audio_id = extract_original_audio(
+                    dest,
+                    user_id,
+                    "story",
+                    story_id
+                )
+
+            # 🎵 STORY KA AUDIO DATABASE ME SAVE KARO
+            if music_id or original_audio_id:
                 c.execute("""
                     INSERT INTO media_audio
                     (
                         media_type,
                         media_id,
                         music_id,
+                        original_audio_id,
                         start_time,
                         end_time,
                         original_volume,
                         music_volume
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     "story",
                     story_id,
-                    music_id,
+                    music_id if music_id else None,
+                    original_audio_id,
                     music_start,
                     music_end,
                     original_volume,
@@ -432,6 +696,32 @@ def publish():
 
             post_id = c.lastrowid
 
+            # 🎙 POST KA ORIGINAL AUDIO
+            # Agar user ne Music page se original audio select kiya hai
+            # to wahi audio use hoga.
+            # Agar select nahi kiya aur uploaded media video hai,
+            # tab video ka original audio extract hoga.
+
+            if not original_audio_id:
+
+                if dest.lower().endswith((
+                    ".mp4",
+                    ".mov",
+                    ".webm",
+                    ".mkv",
+                    ".avi",
+                    ".m4v"
+                )):
+
+                    conn.commit()
+
+                    original_audio_id = extract_original_audio(
+                        dest,
+                        user_id,
+                        "post",
+                        post_id
+                    )
+
             db_path = "/static/uploads/posts/" + dest_name
 
             c.execute("""
@@ -446,29 +736,31 @@ def publish():
                 db_path
             ))
 
-            if music_id:
+            # 🎵 POST KA AUDIO DATABASE ME SAVE KARO
+            if music_id or original_audio_id:
                 c.execute("""
                     INSERT INTO media_audio
                     (
                         media_type,
                         media_id,
                         music_id,
+                        original_audio_id,
                         start_time,
                         end_time,
                         original_volume,
                         music_volume
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     "post",
                     post_id,
-                    music_id,
+                    music_id if music_id else None,
+                    original_audio_id,
                     music_start,
                     music_end,
                     original_volume,
                     music_volume
                 ))
-
             conn.commit()
             conn.close()
 

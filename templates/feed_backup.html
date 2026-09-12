@@ -1,0 +1,1610 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="manifest" href="/manifest.json?v=1">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>inschat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+.carousel { 
+    position: relative; 
+    overflow: hidden; 
+}
+
+.carousel-track {
+    display: flex;
+    transition: transform 0.3s ease-in-out;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.carousel-track::-webkit-scrollbar {
+    display: none;
+}
+
+.carousel-track > * {
+    flex: 0 0 100%;
+    width: 100%;
+    height: clamp(360px, 110vw, 560px);
+    scroll-snap-align: start;
+    position: relative;
+}
+
+.carousel-track video {
+    display: block;
+}
+
+/* ================================
+   INSTAGRAM STYLE POST MEDIA
+================================ */
+
+.carousel,
+.post-card > .relative {
+    width: 100%;
+    background: #000;
+}
+
+/* Har carousel slide same proper size */
+.carousel-track > * {
+    flex: 0 0 100%;
+    width: 100%;
+    height: clamp(360px, 110vw, 560px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
+}
+
+/* Image aur video full media area me */
+.carousel-track img,
+.carousel-track video,
+.post-card > .relative > img,
+.post-card > .relative > video {
+    width: 100%;
+    height: clamp(360px, 110vw, 560px);
+    max-width: 100%;
+    display: block;
+    object-fit: contain;
+    background: #000;
+}
+
+/* Single video wrapper */
+.post-card > .relative > div.relative {
+    width: 100%;
+    height: clamp(360px, 110vw, 560px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+/* Video touch layer bhi exact media size cover kare */
+.video-touch-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+}
+
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.45);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 9999px;
+    font-size: 22px;
+    z-index: 10;
+}
+
+.carousel-btn.left {
+    left: 10px;
+}
+
+.carousel-btn.right {
+    right: 10px;
+}
+
+.heart{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%) scale(0);
+    font-size:110px;
+    opacity:0;
+    pointer-events:none;
+    z-index:999;
+
+    filter: drop-shadow(0 0 15px rgba(255,0,80,.8))
+            drop-shadow(0 0 35px rgba(255,0,80,.5));
+}
+
+.heart.show{
+    animation: heartPop 0.9s ease forwards;
+}
+
+@keyframes heartPop{
+
+    0%{
+        opacity:0;
+        transform:translate(-50%,-50%) scale(0);
+    }
+
+    20%{
+        opacity:1;
+        transform:translate(-50%,-50%) scale(1.45);
+    }
+
+    35%{
+        transform:translate(-50%,-50%) scale(1.1);
+    }
+
+    50%{
+        transform:translate(-50%,-50%) scale(1.3);
+    }
+
+    70%{
+        opacity:1;
+        transform:translate(-50%,-50%) scale(1);
+    }
+
+    100%{
+        opacity:0;
+        transform:translate(-50%,-50%) scale(1.8);
+    }
+}
+
+
+    .no-scrollbar::-webkit-scrollbar { display:none; }
+
+.story-ring{
+  padding:3px;
+  background: linear-gradient(135deg,#00b4d8,#0077b6,#023e8a);
+  border-radius:9999px;
+}
+
+    .story-bar {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 15px;
+
+      overflow-x: auto;
+      white-space: nowrap;
+
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      background: white;
+
+     -webkit-overflow-scrolling: touch;
+    }
+
+.story-item {
+  flex: 0 0 auto;
+  text-align: center;
+  width: 70px;
+}
+
+.my-story-wrapper{
+  position: relative;
+  display: inline-block;
+}
+    .story-ring2 { border: 2px solid white;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      padding: 3px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .story-ring2 img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+.my-story{
+  background:linear-gradient(135deg,#22c55e,#16a34a,#15803d)!important;
+}
+
+    .story-ring2.seen {
+      background: #ccc;
+    }
+
+
+    .story-label {
+      font-size: 12px;
+      margin-top: 5px;
+      width: 70px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+      color:#555;
+    }
+
+.bottom-nav svg{
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: .25s ease;
+}
+
+.bottom-nav a:hover svg{
+    transform: scale(1.12);
+}
+
+.bottom-nav .active svg{
+    color:#3b82f6;
+}
+
+.add-story-btn{
+    position:absolute;
+    bottom:0;
+    right:0;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:#2563eb;
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    border:2px solid #fff;
+    font-size:13px;
+    font-weight:bold;
+}
+
+.story-active{
+    border-radius:50%;
+    animation:storyGlow 1.7s infinite ease-in-out;
+}
+
+.story-seen{
+    border-radius:50%;
+    animation:none;          /* Animation band */
+    filter:none;
+    opacity: 1;              /* Thoda grey/seen look */
+}
+
+@keyframes storyGlow{
+
+    0%{
+        transform:scale(1);
+        filter:drop-shadow(0 0 0px #22c55e);
+    }
+
+    50%{
+        transform:scale(1.08);
+        filter:
+            drop-shadow(0 0 8px #22c55e)
+            drop-shadow(0 0 16px #22c55e);
+    }
+
+    100%{
+        transform:scale(1);
+        filter:drop-shadow(0 0 0px #22c55e);
+    }
+}
+
+.post-video{
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    touch-action: manipulation;
+}
+
+.video-touch-layer{
+    position:absolute;
+    inset:0;
+    z-index:20;
+
+    background:transparent;
+
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+
+    touch-action:pan-y;
+}
+
+html,
+body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.post-card {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.post-card img,
+.post-card video {
+    max-width: 100%;
+}
+
+/* =========================================
+   INSTAGRAM STYLE POST MEDIA
+========================================= */
+
+.post-media {
+    width: 100%;
+    position: relative;
+    background: #000;
+    overflow: hidden;
+
+    /* Instagram jaisa clean media frame */
+    aspect-ratio: 4 / 5;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* IMAGE + VIDEO */
+.post-media img,
+.post-media video {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    /* Image crop nahi hogi */
+    object-fit: contain;
+
+    background: #000;
+}
+
+/* Carousel */
+.carousel {
+    width: 100%;
+    position: relative;
+    background: #000;
+    overflow: hidden;
+}
+
+.carousel-track {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+
+    scroll-snap-type: x mandatory;
+
+    scrollbar-width: none;
+
+    -webkit-overflow-scrolling: touch;
+}
+
+.carousel-track::-webkit-scrollbar {
+    display: none;
+}
+
+.carousel-track > * {
+    flex: 0 0 100%;
+    width: 100%;
+
+    aspect-ratio: 4 / 5;
+
+    scroll-snap-align: start;
+
+    position: relative;
+
+    background: #000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.carousel-track img,
+.carousel-track video {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: contain;
+
+    background: #000;
+}
+
+/* Video wrapper */
+.video-media-wrapper {
+    width: 100%;
+    height: 100%;
+
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Video touch layer */
+.video-touch-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+
+    background: transparent;
+
+    touch-action: pan-y;
+
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+
+    .post-media,
+    .carousel-track > * {
+        aspect-ratio: 4 / 5;
+    }
+
+}
+
+</style>
+
+<script>
+async function uploadStoryInstant(event) {
+    try {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const form = new FormData();
+        form.append("story", file);
+
+        const res = await fetch("/stories/add", {
+            method: "POST",
+            body: form
+        });
+
+        if (res.redirected) {
+            window.location.href = res.url;
+            return;
+        }
+
+        if (res.ok) {
+                    window.location.href = "/stories/view/{{ session.get('user_id') }}";
+                } else {
+                    const text = await res.text();
+                    console.error("Upload failed:", res.status, text);
+                    alert("Upload failed (" + res.status + ")");
+                }
+
+            } catch (e) {
+                console.error("Story Upload Error:", e);
+                alert("JS ERROR:\n" + (e.message || e));
+            } finally {
+              event.target.value = "";
+    }
+}
+</script>
+
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-cyan-500 via-blue-600 via-purple-600 to-yellow-400">
+<div class="pb-24">
+
+<input type="file" id="storyPicker" accept="image/*,video/*" style="display:none" onchange="uploadStoryInstant(event)">
+
+<!-- 💬NAVBAR🔔 -->
+<div class="flex items-center justify-between px-4 py-3 bg-white border-b sticky top-0 z-50">
+
+  <!-- LOGO -->
+  <h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 bg-clip-text text-transparent">inschat</h1>
+
+  <!-- RIGHT ICONS -->
+  <div class="flex items-center gap-5">
+
+    <!-- NOTIFICATION -->
+    <a href="/social/notifications" class="relative flex items-center justify-center">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 01-6 0"/>
+      </svg>
+
+      <span
+        id="notif-badge"
+        class="hidden absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1
+               rounded-full bg-red-500 text-white text-[10px] font-bold
+               flex items-center justify-center border-2 border-white">
+      </span>      
+    </a>
+
+    <!-- MESSAGES (DM) -->
+    <a href="/messages" class="flex items-center justify-center">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/>
+      </svg>
+    </a>
+
+  </div>
+
+</div>
+
+<!-- STORY BAR -->
+<div class="story-bar">
+
+  <!-- YOUR STORY -->
+  <div class="story-item my-story-wrapper">
+
+    <div class="story-ring2 {% if has_my_story and my_story_seen %}seen{% elif has_my_story %}my-story{% endif %}"
+         onclick="openStory('{{ current_user }}')">
+
+      <img src="{{ current_user_photo }}"
+           onerror="this.src='/static/default_dp.png'">
+    </div>
+
+    <div class="add-story-btn"
+         onclick="document.getElementById('storyPicker').click()">
+      ✦
+    </div>
+
+    <div class="story-label">Your Story</div>
+  </div>
+
+
+<!-- OTHER USERS -->
+{% for s in stories_bar %}
+
+  {% if s.user_id != current_user %}
+
+    <!--
+    Story sirf tab dikhegi:
+    1. Account public ho
+    2. Ya current user owner ka accepted follower ho
+    -->
+    {% if not s.is_private or s.can_view %}
+
+      <div class="story-item"
+           onclick="openStory('{{ s.user_id }}')">
+
+        <div class="story-ring2
+             {% if s.seen %}
+                seen
+             {% else %}
+                my-story
+             {% endif %}">
+
+          <img src="{{ s.last_img }}"
+               onerror="this.src='/static/default_dp.png'">
+
+        </div>
+
+        <div class="story-label">
+          {{ s.username }}
+        </div>
+
+      </div>
+
+    {% endif %}
+
+  {% endif %}
+
+{% endfor %}
+
+</div>
+<!-- FEED -->
+  <div class="w-full max-w-[560px] mx-auto mt-3 px-2 sm:px-3 space-y-4 pb-24">
+
+    {% for post in posts %}
+    {% if not post.is_private or post.is_following or post.owner_id == current_user %}
+    <div class="post-card bg-white/95 backdrop-blur-xl rounded-2xl shadow-lg overflow-hidden border border-white/40">
+
+<!-- HEADER -->
+<div class="flex items-center justify-between px-4 py-3">
+
+    <!-- USER -->
+    <a href="/profile/{{ post.owner_id }}"
+       class="flex items-center space-x-3">
+
+    <div class="
+    {% if post.has_story and not post.story_seen %}
+    story-active
+    {% elif post.story_seen %}
+    story-seen
+    {% endif %}
+    ">
+    <img src="{{ post.photo }}"
+         class="w-10 h-10 rounded-full object-cover"
+         onerror="this.src='/static/default_dp.png'">
+</div>
+
+        <div class="font-semibold hover:text-cyan-400 transition">
+            @{{ post.username }}
+        </div>
+
+    </a>
+
+        <!-- DELETE ONLY OWN POST -->
+<!-- POST MENU -->
+<div class="relative">
+
+  <button onclick="toggleMenu({{ post.id }})"
+          class="text-2xl text-gray-600">
+    ⋮
+  </button>
+
+  <div id="menu-{{ post.id }}"
+       class="hidden absolute right-0 top-8 bg-white border rounded-lg shadow-lg w-40 z-50">
+
+    <a href="/posts/{{ post.id }}"
+       class="block px-4 py-2 hover:bg-gray-100">
+      👁 View
+    </a>
+
+    {% if post.owner_id == current_user %}
+
+      <form method="POST"
+            action="/posts/delete/{{ post.id }}"
+            onsubmit="return confirm('Delete this post?')">
+
+        <button type="submit"
+                class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
+          🗑 Delete
+        </button>
+
+      </form>
+
+    {% else %}
+
+<form method="GET" action="/report">
+    <input type="hidden" name="target_type" value="post">
+    <input type="hidden" name="target_id" value="{{ post.id }}">
+    <input type="hidden" name="owner_id" value="{{ post.owner_id }}">
+
+    <button type="submit"
+            class="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100">
+        📃 Report
+    </button>
+</form>
+
+    {% endif %}
+
+  </div>
+
+</div>
+
+</div> <!-- END HEADER -->
+
+<!-- MEDIA (IMAGE + VIDEO CAROUSEL + DOUBLE TAP) -->
+<div class="relative">
+
+  {% if post.images and post.images|length > 1 %}
+
+    <div class="carousel">
+
+      <div id="track-{{ post.id }}"
+           class="carousel-track no-scrollbar">
+
+        {% for img in post.images %}
+
+          {% set lower_media = img|lower %}
+
+          {% if lower_media.endswith('.mp4')
+                or lower_media.endswith('.webm')
+                or lower_media.endswith('.mov')
+                or lower_media.endswith('.mkv')
+                or lower_media.endswith('.avi')
+                or lower_media.endswith('.m4v') %}
+
+            <!-- VIDEO WRAPPER -->
+            <div class="video-media-wrapper">
+
+              <!-- VIDEO -->
+              <video
+                  id="video-{{ post.id }}-{{ loop.index }}"
+                  class="w-full h-auto block post-video"
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                  preload="metadata"
+                  disablepictureinpicture
+                  controlslist="nodownload nofullscreen noremoteplayback"
+                  oncontextmenu="return false;">
+
+                  <source src="{{ img }}">
+
+                  Your browser does not support video.
+
+              </video>
+
+              <!-- TRANSPARENT TOUCH LAYER -->
+              <div
+                  class="video-touch-layer"
+                  data-video-id="video-{{ post.id }}-{{ loop.index }}"
+                  data-post-id="{{ post.id }}">
+              </div>
+
+            </div>
+
+          {% else %}
+
+            <!-- IMAGE -->
+            <img
+                src="{{ img }}"
+                ondblclick="doubleTapLike({{ post.id }})"
+                ontouchend="onImageTap({{ post.id }})">
+
+          {% endif %}
+
+        {% endfor %}
+
+      </div>
+
+
+      <!-- LEFT BUTTON -->
+      <button
+          class="carousel-btn left"
+          onclick="scrollByTrack('{{ post.id }}', -1)">
+          ‹
+      </button>
+
+
+      <!-- RIGHT BUTTON -->
+      <button
+          class="carousel-btn right"
+          onclick="scrollByTrack('{{ post.id }}', +1)">
+          ›
+      </button>
+
+    </div>
+
+  {% elif post.images and post.images|length == 1 %}
+
+    {% set media = post.images[0] %}
+    {% set lower_media = media|lower %}
+
+    {% if lower_media.endswith('.mp4')
+          or lower_media.endswith('.webm')
+          or lower_media.endswith('.mov')
+          or lower_media.endswith('.mkv')
+          or lower_media.endswith('.avi')
+          or lower_media.endswith('.m4v') %}
+
+      <!-- SINGLE VIDEO WRAPPER -->
+      <div class="post-media video-media-wrapper">
+
+        <!-- VIDEO -->
+        <video
+          id="video-{{ post.id }}-single"
+          class="post-video"
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="metadata"
+          disablepictureinpicture
+          controlslist="nodownload nofullscreen noremoteplayback"
+          oncontextmenu="return false;">
+
+          <source src="{{ media }}">
+
+        </video>
+
+        <!-- TRANSPARENT TOUCH LAYER -->
+        <div
+          class="video-touch-layer"
+          data-video-id="video-{{ post.id }}-single"
+          data-post-id="{{ post.id }}">
+        </div>
+
+      </div>
+
+    {% else %}
+
+  <div class="post-media">
+
+      <img
+        src="{{ media }}"
+        ondblclick="doubleTapLike({{ post.id }})"
+        ontouchend="onImageTap({{ post.id }})">
+
+  </div>
+    {% endif %}
+
+  {% else %}
+
+    <div class="p-12 text-center text-gray-400">
+      No Media
+    </div>
+
+  {% endif %}
+
+</div>
+
+        <!-- HEART ANIMATION -->
+<div class="heart" id="heart-{{ post.id }}">
+    <span class="h h1">💞</span>
+</div>
+
+{% if post.music_file or post.original_audio_id %}
+<audio
+    class="post-audio"
+    src="{{ post.music_file }}"
+    preload="metadata"
+    loop>
+</audio>
+{% endif %}
+
+<!-- ACTION ROW -->
+<div class="px-4 pt-3">
+
+  <div class="flex items-center justify-between">
+
+    <!-- LEFT SIDE -->
+    <div class="flex items-center gap-4">
+
+      <!-- LIKE -->
+<button id="like-btn-{{ post.id }}"
+        onclick="toggleLike({{ post.id }}, this)">
+
+  <svg class="w-8 h-8 transition-all duration-300 hover:scale-125 {% if post.liked_by_me %}text-pink-500{% endif %}"
+       viewBox="0 0 24 24"
+       fill="{% if post.liked_by_me %}currentColor{% else %}none{% endif %}"
+       stroke="currentColor"
+       stroke-width="1.8"
+       stroke-linecap="round"
+       stroke-linejoin="round">
+
+    <path d="
+      M12 21
+      C11.2 20.4 3.5 15.4 3.5 9
+      C3.5 5.8 5.8 3.5 8.8 3.5
+      C10.7 3.5 11.8 4.4 12 5.7
+      C12.2 4.4 13.3 3.5 15.2 3.5
+      C18.2 3.5 20.5 5.8 20.5 9
+      C20.5 15.4 12.8 20.4 12 21Z"/>
+  </svg>
+
+</button>
+
+        <!-- COMMENT BUTTON -->
+<button onclick="openComment({{ post.id }})" class="icon-btn">
+
+  <svg class="w-7 h-7"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="1.8">
+
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/>
+  </svg>
+
+</button>
+
+        <!-- SHARE BUTTON -->
+<button onclick="openShare({{ post.id }})" class="icon-btn">
+
+  <svg class="w-7 h-7"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="1.8">
+
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M16 6l-4-4-4 4M12 2v14"/>
+  </svg>
+
+</button>
+
+</div>
+
+<!-- RIGHT SIDE: MUSIC + SAVE -->
+<div class="flex items-center gap-3">
+
+    <!-- 🎵 MUSIC BUTTON -->
+    {% if post.music_file or post.original_audio_id %}
+
+        {% if post.audio_type == "original" %}
+
+            <a href="/original-audio/{{ post.original_audio_id }}"
+               class="flex items-center gap-1.5
+                      max-w-[150px]
+                      overflow-hidden
+                      text-gray-800
+                      active:scale-95
+                      transition">
+
+                <svg
+                    class="w-5 h-5 flex-shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true">
+
+                    <path d="M12 3v11.55A4.5 4.5 0 1 0 14 18V7.65l7-1.75v8.65A4.5 4.5 0 1 0 23 18V3.4L12 6.15V3z"/>
+
+                </svg>
+
+                <span class="truncate text-sm font-medium">
+
+                    {{
+                        post.original_audio_title
+                        or "Original Audio"
+                    }}
+
+                </span>
+
+            </a>
+
+        {% else %}
+
+            <a href="/music/{{ post.music_id }}"
+               class="flex items-center gap-1.5
+                      max-w-[150px]
+                      overflow-hidden
+                      text-gray-800
+                      active:scale-95
+                      transition">
+
+                <svg
+                    class="w-5 h-5 flex-shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true">
+
+                    <path d="M12 3v11.55A4.5 4.5 0 1 0 14 18V7.65l7-1.75v8.65A4.5 4.5 0 1 0 23 18V3.4L12 6.15V3.4L12 6.15V3z"/>
+
+                </svg>
+
+                <span class="truncate text-sm font-medium">
+
+                    {{
+                        post.music_title
+                        or "Music"
+                    }}
+
+                </span>
+
+            </a>
+
+        {% endif %}
+
+    {% endif %}
+
+
+    <!-- 🔖 SAVE BUTTON -->
+    <button
+        id="save-btn-{{ post.id }}"
+        onclick="toggleSave({{ post.id }}, this)">
+
+        <svg class="w-7 h-7 {% if post.saved_by_me %}text-black{% endif %}"
+             viewBox="0 0 24 24"
+             fill="{% if post.saved_by_me %}currentColor{% else %}none{% endif %}"
+             stroke="currentColor"
+             stroke-width="1.8">
+  
+            <path stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/>
+        </svg>
+
+    </button>
+
+</div>
+
+</div>
+
+<!-- LIKE COUNT -->
+<div id="likes-count-{{ post.id }}"
+     class="mt-2 font-semibold text-sm">
+    {{ post.likes }} likes
+</div>
+
+</div> <!-- END flex items-center justify-between -->
+
+</div> <!-- END ACTION ROW -->
+
+<!-- yaha existing post ka visible content khatam -->
+
+{% else %}
+
+<div class="min-h-[360px]
+            flex flex-col
+            items-center
+            justify-center
+            text-center
+            px-6
+            bg-gradient-to-br
+            from-slate-50
+            via-cyan-50
+            to-purple-50">
+
+    <div class="w-20 h-20
+                rounded-full
+                bg-white
+                shadow-lg
+                flex
+                items-center
+                justify-center
+                text-4xl
+                mb-5">
+        🔒
+    </div>
+
+    <h3 class="text-xl font-extrabold text-slate-800">
+        This Post Is Private
+    </h3>
+
+    <p class="mt-2 text-sm text-slate-500 max-w-xs">
+        @{{ post.username }}'s post is only available
+        to approved allies.
+    </p>
+
+    <a href="/profile/{{ post.owner_id }}"
+       class="mt-5 px-5 py-2.5
+              rounded-full
+              text-white
+              font-bold
+              bg-gradient-to-r
+              from-cyan-500
+              via-blue-500
+              to-purple-600
+              shadow-lg">
+        View Profile
+    </a>
+
+</div>
+
+{% endif %}
+
+</div> <!-- END POST CARD -->
+
+{% endfor %}
+
+</div> <!-- END FEED -->
+
+<!-- 🏠🔍➕🎬BOTTOM NAV -->
+<div class="bottom-nav fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-white/30 shadow-2xl flex justify-around py-3 text-2xl">
+  <a href="/posts/feed" class="flex items-center justify-center">
+<svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+  <path d="M4 11.5L12 4l8 7.5"/>
+  <path d="M6 10.5V20h12v-9.5"/>
+  <path d="M10 20v-5h4v5"/>
+</svg>
+</a>
+  <a href="/explore" class="flex items-center justify-center">
+<svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+  <circle cx="12" cy="12" r="9"/>
+  <path d="M15.8 8.2L13.6 13.6L8.2 15.8L10.4 10.4L15.8 8.2Z"/>
+  </svg>
+</a>
+  <a href="/create" class="flex items-center justify-center">
+<svg class="w-7 h-7" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+  <rect x="4" y="4" width="16" height="16" rx="4"/>
+  <path d="M12 8v8M8 12h8"/>
+</svg>
+</a>
+  <a href="/reels" class="flex items-center justify-center">
+<svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+  <rect x="4" y="4" width="16" height="16" rx="4"/>
+  <path d="M8 4l3 4"/>
+  <path d="M13 4l3 4"/>
+  <path d="M10 10l5 3-5 3z" fill="currentColor" stroke="none"/>
+</svg>
+</a>
+  <a href="/profile/{{ current_user }}">
+  <img src="{{ current_user_photo }}"
+       class="w-7 h-7 rounded-full object-cover border"
+       onerror="this.src='/static/default_dp.png'">
+</a>
+</div>
+
+<script>
+async function toggleLike(postId, btn){
+
+try{
+
+    const res = await fetch("/posts/like_toggle/" + postId, {
+        method: "POST"
+    });
+
+    if(res.ok){
+
+        const svg = btn.querySelector("svg");
+
+        const countBox = document.getElementById(
+            "likes-count-" + postId
+        );
+
+        let current = parseInt(countBox.innerText) || 0;
+
+        if(svg.getAttribute("fill") === "currentColor"){
+
+            svg.setAttribute("fill", "none");
+            svg.classList.remove("text-red-500");
+
+            countBox.innerText = (current - 1) + " likes";
+
+        }else{
+
+            svg.setAttribute("fill", "currentColor");
+            svg.classList.add("text-red-500");
+
+            countBox.innerText = (current + 1) + " likes";
+
+            // ❤️ Heart Animation
+            const heart = document.getElementById(
+                "heart-" + postId
+            );
+
+            if(heart){
+
+                heart.classList.remove("show");
+
+                void heart.offsetWidth;
+
+                heart.classList.add("show");
+
+                setTimeout(() => {
+                    heart.classList.remove("show");
+                }, 900);
+            }
+        }
+
+    }
+
+}catch(e){
+    console.log(e);
+}
+
+}
+
+function doubleTapLike(postId){
+
+    const heart = document.getElementById("heart-" + postId);
+
+    if (heart){
+        heart.classList.remove("show");
+        void heart.offsetWidth;
+        heart.classList.add("show");
+
+        setTimeout(() => {
+            heart.classList.remove("show");
+        }, 900);
+    }
+
+    const btn = document.getElementById("like-btn-" + postId);
+    const svg = btn.querySelector("svg");
+
+    if (svg.getAttribute("fill") !== "currentColor"){
+        toggleLike(postId, btn);
+    }
+}
+
+</script>
+
+<script>
+async function toggleSave(postId, btn){
+
+    try{
+
+        const res = await fetch("/posts/save_toggle/" + postId,{
+            method:"POST"
+        });
+
+        const data = await res.json();
+
+        if(data.ok){
+
+            const svg = btn.querySelector("svg");
+
+            if(data.action === "saved"){
+                svg.setAttribute("fill","currentColor");
+            }else{
+                svg.setAttribute("fill","none");
+            }
+
+        }
+
+    }catch(e){
+        console.log(e);
+    }
+
+}
+</script>
+
+<script>
+function toggleMenu(postId){
+
+  document.querySelectorAll("[id^='menu-']").forEach(el=>{
+    if(el.id !== "menu-" + postId){
+      el.classList.add("hidden");
+    }
+  });
+
+  document
+    .getElementById("menu-" + postId)
+    .classList.toggle("hidden");
+}
+
+document.addEventListener("click", function(e){
+
+  if(!e.target.closest(".relative")){
+    document.querySelectorAll("[id^='menu-']").forEach(el=>{
+      el.classList.add("hidden");
+    });
+  }
+
+});
+</script>
+
+<script>
+function openComment(postId){
+    window.location.href = "/posts/comments/" + postId;
+}
+</script>
+
+<script>
+function openStory(user_id){
+    window.location.href = "/stories/view/" + user_id;
+}
+</script>
+
+{% include "post_share.html" %}
+
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+window.me = {{ session.get("user_id")|tojson }};
+</script>
+
+<script src="/static/js/global_call.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const postCards = document.querySelectorAll(".post-card");
+
+    let activeAudio = null;
+    let activeCard = null;
+
+    function stopAudio(audio, reset = true) {
+
+        if (!audio) return;
+
+        audio.pause();
+
+        if (reset) {
+            audio.currentTime = 0;
+        }
+
+    }
+
+    function stopAllAudios(exceptAudio = null) {
+
+        document.querySelectorAll(".post-audio").forEach(audio => {
+
+            if (audio !== exceptAudio) {
+
+                audio.pause();
+                audio.currentTime = 0;
+
+            }
+
+        });
+
+    }
+
+    function playPostAudio(card) {
+
+        const audio = card.querySelector(".post-audio");
+
+        if (!audio) return;
+
+        if (activeAudio === audio) return;
+
+        stopAllAudios(audio);
+
+        activeAudio = audio;
+        activeCard = card;
+
+        audio.volume = 1.0;
+
+        audio.play().catch(() => {});
+
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+
+        let bestEntry = null;
+
+        entries.forEach(entry => {
+
+            if (
+                entry.isIntersecting &&
+                entry.intersectionRatio >= 0.55
+            ) {
+
+                if (
+                    !bestEntry ||
+                    entry.intersectionRatio >
+                    bestEntry.intersectionRatio
+                ) {
+
+                    bestEntry = entry;
+
+                }
+
+            }
+
+        });
+
+        if (bestEntry) {
+
+            playPostAudio(bestEntry.target);
+
+        } else {
+
+            const stillVisible = Array.from(postCards).some(card => {
+
+                const rect = card.getBoundingClientRect();
+
+                const visibleHeight =
+                    Math.max(
+                        0,
+                        Math.min(
+                            rect.bottom,
+                            window.innerHeight
+                        ) -
+                        Math.max(
+                            rect.top,
+                            0
+                        )
+                    );
+
+                const ratio =
+                    visibleHeight /
+                    Math.min(
+                        rect.height,
+                        window.innerHeight
+                    );
+
+                return ratio >= 0.55;
+
+            });
+
+            if (!stillVisible) {
+
+                stopAllAudios();
+
+                activeAudio = null;
+                activeCard = null;
+
+            }
+
+        }
+
+    }, {
+        threshold: [
+            0,
+            0.25,
+            0.55,
+            0.75,
+            1
+        ]
+    });
+
+    postCards.forEach(card => {
+
+        observer.observe(card);
+
+    });
+
+    document.addEventListener(
+        "visibilitychange",
+        () => {
+
+            if (document.hidden) {
+
+                stopAllAudios();
+
+                activeAudio = null;
+                activeCard = null;
+
+            }
+
+        }
+    );
+
+    window.addEventListener(
+        "pagehide",
+        () => {
+
+            stopAllAudios();
+
+        }
+    );
+
+});
+</script>
+
+<script>
+async function updateNotificationCount() {
+    try {
+        const res = await fetch("/social/notifications/count");
+        const data = await res.json();
+
+        const badge = document.getElementById("notif-badge");
+
+        if (!badge) return;
+
+        const count = Number(data.count || 0);
+
+        if (count > 0) {
+            badge.textContent = count > 99 ? "99+" : count;
+            badge.classList.remove("hidden");
+        } else {
+            badge.textContent = "";
+            badge.classList.add("hidden");
+        }
+
+    } catch (error) {
+        console.log("Notification count error:", error);
+    }
+}
+
+// Page open hote hi
+updateNotificationCount();
+
+// Har 5 second me count update
+setInterval(updateNotificationCount, 5000);
+</script>
+
+<script>
+
+document.querySelectorAll(".video-touch-layer").forEach(layer => {
+
+    const videoId = layer.dataset.videoId;
+    const postId = layer.dataset.postId;
+
+    const video = document.getElementById(videoId);
+
+    let holdTimer = null;
+    let holdActive = false;
+
+    let tapTimer = null;
+    let tapCount = 0;
+
+
+    /* =====================
+       FINGER DOWN
+       ===================== */
+
+    layer.addEventListener("pointerdown", function(e){
+
+        holdActive = false;
+
+        clearTimeout(holdTimer);
+
+        holdTimer = setTimeout(() => {
+
+            holdActive = true;
+
+            video.pause();
+
+            video.style.transform = "scale(0.97)";
+            video.style.transition = "transform 0.15s ease";
+
+        }, 2000);
+
+    });
+
+
+    /* =====================
+       FINGER RELEASE
+       ===================== */
+
+    layer.addEventListener("pointerup", function(e){
+
+        clearTimeout(holdTimer);
+
+        if(holdActive){
+
+            video.style.transform = "scale(1)";
+
+            video.play().catch(() => {});
+
+            holdActive = false;
+
+            return;
+        }
+
+        tapCount++;
+
+        clearTimeout(tapTimer);
+
+        tapTimer = setTimeout(() => {
+
+            if(tapCount === 1){
+
+                /* 1 TAP = SOUND */
+
+                if(video.muted){
+
+                    video.muted = false;
+                    video.volume = 1;
+
+                }else{
+
+                    video.muted = true;
+
+                }
+
+            }else if(tapCount >= 2){
+
+                /* 2 TAP = LIKE */
+
+                doubleTapLike(Number(postId));
+
+            }
+
+            tapCount = 0;
+
+        }, 250);
+
+    });
+
+
+    /* =====================
+       FINGER CANCEL
+       ===================== */
+
+    layer.addEventListener("pointercancel", function(){
+
+        clearTimeout(holdTimer);
+
+        if(holdActive){
+
+            video.style.transform = "scale(1)";
+
+            video.play().catch(() => {});
+
+            holdActive = false;
+
+        }
+
+    });
+
+
+    /* =====================
+       BLOCK LONG PRESS MENU
+       ===================== */
+
+    layer.addEventListener("contextmenu", function(e){
+
+        e.preventDefault();
+
+    });
+
+});
+
+</script>
+
+</body>
+</html>

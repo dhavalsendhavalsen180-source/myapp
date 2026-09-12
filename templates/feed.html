@@ -8,38 +8,108 @@
   <title>inschat</title>
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <style>
-    .carousel { position: relative; overflow: hidden; }
-    .carousel-track {
-      display:flex;
-      transition: transform 0.3s ease-in-out;
-      scroll-snap-type: x mandatory;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
+<style>
+.carousel { 
+    position: relative; 
+    overflow: hidden; 
+}
 
-    .carousel-track img {
-        flex: 0 0 100%;
-        width: 100%;
-        height: auto;
-        object-fit: contain;
-        background: transparent;
-        max-height: none;
-    }
+.carousel-track {
+    display: flex;
+    transition: transform 0.3s ease-in-out;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
 
-    .carousel-btn {
-      position:absolute;
-      top:50%;
-      transform:translateY(-50%);
-      background:rgba(0,0,0,0.45);
-      color:white;
-      padding:8px 12px;
-      border-radius:9999px;
-      font-size:22px;
-      z-index:10;
-    }
-    .carousel-btn.left { left:10px; }
-    .carousel-btn.right { right:10px; }
+.carousel-track::-webkit-scrollbar {
+    display: none;
+}
+
+.carousel-track > * {
+    flex: 0 0 100%;
+    width: 100%;
+    height: clamp(360px, 110vw, 560px);
+    scroll-snap-align: start;
+    position: relative;
+}
+
+.carousel-track video {
+    display: block;
+}
+
+/* ================================
+   INSTAGRAM STYLE POST MEDIA
+================================ */
+
+.carousel,
+.post-card > .relative {
+    width: 100%;
+    background: #000;
+}
+
+/* Har carousel slide same proper size */
+.carousel-track > * {
+    flex: 0 0 100%;
+    width: 100%;
+    height: clamp(360px, 110vw, 560px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
+}
+
+/* Image aur video full media area me */
+.carousel-track img,
+.carousel-track video,
+.post-card > .relative > img,
+.post-card > .relative > video {
+    width: 100%;
+    height: clamp(360px, 110vw, 560px);
+    max-width: 100%;
+    display: block;
+    object-fit: contain;
+    background: #000;
+}
+
+/* Single video wrapper */
+.post-card > .relative > div.relative {
+    width: 100%;
+    height: clamp(360px, 110vw, 560px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+/* Video touch layer bhi exact media size cover kare */
+.video-touch-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+}
+
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.45);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 9999px;
+    font-size: 22px;
+    z-index: 10;
+}
+
+.carousel-btn.left {
+    left: 10px;
+}
+
+.carousel-btn.right {
+    right: 10px;
+}
 
 .heart{
     position:absolute;
@@ -225,7 +295,48 @@
         filter:drop-shadow(0 0 0px #22c55e);
     }
 }
-  </style>
+
+.post-video{
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    touch-action: manipulation;
+}
+
+.video-touch-layer{
+    position:absolute;
+    inset:0;
+    z-index:20;
+
+    background:transparent;
+
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+
+    touch-action:pan-y;
+}
+
+html,
+body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.post-card {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.post-card img,
+.post-card video {
+    max-width: 100%;
+}
+
+</style>
 
 <script>
 async function uploadStoryInstant(event) {
@@ -369,12 +480,11 @@ async function uploadStoryInstant(event) {
 
 </div>
 <!-- FEED -->
-  <div class="max-w-xl mx-auto mt-4 space-y-6 pb-24">
+    <div class="w-full max-w-[560px] mx-auto mt-3 px-0 space-y-4 pb-24">
 
     {% for post in posts %}
     {% if not post.is_private or post.is_following or post.owner_id == current_user %}
-    <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/30">
-
+    <div class="post-card bg-white/95 backdrop-blur-xl rounded-2xl shadow-lg overflow-hidden border border-white/40">
 
 <!-- HEADER -->
 <div class="flex items-center justify-between px-4 py-3">
@@ -452,40 +562,172 @@ async function uploadStoryInstant(event) {
 
 </div> <!-- END HEADER -->
 
-      <!-- IMAGES (CAROUSEL + DOUBLE TAP) -->
-      <div class="relative">
+<!-- MEDIA (IMAGE + VIDEO CAROUSEL + DOUBLE TAP) -->
+<div class="relative">
 
-        {% if post.images and post.images|length > 1 %}
-        <div class="carousel">
-          <div id="track-{{ post.id }}" class="carousel-track no-scrollbar">
+  {% if post.images and post.images|length > 1 %}
 
-            {% for img in post.images %}
-            <img src="{{ img }}"
-                 ondblclick="doubleTapLike({{ post.id }})"
-                 ontouchend="onImageTap({{ post.id }})">
-            {% endfor %}
+    <!-- MULTIPLE MEDIA -->
+    <div class="carousel">
+
+      <div id="track-{{ post.id }}"
+           class="carousel-track no-scrollbar">
+
+        {% for img in post.images %}
+
+          {% set lower_media = img|lower %}
+
+          <!-- EVERY MEDIA = SAME 4:5 SLIDE -->
+          <div class="post-media">
+
+            {% if lower_media.endswith('.mp4')
+                  or lower_media.endswith('.webm')
+                  or lower_media.endswith('.mov')
+                  or lower_media.endswith('.mkv')
+                  or lower_media.endswith('.avi')
+                  or lower_media.endswith('.m4v') %}
+
+              <!-- VIDEO -->
+              <div class="video-media-wrapper">
+
+                <video
+                  id="video-{{ post.id }}-{{ loop.index }}"
+                  class="post-video"
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                  preload="metadata"
+                  disablepictureinpicture
+                  controlslist="nodownload nofullscreen noremoteplayback"
+                  oncontextmenu="return false;"
+                >
+                  <source src="{{ img }}">
+                  Your browser does not support video.
+                </video>
+
+                <!-- VIDEO TOUCH -->
+                <div
+                  class="video-touch-layer"
+                  data-video-id="video-{{ post.id }}-{{ loop.index }}"
+                  data-post-id="{{ post.id }}">
+                </div>
+
+              </div>
+
+            {% else %}
+
+              <!-- IMAGE -->
+              <img
+                src="{{ img }}"
+                alt="Post"
+                ondblclick="doubleTapLike({{ post.id }})"
+                ontouchend="onImageTap({{ post.id }})"
+              >
+
+            {% endif %}
 
           </div>
 
-          <button class="carousel-btn left" onclick="scrollByTrack('{{ post.id }}', -1)">‹</button>
-          <button class="carousel-btn right" onclick="scrollByTrack('{{ post.id }}', +1)">›</button>
+        {% endfor %}
+
+      </div>
+
+      <!-- LEFT BUTTON -->
+      <button
+        type="button"
+        class="carousel-btn left"
+        onclick="scrollByTrack('{{ post.id }}', -1)">
+        ‹
+      </button>
+
+      <!-- RIGHT BUTTON -->
+      <button
+        type="button"
+        class="carousel-btn right"
+        onclick="scrollByTrack('{{ post.id }}', 1)">
+        ›
+      </button>
+
+    </div>
+
+  {% elif post.images and post.images|length == 1 %}
+
+    {% set media = post.images[0] %}
+    {% set lower_media = media|lower %}
+
+    <!-- SINGLE MEDIA -->
+    <div class="post-media">
+
+      {% if lower_media.endswith('.mp4')
+            or lower_media.endswith('.webm')
+            or lower_media.endswith('.mov')
+            or lower_media.endswith('.mkv')
+            or lower_media.endswith('.avi')
+            or lower_media.endswith('.m4v') %}
+
+        <!-- SINGLE VIDEO -->
+
+        <div class="video-media-wrapper">
+
+          <video
+            id="video-{{ post.id }}-single"
+            class="post-video"
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="metadata"
+            disablepictureinpicture
+            controlslist="nodownload nofullscreen noremoteplayback"
+            oncontextmenu="return false;"
+          >
+            <source src="{{ media }}">
+            Your browser does not support video.
+          </video>
+
+          <!-- VIDEO TOUCH -->
+          <div
+            class="video-touch-layer"
+            data-video-id="video-{{ post.id }}-single"
+            data-post-id="{{ post.id }}">
+          </div>
+
         </div>
 
-{% elif post.images and post.images|length == 1 %}
-<img src="{{ post.images[0] }}"
-     class="w-full h-auto block"
-     ondblclick="doubleTapLike({{ post.id }})"
-     ontouchend="onImageTap({{ post.id }})">
-{% else %}
-<div class="p-12 text-center text-gray-400">No Image</div>
-{% endif %}
+      {% else %}
+
+        <!-- SINGLE IMAGE -->
+
+        <img
+          src="{{ media }}"
+          alt="Post"
+          ondblclick="doubleTapLike({{ post.id }})"
+          ontouchend="onImageTap({{ post.id }})"
+        >
+
+      {% endif %}
+
+    </div>
+
+  {% else %}
+
+    <!-- NO MEDIA -->
+
+    <div class="p-12 text-center text-gray-400">
+      No Media
+    </div>
+
+  {% endif %}
+
+</div>
 
         <!-- HEART ANIMATION -->
 <div class="heart" id="heart-{{ post.id }}">
     <span class="h h1">💞</span>
 </div>
 
-{% if post.music_file %}
+{% if post.music_file or post.original_audio_id %}
 <audio
     class="post-audio"
     src="{{ post.music_file }}"
@@ -563,32 +805,107 @@ async function uploadStoryInstant(event) {
 </button>
 
 </div>
-    <!-- RIGHT SIDE SAVE -->
-    <button id="save-btn-{{ post.id }}"
-            onclick="toggleSave({{ post.id }}, this)">
 
-      <svg class="w-7 h-7 {% if post.saved_by_me %}text-black{% endif %}"
-           viewBox="0 0 24 24"
-           fill="{% if post.saved_by_me %}currentColor{% else %}none{% endif %}"
-           stroke="currentColor"
-           stroke-width="1.8">
+<!-- RIGHT SIDE: MUSIC + SAVE -->
+<div class="flex items-center gap-3">
 
-        <path stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/>
-      </svg>
+    <!-- 🎵 MUSIC BUTTON -->
+    {% if post.music_file or post.original_audio_id %}
+
+        {% if post.audio_type == "original" %}
+
+            <a href="/posts/original-audio/{{ post.original_audio_id }}"
+               class="flex items-center gap-1.5
+                      max-w-[150px]
+                      overflow-hidden
+                      text-gray-800
+                      active:scale-95
+                      transition">
+
+                <svg
+                    class="w-5 h-5 flex-shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true">
+
+                    <path d="M12 3v11.55A4.5 4.5 0 1 0 14 18V7.65l7-1.75v8.65A4.5 4.5 0 1 0 23 18V3.4L12 6.15V3z"/>
+
+                </svg>
+
+                <span class="truncate text-sm font-medium">
+
+                    {{
+                        post.original_audio_title
+                        or "Original Audio"
+                    }}
+
+                </span>
+
+            </a>
+
+        {% else %}
+
+            <a href="/music/{{ post.music_id }}"
+               class="flex items-center gap-1.5
+                      max-w-[150px]
+                      overflow-hidden
+                      text-gray-800
+                      active:scale-95
+                      transition">
+
+                <svg
+                    class="w-5 h-5 flex-shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true">
+
+                    <path d="M12 3v11.55A4.5 4.5 0 1 0 14 18V7.65l7-1.75v8.65A4.5 4.5 0 1 0 23 18V3.4L12 6.15V3.4L12 6.15V3z"/>
+
+                </svg>
+
+                <span class="truncate text-sm font-medium">
+
+                    {{
+                        post.music_title
+                        or "Music"
+                    }}
+
+                </span>
+
+            </a>
+
+        {% endif %}
+
+    {% endif %}
+
+
+    <!-- 🔖 SAVE BUTTON -->
+    <button
+        id="save-btn-{{ post.id }}"
+        onclick="toggleSave({{ post.id }}, this)">
+
+        <svg class="w-7 h-7 {% if post.saved_by_me %}text-black{% endif %}"
+             viewBox="0 0 24 24"
+             fill="{% if post.saved_by_me %}currentColor{% else %}none{% endif %}"
+             stroke="currentColor"
+             stroke-width="1.8">
+  
+            <path stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/>
+        </svg>
 
     </button>
 
-  </div>
+</div>
+
+</div>
 
 <!-- LIKE COUNT -->
 <div id="likes-count-{{ post.id }}"
      class="mt-2 font-semibold text-sm">
     {{ post.likes }} likes
 </div>
-
-</div> <!-- END flex items-center justify-between -->
 
 </div> <!-- END ACTION ROW -->
 
@@ -679,11 +996,6 @@ async function uploadStoryInstant(event) {
   <path d="M13 4l3 4"/>
   <path d="M10 10l5 3-5 3z" fill="currentColor" stroke="none"/>
 </svg>
-
-    <!-- play triangle -->
-    <path d="M10 9l6 3-6 3V9z" fill="currentColor"></path>
-
-  </svg>
 </a>
   <a href="/profile/{{ current_user }}">
   <img src="{{ current_user_photo }}"
@@ -857,34 +1169,167 @@ window.me = {{ session.get("user_id")|tojson }};
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-    const audios = document.querySelectorAll(".post-audio");
+    const postCards = document.querySelectorAll(".post-card");
 
-    audios.forEach(audio => {
+    let activeAudio = null;
+    let activeCard = null;
+
+    function stopAudio(audio, reset = true) {
+
+        if (!audio) return;
+
+        audio.pause();
+
+        if (reset) {
+            audio.currentTime = 0;
+        }
+
+    }
+
+    function stopAllAudios(exceptAudio = null) {
+
+        document.querySelectorAll(".post-audio").forEach(audio => {
+
+            if (audio !== exceptAudio) {
+
+                audio.pause();
+                audio.currentTime = 0;
+
+            }
+
+        });
+
+    }
+
+    function playPostAudio(card) {
+
+        const audio = card.querySelector(".post-audio");
+
+        if (!audio) return;
+
+        if (activeAudio === audio) return;
+
+        stopAllAudios(audio);
+
+        activeAudio = audio;
+        activeCard = card;
+
         audio.volume = 1.0;
-    });
+
+        audio.play().catch(() => {});
+
+    }
 
     const observer = new IntersectionObserver((entries) => {
 
+        let bestEntry = null;
+
         entries.forEach(entry => {
 
-            const audio = entry.target.querySelector(".post-audio");
-            if (!audio) return;
+            if (
+                entry.isIntersecting &&
+                entry.intersectionRatio >= 0.55
+            ) {
 
-            if (entry.isIntersecting) {
-                audio.play().catch(() => {});
-            } else {
-                audio.pause();
-                audio.currentTime = 0;
+                if (
+                    !bestEntry ||
+                    entry.intersectionRatio >
+                    bestEntry.intersectionRatio
+                ) {
+
+                    bestEntry = entry;
+
+                }
+
             }
+
         });
 
+        if (bestEntry) {
+
+            playPostAudio(bestEntry.target);
+
+        } else {
+
+            const stillVisible = Array.from(postCards).some(card => {
+
+                const rect = card.getBoundingClientRect();
+
+                const visibleHeight =
+                    Math.max(
+                        0,
+                        Math.min(
+                            rect.bottom,
+                            window.innerHeight
+                        ) -
+                        Math.max(
+                            rect.top,
+                            0
+                        )
+                    );
+
+                const ratio =
+                    visibleHeight /
+                    Math.min(
+                        rect.height,
+                        window.innerHeight
+                    );
+
+                return ratio >= 0.55;
+
+            });
+
+            if (!stillVisible) {
+
+                stopAllAudios();
+
+                activeAudio = null;
+                activeCard = null;
+
+            }
+
+        }
+
     }, {
-        threshold: 0.6
+        threshold: [
+            0,
+            0.25,
+            0.55,
+            0.75,
+            1
+        ]
     });
 
-    document.querySelectorAll(".bg-white\\/95").forEach(post => {
-        observer.observe(post);
+    postCards.forEach(card => {
+
+        observer.observe(card);
+
     });
+
+    document.addEventListener(
+        "visibilitychange",
+        () => {
+
+            if (document.hidden) {
+
+                stopAllAudios();
+
+                activeAudio = null;
+                activeCard = null;
+
+            }
+
+        }
+    );
+
+    window.addEventListener(
+        "pagehide",
+        () => {
+
+            stopAllAudios();
+
+        }
+    );
 
 });
 </script>
@@ -919,6 +1364,136 @@ updateNotificationCount();
 
 // Har 5 second me count update
 setInterval(updateNotificationCount, 5000);
+</script>
+
+<script>
+
+document.querySelectorAll(".video-touch-layer").forEach(layer => {
+
+    const videoId = layer.dataset.videoId;
+    const postId = layer.dataset.postId;
+
+    const video = document.getElementById(videoId);
+
+    let holdTimer = null;
+    let holdActive = false;
+
+    let tapTimer = null;
+    let tapCount = 0;
+
+
+    /* =====================
+       FINGER DOWN
+       ===================== */
+
+    layer.addEventListener("pointerdown", function(e){
+
+        holdActive = false;
+
+        clearTimeout(holdTimer);
+
+        holdTimer = setTimeout(() => {
+
+            holdActive = true;
+
+            video.pause();
+
+            video.style.transform = "scale(0.97)";
+            video.style.transition = "transform 0.15s ease";
+
+        }, 2000);
+
+    });
+
+
+    /* =====================
+       FINGER RELEASE
+       ===================== */
+
+    layer.addEventListener("pointerup", function(e){
+
+        clearTimeout(holdTimer);
+
+        if(holdActive){
+
+            video.style.transform = "scale(1)";
+
+            video.play().catch(() => {});
+
+            holdActive = false;
+
+            return;
+        }
+
+        tapCount++;
+
+        clearTimeout(tapTimer);
+
+        tapTimer = setTimeout(() => {
+
+            if(tapCount === 1){
+
+                /* 1 TAP = SOUND */
+
+                if(video.muted){
+
+                    video.muted = false;
+                    video.volume = 1;
+
+                }else{
+
+                    video.muted = true;
+
+                }
+
+            }else if(tapCount >= 2){
+
+                /* 2 TAP = LIKE */
+
+                doubleTapLike(Number(postId));
+
+            }
+
+            tapCount = 0;
+
+        }, 250);
+
+    });
+
+
+    /* =====================
+       FINGER CANCEL
+       ===================== */
+
+    layer.addEventListener("pointercancel", function(){
+
+        clearTimeout(holdTimer);
+
+        if(holdActive){
+
+            video.style.transform = "scale(1)";
+
+            video.play().catch(() => {});
+
+            holdActive = false;
+
+        }
+
+    });
+
+
+    /* =====================
+       BLOCK LONG PRESS MENU
+       ===================== */
+
+    layer.addEventListener("contextmenu", function(e){
+
+        e.preventDefault();
+
+    });
+
+});
+
 </script>
 
 </body>

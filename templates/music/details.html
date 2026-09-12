@@ -1,41 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>{{ song.title }} • InsChat</title>
+<title>
+{% if song %}
+{{ song.title }}
+{% else %}
+{{ original.title or "Original Audio" }}
+{% endif %}
+• InsChat
+</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
 </head>
 
+
 <body class="bg-black text-white">
 
+
 <!-- HEADER -->
+
 <div class="sticky top-0 bg-black border-b border-zinc-800 p-4 flex items-center">
 
-<a href="/music?media_path={{ request.args.get('media_path','') }}&mode={{ request.args.get('mode','reel') }}"
+<a
+href="/music?media_path={{ request.args.get('media_path','') }}&mode={{ request.args.get('mode','reel') }}"
 class="text-cyan-400 text-lg mr-4">
+
 ←
+
 </a>
 
 <h1 class="text-xl font-bold">
+
 Audio
+
 </h1>
 
 </div>
 
 
-{% if song %}
 
-<!-- AUDIO CARD -->
+<!-- ================================= -->
+<!-- 🎵 NORMAL MUSIC -->
+<!-- ================================= -->
+
+{% if song %}
 
 <div class="p-5">
 
 <div class="bg-zinc-900 rounded-2xl p-5">
 
+
 <div class="flex items-center gap-4">
+
 
 {% if song.cover %}
 
@@ -46,28 +68,40 @@ class="w-24 h-24 rounded-xl object-cover">
 {% else %}
 
 <div class="w-24 h-24 rounded-xl bg-zinc-700 flex items-center justify-center text-5xl">
+
 🎵
+
 </div>
 
 {% endif %}
 
+
 <div>
 
 <h2 class="text-xl font-bold">
+
 {{ song.title }}
+
 </h2>
 
+
 <p class="text-gray-400 mt-1">
+
 {{ song.artist }}
+
 </p>
+
 
 <p class="text-xs text-gray-500 mt-2">
+
 {{ song.report_count }} Reports
+
 </p>
 
 </div>
 
 </div>
+
 
 
 <!-- AUDIO PLAYER -->
@@ -82,9 +116,11 @@ src="/static/music/uploads/{{ song.filename }}">
 </audio>
 
 
+
 <!-- BUTTONS -->
 
 <div class="grid grid-cols-2 gap-3 mt-5">
+
 
 <a
 href="/music/use/{{ song.id }}?media_path={{ request.args.get('media_path','') }}&mode={{ request.args.get('mode','reel') }}"
@@ -94,6 +130,7 @@ class="bg-cyan-500 text-center py-3 rounded-xl font-bold">
 
 </a>
 
+
 <a
 href="/music/report/{{song.id}}"
 class="bg-red-500 text-center py-3 rounded-xl font-bold">
@@ -102,11 +139,14 @@ class="bg-red-500 text-center py-3 rounded-xl font-bold">
 
 </a>
 
-</div>
 
 </div>
 
 </div>
+
+</div>
+
+
 
 <!-- REELS -->
 
@@ -117,6 +157,7 @@ class="bg-red-500 text-center py-3 rounded-xl font-bold">
 Reels using this audio
 
 </h2>
+
 
 {% if reels %}
 
@@ -153,7 +194,103 @@ No reels yet.
 
 </div>
 
+
+{% endif %}
+
+
+
+<!-- ================================= -->
+<!-- 🎙️ ORIGINAL AUDIO -->
+<!-- ================================= -->
+
+{% if original %}
+
+<div class="p-5">
+
+<div class="bg-zinc-900 rounded-2xl p-5">
+
+
+<div class="flex items-center gap-4">
+
+
+{% if original.photo %}
+
+<img
+src="{{ original.photo }}"
+class="w-24 h-24 rounded-full object-cover">
+
 {% else %}
+
+<div class="w-24 h-24 rounded-full bg-zinc-700 flex items-center justify-center text-5xl">
+
+🎙️
+
+</div>
+
+{% endif %}
+
+
+<div>
+
+<h2 class="text-xl font-bold">
+
+{{ original.title or "Original Audio" }}
+
+</h2>
+
+
+<p class="text-gray-400 mt-1">
+
+@{{ original.username or "Unknown" }}
+
+</p>
+
+
+<p class="text-xs text-gray-500 mt-2">
+
+Original Audio
+
+</p>
+
+</div>
+
+</div>
+
+
+
+<!-- ORIGINAL AUDIO PLAYER -->
+
+<audio
+controls
+class="w-full mt-5">
+
+<source
+src="/static/uploads/original_audio/{{ original.audio_file }}">
+
+</audio>
+
+
+
+<!-- USE ORIGINAL AUDIO -->
+
+<a
+href="/music/use-original/{{ original.id }}?media_path={{ request.args.get('media_path','') }}&mode={{ request.args.get('mode','reel') }}"
+class="block bg-cyan-500 text-center py-3 rounded-xl font-bold mt-5">
+
+🎙️ Use Original Audio
+
+</a>
+
+
+</div>
+
+</div>
+
+{% endif %}
+
+
+
+{% if not song and not original %}
 
 <div class="text-center mt-24 text-gray-400">
 
@@ -163,5 +300,7 @@ Audio not found.
 
 {% endif %}
 
+
 </body>
+
 </html>

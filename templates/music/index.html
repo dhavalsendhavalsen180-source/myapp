@@ -1,127 +1,221 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!DOCTYPE html><html lang="en">
+<head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Music • InsChat</title><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-black text-white"><!-- HEADER --><div class="sticky top-0 bg-black border-b border-gray-800 p-4 z-50"><div class="flex items-center gap-3">
 
-<title>Music • InsChat</title>
+    <a
+    href="/create/editor?media_path={{ request.args.get('media_path','') | urlencode }}&mode={{ request.args.get('mode','post') | urlencode }}{% if request.args.get('music_id') %}&music_id={{ request.args.get('music_id') | urlencode }}{% endif %}{% if request.args.get('original_audio_id') %}&original_audio_id={{ request.args.get('original_audio_id') | urlencode }}{% endif %}"
+    class="text-cyan-400 text-2xl font-bold">
 
-<script src="https://cdn.tailwindcss.com"></script>
+        ←
 
-</head>
+    </a>
 
-<body class="bg-black text-white">
+    <h1 class="text-2xl font-bold">
 
-<!-- HEADER -->
-<div class="sticky top-0 bg-black border-b border-gray-800 p-4">
+        🎵 Music
 
-    <div class="flex items-center gap-3">
-
-        <a href="/create/editor?media_path={{ request.args.get('media_path','') }}&mode={{ request.args.get('mode','post') }}{% if request.args.get('music_id') %}&music_id={{ request.args.get('music_id') }}{% endif %}"
-           class="text-cyan-400 text-2xl font-bold">
-            ←
-        </a>
-
-        <h1 class="text-2xl font-bold">
-            🎵 Music
-        </h1>
-
-    </div>
-
-    <form method="GET" action="/music" class="mt-4">
-
-        <input
-            type="text"
-            name="q"
-            value="{{ q }}"
-            placeholder="Search music..."
-            class="w-full rounded-xl bg-zinc-900 p-3 outline-none"
-        >
-
-        <input type="hidden" name="media_path" value="{{ request.args.get('media_path','') }}">
-        <input type="hidden" name="mode" value="{{ request.args.get('mode','post') }}">
-
-    </form>
+    </h1>
 
 </div>
 
-<!-- MUSIC LIST -->
 
-<div class="p-4 space-y-3">
+<!-- SEARCH -->
+
+<form
+method="GET"
+action="/music"
+class="mt-4">
+
+    <input
+    type="text"
+    name="q"
+    value="{{ q }}"
+    placeholder="Search music..."
+    class="w-full rounded-xl bg-zinc-900 p-3 outline-none">
+
+    <input
+    type="hidden"
+    name="media_path"
+    value="{{ request.args.get('media_path','') }}">
+
+    <input
+    type="hidden"
+    name="mode"
+    value="{{ request.args.get('mode','post') }}">
+
+</form>
+
+</div><div class="p-4 space-y-8 pb-32"><!-- ================================= --><!-- 🎵 NORMAL MUSIC --><!-- ================================= --><div><h2 class="text-xl font-bold mb-4">
+
+    🎵 Music
+
+</h2>
+
 
 {% if music %}
 
-{% for m in music %}
+    <div class="space-y-3">
 
-<a
-href="/music/{{ m.id }}?media_path={{ request.args.get('media_path','') }}&mode={{ request.args.get('mode','reel') }}"
-class="flex items-center gap-3 bg-zinc-900 rounded-xl p-3">
+    {% for m in music %}
 
-{% if m.cover %}
+        <a
+        href="/music/use/{{ m.id }}?media_path={{ request.args.get('media_path','') | urlencode }}&mode={{ request.args.get('mode','reel') | urlencode }}"
+        class="flex items-center gap-3 bg-zinc-900 rounded-xl p-3">
 
-<img
-src="/static/music/covers/{{m.cover}}"
-class="w-16 h-16 rounded-lg object-cover">
+
+            {% if m.cover %}
+
+                <img
+                src="/static/music/covers/{{ m.cover }}"
+                class="w-16 h-16 rounded-lg object-cover">
+
+            {% else %}
+
+                <div
+                class="w-16 h-16 rounded-lg bg-zinc-700 flex items-center justify-center text-3xl">
+
+                    🎵
+
+                </div>
+
+            {% endif %}
+
+
+            <div class="flex-1 min-w-0">
+
+                <div class="font-bold truncate">
+
+                    {{ m.title }}
+
+                </div>
+
+
+                <div class="text-sm text-gray-400 truncate">
+
+                    {{ m.artist }}
+
+                </div>
+
+
+                <div class="text-xs text-gray-500 mt-1">
+
+                    {{ m.report_count }} Reports
+
+                </div>
+
+            </div>
+
+
+            <div class="text-cyan-400 text-xl">
+
+                ›
+
+            </div>
+
+        </a>
+
+    {% endfor %}
+
+    </div>
 
 {% else %}
 
-<div
-class="w-16 h-16 rounded-lg bg-zinc-700 flex items-center justify-center text-3xl">
+    <div class="text-center py-10 text-gray-500">
 
-🎵
+        No music found.
 
-</div>
+    </div>
 
 {% endif %}
 
-<div class="flex-1">
+</div><!-- ================================= --><!-- 🎙️ ORIGINAL AUDIO --><!-- ================================= --><div><h2 class="text-xl font-bold mb-4">
 
-<div class="font-bold">
+    🎙️ Original Audio
 
-{{m.title}}
+</h2>
 
-</div>
 
-<div class="text-sm text-gray-400">
+{% if original_audio %}
 
-{{m.artist}}
+    <div class="space-y-3">
 
-</div>
+    {% for a in original_audio %}
 
-<div class="text-xs text-gray-500 mt-1">
+        <a
+        href="/create/editor?media_path={{ request.args.get('media_path','') | urlencode }}&mode={{ request.args.get('mode','post') | urlencode }}&original_audio_id={{ a.id }}"
+        class="flex items-center gap-3 bg-zinc-900 rounded-xl p-3">
 
-{{m.report_count}} Reports
 
-</div>
+            {% if a.photo %}
 
-</div>
+                <img
+                src="{{ a.photo }}"
+                class="w-16 h-16 rounded-full object-cover">
 
-</a>
+            {% else %}
 
-{% endfor %}
+                <div
+                class="w-16 h-16 rounded-full bg-zinc-700 flex items-center justify-center text-3xl">
+
+                    🎙️
+
+                </div>
+
+            {% endif %}
+
+
+            <div class="flex-1 min-w-0">
+
+                <div class="font-bold truncate">
+
+                    {{ a.title or "Original Audio" }}
+
+                </div>
+
+
+                <div class="text-sm text-gray-400 truncate">
+
+                    @{{ a.username or "Unknown" }}
+
+                </div>
+
+
+                <div class="text-xs text-gray-500 mt-1">
+
+                    Original Audio
+
+                </div>
+
+            </div>
+
+
+            <div class="text-cyan-400 text-xl">
+
+                ›
+
+            </div>
+
+        </a>
+
+    {% endfor %}
+
+    </div>
 
 {% else %}
 
-<div class="text-center mt-20 text-gray-400">
+    <div class="text-center py-10 text-gray-500">
 
-No music found.
+        No original audio found.
 
-</div>
+    </div>
 
 {% endif %}
 
-</div>
-
-
-<!-- FLOATING BUTTON -->
-
-<a
+</div></div><!-- FLOATING BUTTON --><a
 href="/music/upload"
 class="fixed bottom-24 right-5 w-16 h-16 rounded-full bg-cyan-500 flex items-center justify-center text-3xl shadow-lg">
 
 +
 
-</a>
-
-</body>
+</a></body>
 </html>

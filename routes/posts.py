@@ -43,7 +43,6 @@ def feed():
     )
 
     user = c.fetchone()
-    conn.close()
 
     if not user:
         session.clear()
@@ -193,54 +192,156 @@ def feed():
 
         print(owner_id, current_user, len(owner_stories), [s.get("viewers", []) for s in owner_stories])
 
-# Load attached music
+        # ===============================
+        # 🎵 LOAD ATTACHED AUDIO
+        # Normal music + Original extracted audio
+        # ===============================
         c.execute("""
             SELECT
                 ma.music_id,
+                ma.original_audio_id,
                 ma.original_volume,
                 ma.music_volume,
                 ma.start_time,
                 ma.end_time,
-                m.filename
+
+                m.filename AS music_filename,
+
+                oa.audio_file AS original_audio_file,
+                oa.title AS original_audio_title,
+                oa.user_id AS original_audio_user_id
+
             FROM media_audio ma
-            JOIN music m
+
+            LEFT JOIN music m
                 ON ma.music_id = m.id
+
+            LEFT JOIN original_audio oa
+                ON ma.original_audio_id = oa.id
+
             WHERE ma.media_type='post'
               AND ma.media_id=?
+
+            LIMIT 1
         """, (post_id,))
 
         audio = c.fetchone()
+
+        # ===============================
+        # 🎵 DETERMINE AUDIO FILE
+        # ===============================
+        music_file = None
+        audio_type = None
+        original_audio_id = None
+        original_audio_title = None
+        original_audio_user_id = None
+
+        if audio:
+
+            # Normal music
+            if audio[0] and audio[6]:
+
+                music_file = (
+                    "/static/music/uploads/" +
+                    audio[6]
+                )
+
+                audio_type = "music"
+
+            # Original extracted audio
+            elif audio[1] and audio[7]:
+
+                music_file = (
+                    "/static/uploads/original_audio/" +
+                    audio[7]
+                )
+
+                audio_type = "original"
+
+                original_audio_id = audio[1]
+                original_audio_title = audio[8]
+                original_audio_user_id = audio[9]
 
         posts.append({
             "id": post_id,
             "owner_id": owner_id,
             "username": username,
-            "photo": user_photo if user_photo else "/static/default_dp.png",
+            "photo": (
+                user_photo
+                if user_photo
+                else "/static/default_dp.png"
+            ),
             "caption": caption,
             "images": images,
             "likes": likes,
             "liked_by_me": liked_by_me,
             "saved_by_me": saved_by_me,
             "comments": comments,
-            "music_file": (
-                "/static/music/uploads/" + audio[5]
-                if audio else None
+
+            # 🎵 MUSIC INFO
+            "music_id": (
+                audio[0]
+                if audio and audio_type == "music"
+                else None
             ),
-            "music_start": audio[3] if audio else 0,
-            "music_end": audio[4] if audio else 30,
-            "original_volume": audio[1] if audio else 100,
-            "music_volume": audio[2] if audio else 100,
-            "has_story": len(owner_stories) > 0,
+            "music_title": (
+                audio[1]
+                if audio and audio_type == "music"
+                else None
+            ),
 
+            # 🎵 AUDIO FILE
+            "music_file": music_file,
 
+            "music_start": (
+                audio[4]
+                if audio
+                else 0
+            ),
+            "music_end": (
+                audio[5]
+                if audio
+                else 30
+            ),
+            "original_volume": (
+                audio[2]
+                if audio
+                else 100
+            ),
+            "music_volume": (
+                audio[3]
+                if audio
+                else 100
+            ),
 
-    # True sirf tab hoga jab owner's HAR story dekh li ho
+            # AUDIO TYPE
+            "audio_type": audio_type,
+
+            # ORIGINAL AUDIO INFO
+            "original_audio_id": original_audio_id,
+            "original_audio_title": original_audio_title,
+            "original_audio_user_id": original_audio_user_id,
+
+            "has_story": (
+                len(owner_stories) > 0
+            ),
+
+            # True sirf tab hoga
+            # jab owner's HAR story dekh li ho
             "story_seen": (
-                len(owner_stories) > 0 and
-                all(
-                    str(current_user) in [str(v) for v in s.get("viewers", [])]
+                len(owner_stories) > 0
+                and all(
+                    str(current_user)
+                    in [
+                        str(v)
+                        for v in s.get(
+                            "viewers",
+                            []
+                        )
+                    ]
                     for s in owner_stories
                 )
+                for s in owner_stories
             )
         })
 
@@ -251,7 +352,7 @@ def feed():
         posts=posts,
         stories_bar=stories_bar,
         current_user=current_user,
-        current_user_photo=photo,   # ✅ FIXED
+        current_user_photo=photo,
         my_story_seen=my_story_seen,
         has_my_story=has_my_story
     )
@@ -1716,3 +1817,42 @@ def shared_post_info(post_id):
         "ok": True,
         "image": image
     }
+
+# ===============================
+# 🎵 ORIGINAL AUDIO PAGE
+# ===============================
+@posts_bp.route("/original-audio/<int:audio_id>")
+def original_audio_page(audio_id):
+
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
+
+    audio = conn.execute("""
+        SELECT
+            oa.id,
+            oa.user_id,
+            oa.source_type,
+            oa.source_media_id,
+            oa.audio_file,
+            oa.title,
+            oa.created_at,
+            u.username,
+            u.photo
+        FROM original_audio oa
+        LEFT JOIN users u
+            ON oa.user_id = u.id
+        WHERE oa.id = ?
+        LIMIT 1
+    """, (audio_id,)).fetchone()
+
+    conn.close()
+
+    if not audio:
+        return "Original audio not found", 404
+
+    return render_template(
+        "music/details.html",
+        song=None,
+        original=audio,
+        reels=[]
+    )
