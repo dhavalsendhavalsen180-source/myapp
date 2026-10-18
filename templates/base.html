@@ -46,6 +46,21 @@ if (typeof io !== "undefined") {
 }
 </script>
 
+<script>
+if (window.socket) {
+    window.socket.on("account_status_changed", function (data) {
+        if (!data) return;
+
+        if (data.blocked) {
+            alert(data.message || "Your account has been restricted.");
+            window.location.replace("/auth/login");
+        } else {
+            alert(data.message || "Your account status has been restored.");
+        }
+    });
+}
+</script>
+
 <script src="/static/js/global_call.js"></script>
 
 </body>

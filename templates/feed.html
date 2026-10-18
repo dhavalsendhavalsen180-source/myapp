@@ -530,16 +530,11 @@ async function uploadStoryInstant(event) {
 
     {% if post.owner_id == current_user %}
 
-      <form method="POST"
-            action="/posts/delete/{{ post.id }}"
-            onsubmit="return confirm('Delete this post?')">
-
-        <button type="submit"
-                class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
-          🗑 Delete
-        </button>
-
-      </form>
+      <button type="button"
+              onclick="openDeleteModal({{ post.id }})"
+              class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition">
+        🗑 Delete
+      </button>
 
     {% else %}
 
@@ -592,6 +587,7 @@ async function uploadStoryInstant(event) {
 
                 <video
                   id="video-{{ post.id }}-{{ loop.index }}"
+                  poster="/static/uploads/posts/thumbs/{{ img.split('/')[-1].rsplit('.', 1)[0] }}_thumb.jpg"
                   class="post-video"
                   autoplay
                   muted
@@ -623,8 +619,8 @@ async function uploadStoryInstant(event) {
                 alt="Post"
                 ondblclick="doubleTapLike({{ post.id }})"
                 ontouchend="onImageTap({{ post.id }})"
+                oncontextmenu="return false;"
               >
-
             {% endif %}
 
           </div>
@@ -672,6 +668,7 @@ async function uploadStoryInstant(event) {
 
           <video
             id="video-{{ post.id }}-single"
+            poster="/static/uploads/posts/thumbs/{{ media.split('/')[-1].rsplit('.', 1)[0] }}_thumb.jpg"
             class="post-video"
             autoplay
             muted
@@ -704,8 +701,8 @@ async function uploadStoryInstant(event) {
           alt="Post"
           ondblclick="doubleTapLike({{ post.id }})"
           ontouchend="onImageTap({{ post.id }})"
+          oncontextmenu="return false;"
         >
-
       {% endif %}
 
     </div>
@@ -814,7 +811,7 @@ async function uploadStoryInstant(event) {
 
         {% if post.audio_type == "original" %}
 
-            <a href="/posts/original-audio/{{ post.original_audio_id }}"
+            <a href="/music/original/{{ post.original_audio_id }}"
                class="flex items-center gap-1.5
                       max-w-[150px]
                       overflow-hidden
@@ -845,7 +842,7 @@ async function uploadStoryInstant(event) {
 
         {% else %}
 
-            <a href="/music/{{ post.music_id }}"
+            <a href="/create?music_id={{ post.music_id }}&mode=post"
                class="flex items-center gap-1.5
                       max-w-[150px]
                       overflow-hidden
@@ -1169,142 +1166,508 @@ window.me = {{ session.get("user_id")|tojson }};
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-    const postCards = document.querySelectorAll(".post-card");
+    const postCards = Array.from(
+        document.querySelectorAll(".post-card")
+    );
+
+    const audios = Array.from(
+        document.querySelectorAll(".post-audio")
+    );
 
     let activeAudio = null;
     let activeCard = null;
+    let scrollFrame = null;
 
-    function stopAudio(audio, reset = true) {
+
+    /* ================================
+       STOP ONE AUDIO
+    ================================= */
+
+    function stopAudio(audio) {
 
         if (!audio) return;
 
         audio.pause();
 
-        if (reset) {
+        try {
             audio.currentTime = 0;
-        }
+        } catch (e) {}
 
     }
 
-    function stopAllAudios(exceptAudio = null) {
 
-        document.querySelectorAll(".post-audio").forEach(audio => {
+    /* ================================
+       STOP ALL AUDIO
+    ================================= */
 
-            if (audio !== exceptAudio) {
+    function stopAllAudios() {
 
-                audio.pause();
-                audio.currentTime = 0;
+        audios.forEach(audio => {
+            stopAudio(audio);
+        });
 
+        /*
+         * Feed ke sab video ka sound bhi band
+         */
+        document.querySelectorAll(".post-video").forEach(video => {
+            video.muted = true;
+            video.volume = 0;
+        });
+
+        activeAudio = null;
+    }
+
+    /* ================================
+       PLAY SELECTED POST AUDIO
+    ================================= */
+
+    function playPostAudio(card) {
+
+        const audio =
+            card.querySelector(".post-audio");
+
+        /*
+         * Is post me audio nahi hai
+         */
+        if (!audio) {
+
+            stopAllAudios();
+
+            activeCard = card;
+
+            return;
+        }
+
+
+        /*
+         * Same audio already playing
+         */
+        if (
+            activeAudio === audio &&
+            !audio.paused
+        ) {
+
+            activeCard = card;
+
+            return;
+        }
+
+
+        /*
+         * Purana audio turant band
+         */
+        audios.forEach(otherAudio => {
+
+            if (otherAudio !== audio) {
+                stopAudio(otherAudio);
             }
 
         });
 
-    }
-
-    function playPostAudio(card) {
-
-        const audio = card.querySelector(".post-audio");
-
-        if (!audio) return;
-
-        if (activeAudio === audio) return;
-
-        stopAllAudios(audio);
 
         activeAudio = audio;
         activeCard = card;
 
         audio.volume = 1.0;
 
-        audio.play().catch(() => {});
+        if (audio.readyState === 0) {
+            audio.load();
+        }
+
+        audio.play()
+            .then(() => {
+
+                console.log(
+                    "INSCHAT AUDIO PLAY:",
+                    audio.src
+                );
+
+            })
+            .catch(err => {
+
+                console.log(
+                    "INSCHAT AUDIO BLOCKED:",
+                    err.message
+                );
+
+            });
 
     }
 
-    const observer = new IntersectionObserver((entries) => {
 
-        let bestEntry = null;
+    /* ================================
+       FIND POST AT SCREEN CENTER
+    ================================= */
 
-        entries.forEach(entry => {
+    function updateActivePost() {
+
+        const screenCenter =
+            window.innerHeight / 2;
+
+        let selectedCard = null;
+
+
+        /*
+         * Pehle check karo:
+         * screen center kis post ke andar hai
+         */
+        for (const card of postCards) {
+
+            const rect =
+                card.getBoundingClientRect();
 
             if (
-                entry.isIntersecting &&
-                entry.intersectionRatio >= 0.55
+                rect.top <= screenCenter &&
+                rect.bottom >= screenCenter
             ) {
 
+                selectedCard = card;
+                break;
+            }
+
+        }
+
+
+        /*
+         * Agar center kisi post me nahi hai,
+         * closest visible post choose karo
+         */
+        if (!selectedCard) {
+
+            let closestDistance = Infinity;
+
+            for (const card of postCards) {
+
+                const rect =
+                    card.getBoundingClientRect();
+
                 if (
-                    !bestEntry ||
-                    entry.intersectionRatio >
-                    bestEntry.intersectionRatio
+                    rect.bottom <= 0 ||
+                    rect.top >= window.innerHeight
+                ) {
+                    continue;
+                }
+
+                const cardCenter =
+                    rect.top +
+                    rect.height / 2;
+
+                const distance =
+                    Math.abs(
+                        cardCenter - screenCenter
+                    );
+
+                if (
+                    distance < closestDistance
                 ) {
 
-                    bestEntry = entry;
+                    closestDistance = distance;
+                    selectedCard = card;
 
                 }
 
             }
 
-        });
+        }
 
-        if (bestEntry) {
 
-            playPostAudio(bestEntry.target);
+        /*
+         * Koi post visible nahi
+         */
+        if (!selectedCard) {
 
-        } else {
+            stopAllAudios();
+            activeCard = null;
 
-            const stillVisible = Array.from(postCards).some(card => {
+            return;
+        }
 
-                const rect = card.getBoundingClientRect();
 
-                const visibleHeight =
-                    Math.max(
-                        0,
-                        Math.min(
-                            rect.bottom,
-                            window.innerHeight
-                        ) -
-                        Math.max(
-                            rect.top,
-                            0
-                        )
-                    );
+        /*
+         * Same post hai
+         */
+        if (
+            activeCard === selectedCard
+        ) {
 
-                const ratio =
-                    visibleHeight /
-                    Math.min(
-                        rect.height,
-                        window.innerHeight
-                    );
+            const currentAudio =
+                selectedCard.querySelector(
+                    ".post-audio"
+                );
 
-                return ratio >= 0.55;
-
-            });
-
-            if (!stillVisible) {
-
+            /*
+             * Agar audio nahi hai
+             * to ensure all audio stopped
+             */
+            if (!currentAudio) {
                 stopAllAudios();
-
-                activeAudio = null;
-                activeCard = null;
-
             }
+
+            return;
+        }
+
+
+    /*
+     * Selected post ke alawa sab video mute
+     */
+    document.querySelectorAll(".post-video").forEach(video => {
+
+        if (!selectedCard.contains(video)) {
+
+            video.muted = true;
+            video.volume = 0;
 
         }
 
-    }, {
-        threshold: [
-            0,
-            0.25,
-            0.55,
-            0.75,
-            1
-        ]
     });
 
-    postCards.forEach(card => {
+        /*
+         * NEW POST
+         */
+        playPostAudio(selectedCard);
 
-        observer.observe(card);
+    }
 
-    });
+
+    /* ================================
+       SCROLL
+    ================================= */
+
+    window.addEventListener(
+        "scroll",
+        () => {
+
+            /*
+             * Scroll ke time purana audio
+             * turant band karo
+             */
+            if (activeAudio) {
+
+                const rect =
+                    activeCard?.getBoundingClientRect();
+
+                if (
+                    !rect ||
+                    rect.bottom <= 0 ||
+                    rect.top >= window.innerHeight
+                ) {
+
+                    stopAllAudios();
+                    activeCard = null;
+
+                }
+
+            }
+
+
+            /*
+             * Ek hi frame me calculation
+             */
+            if (!scrollFrame) {
+
+                scrollFrame =
+                    requestAnimationFrame(() => {
+
+                        scrollFrame = null;
+
+                        updateActivePost();
+
+                    });
+
+            }
+
+        },
+        {
+            passive: true
+        }
+    );
+
+
+    /* ================================
+       FIRST LOAD
+    ================================= */
+
+    setTimeout(() => {
+
+        updateActivePost();
+
+    }, 300);
+
+
+/* ================================
+   TOUCH / CLICK
+================================ */
+
+document.addEventListener(
+    "pointerdown",
+    (e) => {
+
+        /* Video ko audio toggle se alag rakho */
+        if (e.target.closest(".video-touch-layer")) {
+            return;
+        }
+
+        /* Buttons / links par post audio toggle mat karo */
+        if (
+            e.target.closest("button") ||
+            e.target.closest("a") ||
+            e.target.closest("input") ||
+            e.target.closest("textarea")
+        ) {
+            return;
+        }
+
+        const card = e.target.closest(".post-card");
+
+        if (!card) {
+            return;
+        }
+
+        /*
+         * Current active post par tap
+         */
+        if (activeCard === card) {
+
+            const audio =
+                card.querySelector(".post-audio");
+
+            /*
+             * No music/audio
+             */
+            if (!audio) {
+                return;
+            }
+
+            /*
+             * 🎵 ON -> 🔇 OFF
+             */
+            if (!audio.paused) {
+
+                audio.pause();
+
+                try {
+                    audio.currentTime = 0;
+                } catch (err) {}
+
+                if (activeAudio === audio) {
+                    activeAudio = null;
+                }
+
+                console.log(
+                    "INSCHAT AUDIO OFF:",
+                    audio.src
+                );
+
+                return;
+            }
+
+            /*
+             * 🔇 OFF -> 🎵 ON
+             *
+             * Sabhi doosre audio ko pehle
+             * completely stop karo.
+             */
+            audios.forEach(otherAudio => {
+
+                if (otherAudio !== audio) {
+
+                    otherAudio.pause();
+
+                    try {
+                        otherAudio.currentTime = 0;
+                    } catch (err) {}
+
+                }
+
+            });
+
+            activeAudio = audio;
+            activeCard = card;
+
+            audio.volume = 1.0;
+
+            if (audio.readyState === 0) {
+                audio.load();
+            }
+
+            audio.play()
+                .then(() => {
+
+                    /*
+                     * Safety:
+                     * play hone ke baad bhi sirf
+                     * isi audio ko active rakho.
+                     */
+                    audios.forEach(otherAudio => {
+
+                        if (otherAudio !== audio) {
+                            otherAudio.pause();
+
+                            try {
+                                otherAudio.currentTime = 0;
+                            } catch (err) {}
+                        }
+
+                    });
+
+                    console.log(
+                        "INSCHAT AUDIO ON:",
+                        audio.src
+                    );
+
+                })
+                .catch(err => {
+
+                    activeAudio = null;
+
+                    console.log(
+                        "INSCHAT AUDIO BLOCKED:",
+                        err.message
+                    );
+
+                });
+
+            return;
+        }
+
+        /*
+         * Dusre post par tap.
+         *
+         * Pehle active post ko completely stop,
+         * phir selected post ko activate.
+         */
+        if (activeAudio) {
+
+            activeAudio.pause();
+
+            try {
+                activeAudio.currentTime = 0;
+            } catch (err) {}
+
+            activeAudio = null;
+        }
+
+        audios.forEach(otherAudio => {
+
+            otherAudio.pause();
+
+            try {
+                otherAudio.currentTime = 0;
+            } catch (err) {}
+
+        });
+
+        updateActivePost();
+
+    },
+    {
+        passive: true
+    }
+);
+
+    /* ================================
+       TAB HIDDEN
+    ================================= */
 
     document.addEventListener(
         "visibilitychange",
@@ -1313,8 +1676,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (document.hidden) {
 
                 stopAllAudios();
-
-                activeAudio = null;
                 activeCard = null;
 
             }
@@ -1322,14 +1683,43 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     );
 
+
+    /* ================================
+       PAGE LEAVE
+    ================================= */
+
     window.addEventListener(
         "pagehide",
         () => {
 
             stopAllAudios();
 
+            activeCard = null;
+
         }
     );
+
+
+    /* ================================
+       AUDIO ERROR
+    ================================= */
+
+    audios.forEach(audio => {
+
+        audio.addEventListener(
+            "error",
+            () => {
+
+                console.log(
+                    "INSCHAT AUDIO ERROR:",
+                    audio.error,
+                    audio.src
+                );
+
+            }
+        );
+
+    });
 
 });
 </script>
@@ -1494,6 +1884,111 @@ document.querySelectorAll(".video-touch-layer").forEach(layer => {
 
 });
 
+</script>
+
+<!-- ✨ INSCHAT PREMIUM DELETE MODAL -->
+<div id="deletePostModal"
+     class="hidden fixed inset-0 z-[9999] flex items-center justify-center
+            bg-black/60 backdrop-blur-sm p-4">
+
+  <div class="w-full max-w-sm overflow-hidden rounded-3xl
+              bg-white shadow-2xl"
+       style="animation: deleteModalIn .22s ease-out;">
+
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-rose-500 via-red-500 to-orange-500
+                px-6 py-7 text-center text-white">
+
+      <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center
+                  rounded-full bg-white/20 text-4xl">
+        🗑️
+      </div>
+
+      <h2 class="text-2xl font-extrabold">
+        Delete Post?
+      </h2>
+
+      <p class="mt-2 text-sm text-white/90">
+        Are you sure you want to delete this post?
+      </p>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6">
+
+      <p class="mb-6 text-center text-sm leading-6 text-gray-500">
+        This action cannot be undone. Please confirm before continuing.
+      </p>
+
+      <div class="flex gap-3">
+
+        <button type="button"
+                onclick="closeDeleteModal()"
+                class="flex-1 rounded-xl border border-gray-200
+                       bg-gray-100 px-4 py-3 font-bold text-gray-700
+                       transition hover:bg-gray-200 active:scale-95">
+          Cancel
+        </button>
+
+        <form id="deletePostForm"
+              method="POST"
+              class="flex-1">
+
+          <button type="submit"
+                  class="w-full rounded-xl bg-gradient-to-r
+                         from-rose-500 to-red-600 px-4 py-3
+                         font-bold text-white shadow-lg shadow-red-200
+                         transition hover:brightness-110 active:scale-95">
+            Delete
+          </button>
+
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+@keyframes deleteModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+</style>
+
+<script>
+function openDeleteModal(postId) {
+    const modal = document.getElementById("deletePostModal");
+    const form = document.getElementById("deletePostForm");
+
+    form.action = "/posts/delete/" + postId;
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+}
+
+function closeDeleteModal() {
+    document.getElementById("deletePostModal").classList.add("hidden");
+    document.body.style.overflow = "";
+}
+
+document.getElementById("deletePostModal").addEventListener("click", function(event) {
+    if (event.target === this) {
+        closeDeleteModal();
+    }
+});
+
+document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") {
+        closeDeleteModal();
+    }
+});
 </script>
 
 </body>

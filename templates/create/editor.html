@@ -69,6 +69,32 @@ class="px-4 py-2 rounded-xl bg-violet-600 text-white font-semibold">
 </div>
 {% endif %}
 
+{% if original_audio %}
+
+<div class="mt-4 p-3 rounded-xl bg-zinc-900 border border-cyan-700">
+
+    <div class="font-bold text-cyan-400">
+        🎙 {{ original_audio.title }}
+    </div>
+
+    <div class="text-sm text-gray-400 mt-1">
+        Original Audio
+    </div>
+
+    <audio
+        id="originalAudioPlayer"
+        controls
+        class="w-full mt-3"
+        preload="auto">
+
+        <source
+            src="/static/uploads/original_audio/{{ original_audio.audio_file }}">
+    </audio>
+
+</div>
+
+{% endif %}
+
 <div class="mt-4 p-4 rounded-xl bg-zinc-900 border border-zinc-700">
 
     <div class="font-semibold mb-4">
@@ -295,12 +321,19 @@ const mvLabel = document.getElementById("mvLabel");
 
 const musicPlayer = document.getElementById("musicPlayer");
 
+const originalAudioPlayer =
+    document.getElementById("originalAudioPlayer");
+
 if (ov) {
     ov.oninput = () => {
         ovLabel.textContent = ov.value + "%";
 
         if (mediaEl && mediaEl.tagName.toLowerCase() === "video") {
             mediaEl.volume = ov.value / 100;
+        }
+
+        if (originalAudioPlayer) {
+            originalAudioPlayer.volume = ov.value / 100;
         }
     };
 }
@@ -322,6 +355,10 @@ if (mediaEl && mediaEl.tagName.toLowerCase() === "video") {
 
 if (musicPlayer) {
     musicPlayer.volume = 0.7;
+}
+
+if (originalAudioPlayer) {
+    originalAudioPlayer.volume = 1;
 }
 
 })();

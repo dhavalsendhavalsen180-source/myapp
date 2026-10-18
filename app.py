@@ -2,7 +2,7 @@ import os
 os.environ["EVENTLET_NO_GREENDNS"] = "yes"
 import eventlet
 eventlet.monkey_patch()
-from flask import Flask, send_from_directory, render_template
+from flask import Flask, send_from_directory, render_template, request, session, redirect, url_for, render_template_string
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from socketio_init import socketio
@@ -10,6 +10,7 @@ from datetime import timedelta
 from routes.music import music_bp
 from routes.report import report_bp
 from routes.admin import admin_bp
+from routes.account_guard import account_guard_bp
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -31,6 +32,7 @@ from routes.call_socket import call_bp
 from routes.auth import oauth
 import auth_backend
 import routes.call_socket
+import sqlite3
 
 app = Flask(__name__)
 
@@ -72,6 +74,7 @@ app.register_blueprint(call_bp)
 app.register_blueprint(music_bp)
 app.register_blueprint(report_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(account_guard_bp)
 
 @app.route("/")
 def home():

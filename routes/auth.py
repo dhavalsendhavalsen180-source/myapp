@@ -3,6 +3,7 @@ import sqlite3
 import random
 import os
 import requests
+import re
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
@@ -246,6 +247,10 @@ def register_username():
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
+
+        if not re.fullmatch(r"[A-Za-z0-9._]+", username):
+            flash("Username can only contain letters, numbers, dots and underscores.", "error")
+            return redirect(url_for("auth.register_username"))
 
         if len(username) < 3:
             flash("Username must be at least 3 characters", "error")
@@ -596,7 +601,9 @@ def forgot_password():
         c.execute("""
             SELECT id, username, phone, email
             FROM users
-            WHERE username=? OR email=? OR phone=?
+            WHERE LOWER(username)=LOWER(?)
+               OR email=?
+               OR phone=?
         """, (login, login, login))
 
         user = c.fetchone()
@@ -607,45 +614,75 @@ def forgot_password():
             flash("No account found.", "error")
             return redirect(url_for("auth.forgot_password"))
 
-        # user = (id, username, phone, email)
-
-        if not user[3]:
-            flash("This account doesn't have a recovery email.", "error")
-            return redirect(url_for("auth.forgot_password"))
-
         otp = str(random.randint(100000, 999999))
 
-        # Email par OTP bhejo
+        # EMAIL RECOVERY
+        if user[3]:
 
-        if not send_otp_email(user[3], otp):
-            flash("Failed to send OTP email.", "error")
+            if not send_otp_email(user[3], otp):
+                flash("Failed to send OTP email.", "error")
+                return redirect(url_for("auth.forgot_password"))
+
+            session["reset_method"] = "email"
+
+            email = user[3]
+            name, domain = email.split("@", 1)
+
+            if len(name) > 2:
+                masked = name[0] + "*" * (len(name) - 2) + name[-1]
+            else:
+                masked = name[0] + "*"
+
+            masked_email = f"{masked}@{domain}"
+
+            flash(f"OTP sent to {masked_email}", "success")
+
+        # PHONE RECOVERY
+        elif user[2]:
+
+            session["reset_method"] = "phone"
+
+            print("==============================")
+            print("InsChat Password Reset OTP")
+            print("Username:", user[1])
+            print("Phone:", user[2])
+            print("InsChat OTP =", otp)
+            print("==============================")
+
+            phone = user[2]
+
+            if len(phone) >= 4:
+                masked_phone = "*" * (len(phone) - 4) + phone[-4:]
+            else:
+                masked_phone = "****"
+
+            flash(
+                f"OTP generated for phone ending {masked_phone}",
+                "success"
+            )
+
+        # NO RECOVERY METHOD
+        else:
+
+            flash(
+                "This account does not have a recovery email or phone.",
+                "error"
+            )
+
             return redirect(url_for("auth.forgot_password"))
+
         session["reset_user_id"] = user[0]
         session["reset_otp"] = otp
+
         session["reset_otp_expiry"] = (
             datetime.now() + timedelta(minutes=10)
         ).strftime("%Y-%m-%d %H:%M:%S")
 
         session["reset_otp_attempts"] = 0
 
-        # Email mask karke dikhana
-        email = user[3]
-
-        name, domain = email.split("@", 1)
-
-        if len(name) > 2:
-            masked = name[0] + "*" * (len(name) - 2) + name[-1]
-        else:
-            masked = name[0] + "*"
-
-        masked_email = f"{masked}@{domain}"
-
-        flash(f"OTP sent to {masked_email}", "success")
-
         return redirect(url_for("auth.verify_reset_otp"))
 
     return render_template("forgot_password.html")
-
 
 ##################### forget veryfy #################
 @auth_bp.route("/forgot-password/verify", methods=["GET", "POST"])

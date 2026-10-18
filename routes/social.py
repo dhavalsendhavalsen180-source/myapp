@@ -493,8 +493,9 @@ def profile(username):
         is_following=is_following,
 
         follow_requested=follow_requested,
-
-        can_view=can_view
+        can_view=can_view,
+        current_user=me,
+        is_owner=(str(me) == str(user_id))
     )
 
 # ==============================================================
@@ -765,12 +766,95 @@ def notifications():
             "created_at": r[7]
         })
 
+    # ==========================================================
+    # 👥 PEOPLE YOU MAY KNOW
+    # Mutual connections first, then other eligible users
+    # ==========================================================
+
+    c.execute("""
+        SELECT
+            u.id,
+            u.username,
+            u.photo,
+            COALESCE(mc.mutual_count, 0) AS mutual_count,
+
+            CASE WHEN EXISTS (
+                SELECT 1
+                FROM follow_requests fr
+                WHERE fr.sender_id = ?
+                  AND fr.receiver_id = u.id
+            ) THEN 1 ELSE 0 END AS request_pending
+
+        FROM users u
+
+        LEFT JOIN (
+            SELECT
+                f2.following_id AS candidate_id,
+                COUNT(DISTINCT f1.following_id) AS mutual_count
+            FROM follows f1
+            JOIN follows f2
+                ON f2.follower_id = f1.following_id
+            WHERE f1.follower_id = ?
+            GROUP BY f2.following_id
+        ) mc ON mc.candidate_id = u.id
+
+        WHERE u.id != ?
+          AND COALESCE(u.suspended, 0) = 0
+          AND COALESCE(u.banned, 0) = 0
+
+          AND NOT EXISTS (
+              SELECT 1
+              FROM follows f
+              WHERE f.follower_id = ?
+                AND f.following_id = u.id
+          )
+
+          AND NOT EXISTS (
+              SELECT 1
+              FROM follows f
+              WHERE f.follower_id = u.id
+                AND f.following_id = ?
+          )
+
+          AND NOT EXISTS (
+              SELECT 1
+              FROM follow_requests fr
+              WHERE fr.sender_id = u.id
+                AND fr.receiver_id = ?
+          )
+
+        ORDER BY mutual_count DESC, u.id DESC
+        LIMIT 10
+    """, (uid, uid, uid, uid, uid, uid))
+
+    suggestions = []
+
+    for row in c.fetchall():
+        photo = row[2]
+
+        if not photo:
+            photo = "/static/default_dp.png"
+        elif not str(photo).startswith("/"):
+            if str(photo).startswith("static/"):
+                photo = "/" + str(photo)
+            else:
+                photo = "/static/profile/" + str(photo)
+
+        suggestions.append({
+            "id": row[0],
+            "username": row[1],
+            "photo": photo,
+            "mutual_count": row[3],
+            "request_pending": bool(row[4])
+        })
+
     conn.close()
 
     return render_template(
         "notifications.html",
         notifications=nots,
-        follow_requests=follow_requests
+        follow_requests=follow_requests,
+        suggestions=suggestions
     )
 
 # ==============================================================

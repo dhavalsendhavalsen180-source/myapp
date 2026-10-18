@@ -1,6 +1,7 @@
 import os
 import uuid
 import sqlite3
+import subprocess
 from datetime import datetime
 from flask import Blueprint, render_template, request, session, redirect, jsonify
 
@@ -15,7 +16,7 @@ THUMB_FOLDER = "static/uploads/reels/thumbs"
 os.makedirs(THUMB_FOLDER, exist_ok=True)
 
 ALLOWED_VIDEO_EXT = {"mp4", "webm", "mov", "mkv"}
-
+ALLOWED_IMAGE_EXT = {"jpg", "jpeg", "png", "webp"}
 
 # ===============================
 # ✅ DB CONNECTION
@@ -162,6 +163,109 @@ def init_reels_db():
     conn.commit()
     conn.close()
 
+# ===============================
+# 🎙️ ORIGINAL AUDIO EXTRACTION
+# ===============================
+ORIGINAL_AUDIO_DIR = "static/uploads/original_audio"
+os.makedirs(ORIGINAL_AUDIO_DIR, exist_ok=True)
+
+
+def extract_reel_original_audio(video_path, user_id, reel_id):
+    audio_filename = f"{uuid.uuid4().hex}_original.m4a"
+    audio_path = os.path.join(
+        ORIGINAL_AUDIO_DIR,
+        audio_filename
+    )
+
+    try:
+        command = [
+            "ffmpeg",
+            "-y",
+            "-i", video_path,
+            "-vn",
+            "-c:a", "aac",
+            "-b:a", "128k",
+            audio_path
+        ]
+
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        if result.returncode != 0:
+            print("❌ Reel original audio extraction failed:")
+            print(result.stderr.decode(errors="ignore"))
+            return None
+
+        if not os.path.exists(audio_path):
+            print("❌ Reel audio file was not created")
+            return None
+
+        conn = get_conn()
+        c = conn.cursor()
+
+        c.execute("""
+            INSERT INTO original_audio
+            (
+                user_id,
+                source_type,
+                source_media_id,
+                audio_file,
+                title
+            )
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            "reel",
+            reel_id,
+            audio_filename,
+            f"Original audio by user {user_id}"
+        ))
+
+        original_audio_id = c.lastrowid
+
+        c.execute("""
+            INSERT INTO media_audio
+            (
+                media_type,
+                media_id,
+                music_id,
+                original_audio_id,
+                start_time,
+                end_time,
+                original_volume,
+                music_volume
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            "reel",
+            reel_id,
+            None,
+            original_audio_id,
+            0,
+            30,
+            100,
+            0
+        ))
+
+        conn.commit()
+        conn.close()
+
+        print(
+            "✅ Reel original audio extracted:",
+            original_audio_id,
+            "for reel:",
+            reel_id
+        )
+
+        return original_audio_id
+
+    except Exception as e:
+        print("❌ Reel original audio error:", e)
+        return None
+
 
 # ===============================
 # ✅ CHECK VIDEO EXTENSION
@@ -169,6 +273,13 @@ def init_reels_db():
 def allowed_video(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_VIDEO_EXT
 
+def allowed_reel_media(filename):
+    if "." not in filename:
+        return False
+
+    ext = filename.rsplit(".", 1)[1].lower()
+
+    return ext in ALLOWED_VIDEO_EXT or ext in ALLOWED_IMAGE_EXT
 
 # ===============================
 # ✅ GET CURRENT USER ID
@@ -222,6 +333,9 @@ def reels_page():
         LEFT JOIN music
         ON reels.music_id = music.id
 
+        WHERE COALESCE(users.suspended, 0) = 0
+          AND COALESCE(users.banned, 0) = 0
+
         ORDER BY reels.id DESC
     """)
 
@@ -253,6 +367,23 @@ def reels_page():
 
         saved = c.fetchone() is not None
 
+        c.execute(
+            """
+            SELECT oa.id, oa.audio_file
+            FROM media_audio ma
+            JOIN original_audio oa
+              ON oa.id = ma.original_audio_id
+            WHERE ma.media_type='reel'
+              AND ma.media_id=?
+              AND ma.original_audio_id IS NOT NULL
+            ORDER BY ma.id DESC
+            LIMIT 1
+            """,
+            (r["id"],)
+        )
+
+        original_audio = c.fetchone()
+
         reels.append({
                     "id": r["id"],
                     "user_id": r["user_id"],
@@ -280,7 +411,9 @@ def reels_page():
                     "music_title": r["music_title"],
                     "music_artist": r["music_artist"],
                     "music_file": r["music_file"],
-                    "music_cover": r["music_cover"]
+                    "music_cover": r["music_cover"],
+                    "original_audio_id": original_audio["id"] if original_audio else None,
+                    "original_audio_file": original_audio["audio_file"] if original_audio else None
                 })
 
 
@@ -368,6 +501,8 @@ def view_reel(reel_id):
             ON reels.music_id = music.id
 
         WHERE reels.user_id=?
+          AND COALESCE(users.suspended, 0) = 0
+          AND COALESCE(users.banned, 0) = 0
 
         ORDER BY
             CASE WHEN reels.id=? THEN 0 ELSE 1 END,
@@ -399,6 +534,23 @@ def view_reel(reel_id):
 
         saved = c.fetchone() is not None
 
+        c.execute(
+            """
+            SELECT oa.id, oa.audio_file
+            FROM media_audio ma
+            JOIN original_audio oa
+              ON oa.id = ma.original_audio_id
+            WHERE ma.media_type='reel'
+              AND ma.media_id=?
+              AND ma.original_audio_id IS NOT NULL
+            ORDER BY ma.id DESC
+            LIMIT 1
+            """,
+            (r["id"],)
+        )
+
+        original_audio = c.fetchone()
+
         reels.append({
             "id": r["id"],
             "user_id": r["user_id"],
@@ -423,7 +575,9 @@ def view_reel(reel_id):
             "music_title": r["music_title"],
             "music_artist": r["music_artist"],
             "music_file": r["music_file"],
-            "music_cover": r["music_cover"]
+            "music_cover": r["music_cover"],
+            "original_audio_id": original_audio["id"] if original_audio else None,
+            "original_audio_file": original_audio["audio_file"] if original_audio else None
         })
 
     uid = get_user_id()
@@ -452,6 +606,9 @@ def view_reel(reel_id):
 # ===============================
 # ⬆️ UPLOAD REEL
 # ===============================
+# ===============================
+# ⬆️ UPLOAD REEL
+# ===============================
 @reels_bp.route("/upload", methods=["GET", "POST"])
 def upload_reel():
     init_reels_db()
@@ -466,25 +623,39 @@ def upload_reel():
     file = request.files.get("video")
 
     if not file or file.filename == "":
-        return "No video selected", 400
+        return "No media selected", 400
 
-    if not allowed_video(file.filename):
-        return "Invalid video format", 400
+    if not allowed_reel_media(file.filename):
+        return "Invalid media format", 400
 
     ext = file.filename.rsplit(".", 1)[-1].lower()
+
     new_name = f"{uuid.uuid4().hex}.{ext}"
 
     save_path = os.path.join(UPLOAD_FOLDER, new_name)
     file.save(save_path)
 
-    # AUTO THUMBNAIL
+    # ===============================
+    # 🖼️ AUTO THUMBNAIL
+    # ===============================
     thumb_name = f"{uuid.uuid4().hex}.jpg"
     thumb_path = os.path.join(THUMB_FOLDER, thumb_name)
 
-    os.system(
-        f'ffmpeg -i "{save_path}" -ss 00:00:01 -vframes 1 "{thumb_path}" -y'
-    )
+    if ext in ALLOWED_IMAGE_EXT:
 
+        # PHOTO → JPG THUMBNAIL
+        os.system(
+            f'ffmpeg -y -i "{save_path}" '
+            f'-frames:v 1 -q:v 2 "{thumb_path}"'
+        )
+
+    else:
+
+        # VIDEO → EXISTING THUMBNAIL
+        os.system(
+            f'ffmpeg -i "{save_path}" '
+            f'-ss 00:00:01 -vframes 1 "{thumb_path}" -y'
+        )
 
     uid = get_user_id()
 
@@ -492,11 +663,42 @@ def upload_reel():
     c = conn.cursor()
 
     c.execute("""
-        INSERT INTO reels (user_id, caption, video_path, thumbnail, audio_name, created_at)
-        VALUES (?,?,?,?,?,?)
-    """, (uid, caption, new_name, thumb_name, "Original Audio", datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        INSERT INTO reels
+        (
+            user_id,
+            caption,
+            video_path,
+            thumbnail,
+            audio_name,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        uid,
+        caption,
+        new_name,
+        thumb_name,
+        "Original Audio",
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+
+    reel_id = c.lastrowid
 
     conn.commit()
+
+    # ===============================
+    # 🎙️ ORIGINAL AUDIO
+    # ONLY VIDEO
+    # ===============================
+    original_audio_id = None
+
+    if ext in ALLOWED_VIDEO_EXT:
+        original_audio_id = extract_reel_original_audio(
+            save_path,
+            uid,
+            reel_id
+        )
+
     conn.close()
 
     return redirect("/reels")
@@ -1111,6 +1313,8 @@ def reels_by_audio():
         FROM reels
         JOIN users ON reels.user_id = users.id
         WHERE audio_name=?
+          AND COALESCE(users.suspended, 0) = 0
+          AND COALESCE(users.banned, 0) = 0
         ORDER BY reels.id DESC
     """, (name,))
 

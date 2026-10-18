@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Saved • InsChat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- TOP BAR -->
+  <div class="flex items-center justify-between p-4 bg-white shadow">
+    <a href="/profile/settings" class="text-xl font-bold">⬅ Back</a>
+    <h2 class="font-bold text-lg">Saved</h2>
+    <div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="max-w-3xl mx-auto mt-4 bg-white rounded-xl shadow">
+    <div class="flex justify-around border-b">
+      <button onclick="showTab('posts')" class="py-3 w-full font-semibold">Posts</button>
+      <button onclick="showTab('reels')" class="py-3 w-full font-semibold">Reels</button>
+      <button onclick="showTab('audio')" class="py-3 w-full font-semibold">Audio</button>
+    </div>
+
+    <!-- POSTS TAB -->
+    <div id="posts" class="p-4">
+      {% if saved_posts and saved_posts|length > 0 %}
+        <div class="grid grid-cols-3 gap-1">
+          {% for p in saved_posts %}
+            <a href="/posts/{{ p.id }}" class="block bg-black overflow-hidden">
+              {% if p.image %}
+                <img src="{{ p.image }}" class="w-full h-32 object-cover">
+              {% else %}
+                <div class="w-full h-32 flex items-center justify-center text-gray-400 bg-gray-200">
+                  No Image
+                </div>
+              {% endif %}
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-gray-500 text-sm text-center py-10">
+          No saved posts yet
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- REELS TAB -->
+<div id="reels" class="p-4 hidden">
+
+{% if saved_reels %}
+
+<div class="grid grid-cols-3 gap-1">
+
+{% for reel in saved_reels %}
+
+<a href="/reels?open={{ reel.id }}">
+
+<video
+class="w-full h-32 object-cover"
+src="/static/uploads/reels/{{ reel.video_path }}">
+</video>
+
+</a>
+
+{% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="text-gray-500 text-center py-10">
+No saved reels yet
+</div>
+
+{% endif %}
+
+</div>
+
+    <!-- AUDIO TAB -->
+    <div id="audio" class="p-4 hidden">
+
+      {% if saved_music and saved_music|length > 0 %}
+
+        <div class="space-y-3">
+
+          {% for song in saved_music %}
+
+            <div class="bg-white rounded-2xl shadow-sm border p-3 flex items-center gap-3">
+
+              <!-- COVER -->
+              {% if song.cover %}
+                <img
+                  src="{{ song.cover }}"
+                  class="w-16 h-16 rounded-xl object-cover bg-gray-200"
+                  onerror="this.src='/static/default_music_cover.png'">
+              {% else %}
+                <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl">
+                  🎵
+                </div>
+              {% endif %}
+
+              <!-- SONG INFO -->
+              <div class="flex-1 min-w-0">
+                <div class="font-bold text-gray-900 truncate">
+                  {{ song.title }}
+                </div>
+
+                <div class="text-sm text-gray-500 truncate">
+                  {{ song.artist or 'Unknown Artist' }}
+                </div>
+
+                {% if song.duration %}
+                  <div class="text-xs text-gray-400 mt-1">
+                    {{ song.duration }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- PLAY -->
+              <button
+                type="button"
+                onclick="playSavedSong(this)"
+                data-src="/static/music/uploads/{{ song.filename }}"
+                class="w-11 h-11 rounded-full bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 text-white flex items-center justify-center shadow-lg">
+                ▶
+              </button>
+
+              <!-- DETAILS -->
+<!-- DETAILS -->          <a
+            href="/music/{{ song.id }}"
+            class="text-gray-500 text-xl px-1">
+            ⋮
+          </a>
+
+        </div>
+
+      {% endfor %}
+
+    </div>
+
+  {% else %}
+
+    <div class="text-gray-500 text-sm text-center py-10">
+      🎵 No saved songs yet
+    </div>
+
+  {% endif %}
+
+
+  <!-- SAVED ORIGINAL AUDIO -->
+  {% if saved_original_audio and saved_original_audio|length > 0 %}
+
+    <div class="mt-6">
+
+      <h3 class="font-bold text-lg text-gray-900 mb-3">
+        🎙️ Saved Original Audio
+      </h3>
+
+      <div class="space-y-3">
+
+        {% for audio in saved_original_audio %}
+
+          <div class="bg-white rounded-2xl shadow-sm border p-3">
+
+            <div class="flex items-center gap-3">
+
+              {% if audio.photo %}
+
+                <img
+                  src="{{ audio.photo }}"
+                  class="w-16 h-16 rounded-full object-cover">
+
+              {% else %}
+
+                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl">
+                  🎙️
+                </div>
+
+              {% endif %}
+
+
+              <div class="flex-1 min-w-0">
+
+                <a
+                  href="/music/original/{{ audio.id }}"
+                  class="font-bold text-gray-900 truncate block">
+                  {{ audio.title or "Original Audio" }}
+                </a>
+
+                <div class="text-sm text-gray-500 truncate">
+                  @{{ audio.username or "Unknown" }}
+                </div>
+
+                <div class="text-xs text-gray-400 mt-1">
+                  Original Audio
+                </div>
+
+              </div>
+
+              <!-- PLAY -->
+              <button
+                type="button"
+                onclick="playSavedSong(this)"
+                data-src="/static/uploads/original_audio/{{ audio.audio_file }}"
+                class="w-11 h-11 rounded-full bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 text-white flex items-center justify-center shadow-lg">
+                ▶
+              </button>
+
+              <!-- DETAILS -->
+              <a
+                href="/music/original/{{ audio.id }}"
+                class="text-gray-500 text-xl px-1">
+                ⋮
+              </a>
+
+            </div>
+
+
+          </div>
+
+        {% endfor %}
+
+      </div>
+
+    </div>
+
+  {% endif %}
+
+</div>
+
+  </div>
+
+<script>
+  function showTab(tab){
+    document.getElementById("posts").classList.add("hidden");
+    document.getElementById("reels").classList.add("hidden");
+    document.getElementById("audio").classList.add("hidden");
+
+    document.getElementById(tab).classList.remove("hidden");
+  }
+</script>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+window.me = {{ session.get("user_id")|tojson }};
+</script>
+
+<script src="/static/js/global_call.js"></script>
+
+<script>
+let savedAudio = null;
+let savedAudioButton = null;
+
+function playSavedSong(button) {
+
+  const src = button.dataset.src;
+
+  if (savedAudio && savedAudio.src.includes(src)) {
+
+    if (savedAudio.paused) {
+      savedAudio.play();
+      button.textContent = "⏸";
+    } else {
+      savedAudio.pause();
+      button.textContent = "▶";
+    }
+
+    return;
+  }
+
+  if (savedAudio) {
+    savedAudio.pause();
+
+    if (savedAudioButton) {
+      savedAudioButton.textContent = "▶";
+    }
+  }
+
+  savedAudio = new Audio(src);
+  savedAudioButton = button;
+
+  savedAudio.play();
+
+  button.textContent = "⏸";
+
+  savedAudio.onended = function() {
+    button.textContent = "▶";
+  };
+}
+</script>
+
+</body>
+</html>

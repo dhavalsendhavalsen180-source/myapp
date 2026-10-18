@@ -37,14 +37,21 @@ def profile(user_id):
 
     # USER
     c.execute("""
-        SELECT id, username, bio, photo, is_private
+        SELECT
+            id,
+            username,
+            bio,
+            photo,
+            is_private,
+            COALESCE(suspended, 0) AS suspended,
+            COALESCE(banned, 0) AS banned
         FROM users
         WHERE id=?
     """, (user_id,))
 
     u = c.fetchone()
 
-    if not u:
+    if not u or u["suspended"] or u["banned"]:
         conn.close()
         return "User not found", 404
 
@@ -202,6 +209,7 @@ def profile(user_id):
         is_following=is_following,
         follow_requested=follow_requested,
         current_user=current,
+        is_owner=(current is not None and str(current) == str(user_id)),
         can_view=can_view,
         can_chat=can_chat,
         has_story=has_story,
@@ -220,6 +228,12 @@ def edit_profile():
     uid = session["user_id"]
 
     username = request.form.get("username", "").strip()
+    import re
+
+    if not re.fullmatch(r"[A-Za-z0-9._]+", username):
+        conn = sqlite3.connect(DB_NAME)
+        conn.close()
+        return redirect(f"/profile/{uid}?error=invalid_username")
     bio = request.form.get("bio", "").strip()
     photo = request.files.get("photo")
 
@@ -328,8 +342,14 @@ def saved_page():
     c.execute("""
         SELECT posts.id, posts.caption
         FROM post_saves
-        JOIN posts ON post_saves.post_id = posts.id
-        WHERE post_saves.user_id=?
+        JOIN posts
+            ON post_saves.post_id = posts.id
+        JOIN users
+            ON posts.user_id = users.id
+        WHERE post_saves.user_id = ?
+          AND COALESCE(users.suspended, 0) = 0
+          AND COALESCE(users.banned, 0) = 0
+        ORDER BY posts.id DESC
     """, (uid,))
 
     rows = c.fetchall()
@@ -350,23 +370,70 @@ def saved_page():
             "image": img["image_path"] if img else None
         })
 
-    # SAVED REELS
+    # SAVED REELS — hide suspended/banned owners
     c.execute("""
         SELECT r.*
         FROM reel_saves rs
-        JOIN reels r ON r.id = rs.reel_id
-        WHERE rs.user_id=?
+        JOIN reels r
+            ON r.id = rs.reel_id
+        JOIN users u
+            ON r.user_id = u.id
+        WHERE rs.user_id = ?
+          AND COALESCE(u.suspended, 0) = 0
+          AND COALESCE(u.banned, 0) = 0
         ORDER BY rs.id DESC
     """, (uid,))
 
     saved_reels = c.fetchall()
+
+    # SAVED MUSIC / SONGS
+    c.execute("""
+        SELECT
+            m.id,
+            m.title,
+            m.artist,
+            m.filename,
+            m.cover,
+            m.duration
+        FROM music_saves ms
+        JOIN music m ON m.id = ms.music_id
+        WHERE ms.user_id=? AND m.blocked=0
+        ORDER BY ms.id DESC
+    """, (uid,))
+
+    saved_music = c.fetchall()
+
+    # SAVED ORIGINAL AUDIO
+    c.execute("""
+        SELECT
+            oa.id,
+            oa.user_id,
+            oa.source_type,
+            oa.source_media_id,
+            oa.audio_file,
+            oa.title,
+            oa.created_at,
+            u.username,
+            u.photo
+        FROM original_audio_saves oas
+        JOIN original_audio oa
+            ON oa.id = oas.audio_id
+        LEFT JOIN users u
+            ON oa.user_id = u.id
+        WHERE oas.user_id=?
+        ORDER BY oas.id DESC
+    """, (uid,))
+
+    saved_original_audio = c.fetchall()
 
     conn.close()
 
     return render_template(
         "saved.html",
         saved_posts=saved_posts,
-        saved_reels=saved_reels
+        saved_reels=saved_reels,
+        saved_music=saved_music,
+        saved_original_audio=saved_original_audio
     )
 
 ########################################

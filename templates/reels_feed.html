@@ -404,6 +404,25 @@ scroll-snap-stop:always;
   src="/static/uploads/reels/{{ reel.video_path }}"
   class="w-full h-full object-cover">
 
+{% if reel.music_id and reel.music_file %}
+<audio
+  id="music-{{ reel.id }}"
+  src="/static/music/uploads/{{ reel.music_file }}"
+  preload="auto"
+  data-start="{{ reel.music_start or 0 }}"
+  data-end="{{ reel.music_end or 0 }}">
+</audio>
+
+{% elif reel.original_audio_id and reel.original_audio_file %}
+<audio
+  id="music-{{ reel.id }}"
+  src="/static/uploads/original_audio/{{ reel.original_audio_file }}"
+  preload="auto"
+  data-start="{{ reel.music_start or 0 }}"
+  data-end="{{ reel.music_end or 0 }}">
+</audio>
+{% endif %}
+
 {% else %}
 
 <video
@@ -440,12 +459,11 @@ scroll-snap-stop:always;
 
     {% if reel.user_id == session.user_id %}
 
-      <form action="/reels/delete/{{ reel.id }}" method="POST">
-        <button type="submit"
-                onclick="return confirm('Delete this reel?')">
-          🗑 Remove Reel
-        </button>
-      </form>
+      <button type="button"
+              onclick="openDeleteReelModal({{ reel.id }})"
+              class="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 transition">
+        🗑 Remove Reel
+      </button>
 
     {% else %}
 
@@ -659,6 +677,59 @@ scroll-snap-stop:always;
 
 </div>
 
+<!-- 🎵 MUSIC / 🔊 ORIGINAL AUDIO -->
+{% if reel.music_id %}
+
+<a href="/music/{{ reel.music_id }}?media_path={{ reel.video_path }}&mode=reel"
+   class="flex flex-col items-center text-white">
+
+  <svg class="w-7 h-7"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="2"
+       stroke-linecap="round"
+       stroke-linejoin="round">
+
+    <path d="M9 18V5l11-2v13"/>
+    <circle cx="6" cy="18" r="3"/>
+    <circle cx="17" cy="16" r="3"/>
+
+  </svg>
+
+  <span class="text-[11px] mt-1 max-w-[70px] truncate">
+    {{ reel.music_title or "Music" }}
+  </span>
+
+</a>
+
+{% elif reel.original_audio_id %}
+
+<a href="/music/original/{{ reel.original_audio_id }}?media_path={{ reel.video_path | urlencode }}&mode=reel"
+   class="flex flex-col items-center text-white">
+
+  <svg class="w-7 h-7"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="2"
+       stroke-linecap="round"
+       stroke-linejoin="round">
+
+    <path d="M11 5L6 9H3v6h3l5 4V5z"/>
+    <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+    <path d="M18.5 5.5a9 9 0 0 1 0 13"/>
+
+  </svg>
+
+  <span class="text-[11px] mt-1 max-w-[90px] truncate">
+    Original Audio
+  </span>
+
+</a>
+
+{% endif %}
+
 </div>
 
 
@@ -782,21 +853,75 @@ const wrapper = document.getElementById("wrapper");
 const videos = document.querySelectorAll("video");
 
 function controlVideos(){
-  let middle = window.innerHeight / 2;
 
-  videos.forEach(v => {
-    let rect = v.getBoundingClientRect();
+  const middle = window.innerHeight / 2;
 
-    if(rect.top < middle && rect.bottom > middle){
-      // ACTIVE REEL
-      v.play();
-    v.muted = globalMuted;
-    } else {
-      // OTHER REELS
-      v.pause();
-      v.currentTime = 0;
+  document.querySelectorAll(".reel").forEach(reel => {
+
+    const rect = reel.getBoundingClientRect();
+
+    const active =
+      rect.top < middle &&
+      rect.bottom > middle;
+
+    const video = reel.querySelector("video");
+    const music = reel.querySelector("audio");
+
+    if(active){
+
+      /* VIDEO REEL */
+      if(video){
+
+        video.muted = globalMuted;
+
+        video.play().catch(()=>{});
+
+      }
+
+      /* PHOTO + MUSIC REEL */
+      if(music){
+
+        const start = parseFloat(music.dataset.start || "0");
+        const end = parseFloat(music.dataset.end || "0");
+
+        if(
+          end > start &&
+          (music.currentTime < start || music.currentTime >= end)
+        ){
+          music.currentTime = start;
+        }
+
+        music.volume = 0.7;
+
+        music.play().catch(()=>{});
+
+      }
+
+    }else{
+
+      /* STOP VIDEO */
+      if(video){
+
+        video.pause();
+        video.currentTime = 0;
+
+      }
+
+      /* STOP MUSIC */
+      if(music){
+
+        music.pause();
+
+        const start = parseFloat(music.dataset.start || "0");
+
+        music.currentTime = start;
+
+      }
+
     }
+
   });
+
 }
 
 /* SCROLL + LOAD */
@@ -1149,6 +1274,61 @@ wrapper.scrollTop = Math.round(wrapper.scrollTop);
 window.addEventListener('load', fixReelHeight);
 window.addEventListener('resize', fixReelHeight);
 
+document.querySelectorAll("audio").forEach(audio => {
+
+  audio.addEventListener("timeupdate", () => {
+
+    const start = parseFloat(audio.dataset.start || "0");
+    const end = parseFloat(audio.dataset.end || "0");
+
+    if(end > start && audio.currentTime >= end){
+
+      audio.currentTime = start;
+
+      const reel = audio.closest(".reel");
+
+      if(reel){
+
+        const rect = reel.getBoundingClientRect();
+        const middle = window.innerHeight / 2;
+
+        if(rect.top < middle && rect.bottom > middle){
+          audio.play().catch(()=>{});
+        }
+
+      }
+
+    }
+
+  });
+
+});
+
+function resumeActiveMusic(){
+
+  document.querySelectorAll(".reel").forEach(reel => {
+
+    const rect = reel.getBoundingClientRect();
+
+    if(
+      rect.top < window.innerHeight / 2 &&
+      rect.bottom > window.innerHeight / 2
+    ){
+
+      const music = reel.querySelector("audio");
+
+      if(music){
+        music.play().catch(()=>{});
+      }
+
+    }
+
+  });
+
+}
+
+document.addEventListener("touchstart", resumeActiveMusic, {passive:true});
+document.addEventListener("click", resumeActiveMusic);
 
 </script>
 
@@ -1161,5 +1341,94 @@ window.me = {{ session.get("user_id")|tojson }};
 <script src="/static/js/global_call.js"></script>
 
 {% include "reels_sher_nano.html" %}
+
+<!-- INSCHAT PREMIUM DELETE REEL MODAL -->
+<div id="deleteReelModal"
+     class="hidden fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+
+  <div class="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl"
+       style="animation: reelDeleteModalIn .22s ease-out;">
+
+    <div class="bg-gradient-to-r from-rose-500 via-red-500 to-orange-500 px-6 py-7 text-center text-white">
+      <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-4xl">
+        🗑️
+      </div>
+
+      <h2 class="text-2xl font-extrabold">Delete Reel?</h2>
+
+      <p class="mt-2 text-sm text-white/90">
+        Are you sure you want to remove this reel?
+      </p>
+    </div>
+
+    <div class="p-6">
+      <p class="mb-6 text-center text-sm leading-6 text-gray-500">
+        This action cannot be undone. Please confirm before continuing.
+      </p>
+
+      <div class="flex gap-3">
+        <button type="button"
+                onclick="closeDeleteReelModal()"
+                class="flex-1 rounded-xl border border-gray-200 bg-gray-100 px-4 py-3 font-bold text-gray-700 transition hover:bg-gray-200 active:scale-95">
+          Cancel
+        </button>
+
+        <form id="deleteReelForm" method="POST" class="flex-1">
+          <button type="submit"
+                  class="w-full rounded-xl bg-gradient-to-r from-rose-500 to-red-600 px-4 py-3 font-bold text-white shadow-lg shadow-red-200 transition hover:brightness-110 active:scale-95">
+            Delete
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes reelDeleteModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+</style>
+
+<script>
+function openDeleteReelModal(reelId) {
+    const modal = document.getElementById("deleteReelModal");
+    const form = document.getElementById("deleteReelForm");
+
+    if (!modal || !form) return;
+
+    form.action = "/reels/delete/" + reelId;
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+}
+
+function closeDeleteReelModal() {
+    const modal = document.getElementById("deleteReelModal");
+
+    if (modal) modal.classList.add("hidden");
+
+    document.body.style.overflow = "";
+}
+
+document.getElementById("deleteReelModal").addEventListener("click", function(event) {
+    if (event.target === this) {
+        closeDeleteReelModal();
+    }
+});
+
+document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") {
+        closeDeleteReelModal();
+    }
+});
+</script>
+
 </body>
 </html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>InsChat | Account Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-slate-950 text-white">
+<div class="mx-auto max-w-7xl p-4 sm:p-6">
+
+    <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <p class="text-sm font-semibold text-cyan-400">INSCHAT ADMIN</p>
+            <h1 class="text-2xl font-bold sm:text-3xl">Account Management</h1>
+            <p class="mt-1 text-sm text-slate-400">
+                Search accounts and manage their status.
+            </p>
+        </div>
+
+        <a href="/admin/reports"
+           class="rounded-lg bg-slate-800 px-4 py-2 text-sm hover:bg-slate-700">
+            ← Back to Reports
+        </a>
+    </header>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="mb-4 space-y-2">
+                {% for message in messages %}
+                    <div class="rounded-lg border border-cyan-800 bg-cyan-950 p-3 text-cyan-200">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <section class="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-4">
+        <form method="GET" action="/admin/accounts"
+              class="flex flex-col gap-3 sm:flex-row">
+            <input
+                type="text"
+                name="q"
+                value="{{ search }}"
+                placeholder="Search by username or User ID"
+                class="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 outline-none focus:border-cyan-500"
+            >
+            <button type="submit"
+                    class="rounded-lg bg-cyan-600 px-5 py-3 font-semibold hover:bg-cyan-500">
+                Search
+            </button>
+            <a href="/admin/accounts"
+               class="rounded-lg bg-slate-800 px-5 py-3 text-center hover:bg-slate-700">
+                Reset
+            </a>
+        </form>
+    </section>
+
+    <section class="mb-8">
+        <h2 class="mb-3 text-xl font-bold">User Accounts</h2>
+
+        {% if users %}
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {% for u in users %}
+                    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+
+                        <div class="mb-3 flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="break-words text-lg font-bold">
+                                    {{ u.username }}
+                                </h3>
+                                <p class="text-sm text-slate-400">
+                                    User ID: {{ u.id }}
+                                </p>
+                            </div>
+
+                            {% if u.banned %}
+                                <span class="rounded-full bg-red-950 px-3 py-1 text-xs font-bold text-red-300">
+                                    BANNED
+                                </span>
+                            {% elif u.suspended %}
+                                <span class="rounded-full bg-amber-950 px-3 py-1 text-xs font-bold text-amber-300">
+                                    SUSPENDED
+                                </span>
+                            {% else %}
+                                <span class="rounded-full bg-emerald-950 px-3 py-1 text-xs font-bold text-emerald-300">
+                                    ACTIVE
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4 grid grid-cols-2 gap-2">
+                            <div class="rounded-lg bg-slate-950 p-3">
+                                <p class="text-xs text-slate-400">Copyright Strikes</p>
+                                <p class="mt-1 text-xl font-bold">
+                                    {{ u.copyright_strikes }}
+                                </p>
+                            </div>
+
+                            <div class="rounded-lg bg-slate-950 p-3">
+                                <p class="text-xs text-slate-400">Reports</p>
+                                <p class="mt-1 text-xl font-bold">
+                                    {{ u.report_count }}
+                                </p>
+                            </div>
+                        </div>
+
+                        {% if u.id == 1 %}
+                            <p class="rounded-lg border border-slate-700 p-3 text-sm text-slate-400">
+                                Admin account — status changes are disabled here.
+                            </p>
+                        {% else %}
+                            <div class="grid grid-cols-2 gap-2">
+
+                                {% if u.suspended %}
+                                    <form method="POST" action="/admin/accounts"
+                                          onsubmit="return confirm('Unsuspend {{ u.username }}?')">
+                                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                                        <input type="hidden" name="action" value="unsuspend">
+                                        <button class="w-full rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold hover:bg-emerald-600">
+                                            Unsuspend
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form method="POST" action="/admin/accounts"
+                                          onsubmit="return confirm('Suspend {{ u.username }}?')">
+                                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                                        <input type="hidden" name="action" value="suspend">
+                                        <button class="w-full rounded-lg bg-amber-700 px-3 py-2 text-sm font-semibold hover:bg-amber-600">
+                                            Suspend
+                                        </button>
+                                    </form>
+                                {% endif %}
+
+                                {% if u.banned %}
+                                    <form method="POST" action="/admin/accounts"
+                                          onsubmit="return confirm('Unban {{ u.username }}?')">
+                                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                                        <input type="hidden" name="action" value="unban">
+                                        <button class="w-full rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold hover:bg-emerald-600">
+                                            Unban
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form method="POST" action="/admin/accounts"
+                                          onsubmit="return confirm('Ban {{ u.username }}?')">
+                                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                                        <input type="hidden" name="action" value="ban">
+                                        <button class="w-full rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold hover:bg-red-600">
+                                            Ban
+                                        </button>
+                                    </form>
+                                {% endif %}
+
+                            </div>
+                        {% endif %}
+
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="rounded-xl border border-slate-800 bg-slate-900 p-6 text-center text-slate-400">
+                No matching users found.
+            </div>
+        {% endif %}
+    </section>
+
+    <section>
+        <h2 class="mb-3 text-xl font-bold">Recent Admin Actions</h2>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
+            <table class="w-full min-w-[650px] text-left text-sm">
+                <thead class="bg-slate-800 text-slate-300">
+                    <tr>
+                        <th class="p-3">Time</th>
+                        <th class="p-3">User</th>
+                        <th class="p-3">Action</th>
+                        <th class="p-3">Notes</th>
+                        <th class="p-3">Admin ID</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for log in logs %}
+                        <tr class="border-t border-slate-800">
+                            <td class="p-3">{{ log.created_at }}</td>
+                            <td class="p-3">
+                                {{ log.owner_name or ('User #' ~ log.owner_id) }}
+                            </td>
+                            <td class="p-3 font-semibold">{{ log.action }}</td>
+                            <td class="p-3">{{ log.notes or '-' }}</td>
+                            <td class="p-3">{{ log.admin_id }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="p-4 text-center text-slate-400">
+                                No admin actions recorded yet.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+</body>
+</html>

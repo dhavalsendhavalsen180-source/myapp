@@ -177,20 +177,6 @@
       </div>
 
       <!-- MENU -->
-      <button onclick="togglePostMenu()"
-              class="group w-11 h-11 rounded-2xl bg-white border border-gray-200 shadow-md flex items-center justify-center active:scale-95 transition hover:bg-gray-50">
-
-        <svg class="w-6 h-6 text-gray-700"
-             viewBox="0 0 24 24"
-             fill="currentColor">
-
-          <circle cx="12" cy="5" r="1.7"/>
-          <circle cx="12" cy="12" r="1.7"/>
-          <circle cx="12" cy="19" r="1.7"/>
-
-        </svg>
-
-      </button>
 
     </div>
 
@@ -199,12 +185,12 @@
 </div>
 
 <!-- FEED -->
-  <div class="max-w-xl mx-auto mt-4 space-y-6 pb-24">
+  <div class="max-w-xl mx-auto mt-4 space-y-6 pb-15">
 
 {% for post in posts %}
 
 <!-- POST CARD -->
-<div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/30">
+<div class="post-card bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/30">
 
 <!-- HEADER -->
 <div class="flex items-center justify-between px-4 py-3">
@@ -248,25 +234,20 @@
       👁 View
     </a>
 
-    {% if post.owner_id == current_user %}
+    {% if post.user_id|string == current_user|string %}
 
-      <form method="POST"
-            action="/posts/delete/{{ post.id }}"
-            onsubmit="return confirm('Delete this post?')">
-
-        <button type="submit"
-                class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
-          🗑 Delete
-        </button>
-
-      </form>
+      <button type="button"
+              onclick="openDeleteModal({{ post.id }})"
+              class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition">
+        🗑 Delete
+      </button>
 
     {% else %}
 
 <form method="GET" action="/report">
     <input type="hidden" name="target_type" value="post">
     <input type="hidden" name="target_id" value="{{ post.id }}">
-    <input type="hidden" name="owner_id" value="{{ post.owner_id }}">
+    <input type="hidden" name="owner_id" value="{{ post.user_id }}">
 
     <button type="submit"
             class="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100">
@@ -443,6 +424,14 @@
     preload="metadata"
     loop>
 </audio>
+
+{% elif post.original_audio_file %}
+<audio
+    class="post-audio"
+    src="/static/uploads/original_audio/{{ post.original_audio_file }}"
+    preload="metadata"
+    loop>
+</audio>
 {% endif %}
 
 <!-- ACTION ROW -->
@@ -523,7 +512,7 @@
 
         {% if post.audio_type == "original" %}
 
-            <a href="/posts/original-audio/{{ post.original_audio_id }}"
+            <a href="/music/original/{{ post.original_audio_id }}"
                class="flex items-center gap-1.5
                       max-w-[150px]
                       overflow-hidden
@@ -625,6 +614,8 @@
 {% endfor %}
 
 </div> <!-- END FEED -->
+
+<div class="h-[15vh]"></div>
 
 <!-- 🏠🔍➕🎬BOTTOM NAV -->
 <!-- ✨ INSCHAT BOTTOM NAV -->
@@ -896,33 +887,263 @@ window.me = {{ session.get("user_id")|tojson }};
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
+    const postCards = document.querySelectorAll(".post-card");
     const audios = document.querySelectorAll(".post-audio");
 
-    audios.forEach(audio => {
-        audio.volume = 1.0;
-    });
+    let activeAudio = null;
 
-    const observer = new IntersectionObserver((entries) => {
+    function stopAllAudios(exceptAudio = null) {
 
-        entries.forEach(entry => {
+        audios.forEach(audio => {
 
-            const audio = entry.target.querySelector(".post-audio");
-            if (!audio) return;
-
-            if (entry.isIntersecting) {
-                audio.play().catch(() => {});
-            } else {
+            if (audio !== exceptAudio) {
                 audio.pause();
                 audio.currentTime = 0;
             }
+
         });
 
+    }
+
+
+    function playAudio(audio) {
+
+        if (!audio) return;
+
+        stopAllAudios(audio);
+
+        activeAudio = audio;
+
+        audio.volume = 1.0;
+
+        /*
+         * Browser ko source load karne ke liye force
+         */
+        if (audio.readyState === 0) {
+            audio.load();
+        }
+
+        audio.play()
+            .then(() => {
+                console.log(
+                    "VIEW POST AUDIO PLAYING:",
+                    audio.src
+                );
+            })
+            .catch(error => {
+
+                console.log(
+                    "VIEW POST AUDIO BLOCKED:",
+                    error.name,
+                    error.message
+                );
+
+            });
+
+    }
+
+
+    /*
+     * PAGE LOAD
+     */
+    if (audios.length > 0) {
+
+        const audio = audios[0];
+
+        if (audio.readyState >= 2) {
+
+            playAudio(audio);
+
+        } else {
+
+            audio.addEventListener("canplay", function startAudio() {
+
+                audio.removeEventListener(
+                    "canplay",
+                    startAudio
+                );
+
+                playAudio(audio);
+
+            });
+
+        }
+
+    }
+
+
+    /*
+     * USER TOUCH
+     *
+     * Browser autoplay block ho to
+     * first touch par music start hoga.
+     */
+    document.addEventListener("pointerdown", () => {
+
+        if (activeAudio && !activeAudio.paused) {
+            return;
+        }
+
+        if (audios.length > 0) {
+            playAudio(audios[0]);
+        }
+
     }, {
-        threshold: 0.6
+        passive: true
     });
 
-    document.querySelectorAll(".bg-white\\/95").forEach(post => {
-        observer.observe(post);
+
+    /*
+     * CLICK FALLBACK
+     */
+    document.addEventListener("click", () => {
+
+        if (activeAudio && !activeAudio.paused) {
+            return;
+        }
+
+        if (audios.length > 0) {
+            playAudio(audios[0]);
+        }
+
+    });
+
+
+    /*
+     * AUDIO ERROR DEBUG
+     */
+    audios.forEach(audio => {
+
+        audio.addEventListener("error", () => {
+
+            console.log(
+                "VIEW POST AUDIO ERROR:",
+                audio.error,
+                audio.src
+            );
+
+        });
+
+    });
+
+
+/*
+ * SCROLL AUTO PLAY
+ *
+ * Screen ke center ke sabse paas wala post
+ * current post maana jayega.
+ *
+ * Audio hai:
+ *     automatically play
+ *
+ * Audio nahi hai:
+ *     previous audio stop
+ */
+
+let scrollTimer = null;
+
+window.addEventListener("scroll", () => {
+
+    clearTimeout(scrollTimer);
+
+    scrollTimer = setTimeout(() => {
+
+        let closestCard = null;
+        let closestDistance = Infinity;
+
+        const screenCenter = window.innerHeight / 2;
+
+        postCards.forEach(card => {
+
+            const rect = card.getBoundingClientRect();
+
+            if (
+                rect.bottom <= 0 ||
+                rect.top >= window.innerHeight
+            ) {
+                return;
+            }
+
+            const cardCenter =
+                rect.top + (rect.height / 2);
+
+            const distance =
+                Math.abs(cardCenter - screenCenter);
+
+            if (distance < closestDistance) {
+
+                closestDistance = distance;
+                closestCard = card;
+
+            }
+
+        });
+
+
+        if (!closestCard) return;
+
+
+        const audio =
+            closestCard.querySelector(".post-audio");
+
+
+        /*
+         * Current post me audio hai
+         */
+        if (audio) {
+
+            /*
+             * Already isi audio ka music chal raha hai
+             * to dobara restart mat karo.
+             */
+            if (
+                activeAudio === audio &&
+                !audio.paused
+            ) {
+                return;
+            }
+
+            playAudio(audio);
+
+        }
+
+
+        /*
+         * Current post me audio nahi hai
+         */
+        else {
+
+            stopAllAudios();
+            activeAudio = null;
+
+        }
+
+    }, 100);
+
+}, {
+    passive: true
+});
+
+    /*
+     * PAGE HIDE
+     */
+    document.addEventListener("visibilitychange", () => {
+
+        if (document.hidden) {
+
+            stopAllAudios();
+            activeAudio = null;
+
+        }
+
+    });
+
+
+    window.addEventListener("pagehide", () => {
+
+        stopAllAudios();
+        activeAudio = null;
+
     });
 
 });
@@ -1087,6 +1308,111 @@ document.querySelectorAll(".video-touch-layer").forEach(layer => {
 
 });
 
+</script>
+
+<!-- ✨ INSCHAT PREMIUM DELETE MODAL -->
+<div id="deletePostModal"
+     class="hidden fixed inset-0 z-[9999] flex items-center justify-center
+            bg-black/60 backdrop-blur-sm p-4">
+
+  <div class="w-full max-w-sm overflow-hidden rounded-3xl
+              bg-white shadow-2xl"
+       style="animation: deleteModalIn .22s ease-out;">
+
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-rose-500 via-red-500 to-orange-500
+                px-6 py-7 text-center text-white">
+
+      <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center
+                  rounded-full bg-white/20 text-4xl">
+        🗑️
+      </div>
+
+      <h2 class="text-2xl font-extrabold">
+        Delete Post?
+      </h2>
+
+      <p class="mt-2 text-sm text-white/90">
+        Are you sure you want to delete this post?
+      </p>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6">
+
+      <p class="mb-6 text-center text-sm leading-6 text-gray-500">
+        This action cannot be undone. Please confirm before continuing.
+      </p>
+
+      <div class="flex gap-3">
+
+        <button type="button"
+                onclick="closeDeleteModal()"
+                class="flex-1 rounded-xl border border-gray-200
+                       bg-gray-100 px-4 py-3 font-bold text-gray-700
+                       transition hover:bg-gray-200 active:scale-95">
+          Cancel
+        </button>
+
+        <form id="deletePostForm"
+              method="POST"
+              class="flex-1">
+
+          <button type="submit"
+                  class="w-full rounded-xl bg-gradient-to-r
+                         from-rose-500 to-red-600 px-4 py-3
+                         font-bold text-white shadow-lg shadow-red-200
+                         transition hover:brightness-110 active:scale-95">
+            Delete
+          </button>
+
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+@keyframes deleteModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+</style>
+
+<script>
+function openDeleteModal(postId) {
+    const modal = document.getElementById("deletePostModal");
+    const form = document.getElementById("deletePostForm");
+
+    form.action = "/posts/delete/" + postId;
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+}
+
+function closeDeleteModal() {
+    document.getElementById("deletePostModal").classList.add("hidden");
+    document.body.style.overflow = "";
+}
+
+document.getElementById("deletePostModal").addEventListener("click", function(event) {
+    if (event.target === this) {
+        closeDeleteModal();
+    }
+});
+
+document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") {
+        closeDeleteModal();
+    }
+});
 </script>
 
 </body>

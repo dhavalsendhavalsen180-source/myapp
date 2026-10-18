@@ -321,6 +321,19 @@ class="w-full bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl p-4 font-s
 
 </button>
 
+{% if owner_info.suspended %}
+
+<button
+name="action"
+value="unsuspend"
+class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-4 font-semibold">
+
+🔓 Unsuspend User
+
+</button>
+
+{% endif %}
+
 <button
 name="action"
 value="ban"

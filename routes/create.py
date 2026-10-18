@@ -11,6 +11,8 @@ DB_NAME = "database.db"
 
 UPLOAD_REELS_DIR = os.path.join("static", "uploads", "reels")
 THUMB_FOLDER = os.path.join("static", "uploads", "reels", "thumbs")
+POST_THUMB_FOLDER = os.path.join("static", "uploads", "posts", "thumbs")
+os.makedirs(POST_THUMB_FOLDER, exist_ok=True)
 os.makedirs(THUMB_FOLDER, exist_ok=True)
 UPLOAD_POSTS_DIR = os.path.join("static", "uploads", "posts")      # ✅ posts folder
 UPLOAD_STORY_DIR = os.path.join("static", "stories")    # ✅ story folder
@@ -310,8 +312,12 @@ def create_home():
     if "user_id" not in session:
         return redirect("/auth/login")
 
-    return render_template("create/index.html")
-
+    return render_template(
+        "create/index.html",
+        original_audio_id=request.args.get("original_audio_id", ""),
+        music_id=request.args.get("music_id", ""),
+        mode=request.args.get("mode", "post")
+    )
 
 # ===============================
 # ✂️ EDITOR PAGE
@@ -338,7 +344,9 @@ def editor():
             url_for(
                 "create.editor",
                 media_path=newname,
-                mode=request.args.get("mode", "post")
+                mode=request.args.get("mode", "post"),
+                music_id=request.args.get("music_id", ""),
+                original_audio_id=request.args.get("original_audio_id", "")
             )
         )
 
@@ -378,6 +386,22 @@ def editor():
     music = None
     music_id = request.args.get("music_id")
 
+    original_audio = None
+    original_audio_id = request.args.get("original_audio_id")
+
+    if original_audio_id:
+        conn = sqlite3.connect(DB_NAME)
+        conn.row_factory = sqlite3.Row
+
+        original_audio = conn.execute("""
+            SELECT *
+            FROM original_audio
+            WHERE id = ?
+            LIMIT 1
+        """, (original_audio_id,)).fetchone()
+
+        conn.close()
+
     if music_id:
         conn = sqlite3.connect(DB_NAME)
         conn.row_factory = sqlite3.Row
@@ -393,9 +417,9 @@ def editor():
         "create/editor.html",
         media_path=media_path,
         mode=mode,
-        music=music
+        music=music,
+        original_audio=original_audio
     )
-
 # ===============================
 # 🚀 PUBLISH PAGE
 # ===============================
@@ -414,6 +438,7 @@ def publish():
         mode = request.form.get("mode", "post").strip()
 
         music_id = request.form.get("music_id")
+        print("🔥 PUBLISH MUSIC_ID:", repr(music_id))
         music_start = request.form.get("music_start", 0)
         music_end = request.form.get("music_end", 30)
 
@@ -486,18 +511,48 @@ def publish():
         thumb_name = None
 
         if mode == "reel":
-            thumb_name = f"{uuid.uuid4().hex}.jpg"
-            thumb_path = os.path.join(THUMB_FOLDER, thumb_name)
 
-            subprocess.run([
-                "ffmpeg",
-                "-y",
-                "-i", dest,
-                "-ss", "00:00:00.5",
-                "-frames:v", "1",
-                thumb_path
-            ], stdout=subprocess.DEVNULL,
-               stderr=subprocess.DEVNULL)
+            ext = dest.rsplit(".", 1)[-1].lower()
+
+            # ==========================
+            # 🖼️ PHOTO REEL
+            # ==========================
+            if ext in {"jpg", "jpeg", "png", "webp", "gif"}:
+
+                thumb_name = f"{uuid.uuid4().hex}.jpg"
+                thumb_path = os.path.join(THUMB_FOLDER, thumb_name)
+
+                subprocess.run([
+                    "ffmpeg",
+                    "-y",
+                    "-i", dest,
+                    "-frames:v", "1",
+                    "-q:v", "2",
+                    thumb_path
+                ], stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL)
+
+            # ==========================
+            # 🎬 VIDEO REEL
+            # ==========================
+            elif ext in {
+                "mp4", "mov", "webm", "mkv",
+                "avi", "m4v"
+            }:
+
+                thumb_name = f"{uuid.uuid4().hex}.jpg"
+                thumb_path = os.path.join(THUMB_FOLDER, thumb_name)
+
+                subprocess.run([
+                    "ffmpeg",
+                    "-y",
+                    "-ss", "00:00:01",
+                    "-i", dest,
+                    "-frames:v", "1",
+                    "-q:v", "2",
+                    thumb_path
+                ], stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL)
 
             if not os.path.exists(thumb_path):
                 thumb_name = None
@@ -531,50 +586,56 @@ def publish():
 
             reel_id = c.lastrowid
 
-            # 🎙 REEL KA ORIGINAL AUDIO EXTRACT KARO
-            original_audio_id = None
+            # 🎙 REEL KA ORIGINAL AUDIO
+            # Agar editor se original_audio_id aaya hai,
+            # to wahi audio use hoga.
+            # Agar nahi aaya aur video hai,
+            # tab video ka original audio extract hoga.
 
-            if dest.lower().endswith((
-                ".mp4",
-                ".mov",
-                ".webm",
-                ".mkv",
-                ".avi",
-                ".m4v"
-            )):
-                conn.commit()
+            if not original_audio_id:
 
-                original_audio_id = extract_original_audio(
-                    dest,
-                    user_id,
-                    "reel",
-                    reel_id
-                )
+                if dest.lower().endswith((
+                    ".mp4",
+                    ".mov",
+                    ".webm",
+                    ".mkv",
+                    ".avi",
+                    ".m4v"
+                )):
+                    conn.commit()
 
-                if original_audio_id:
-                    c.execute("""
-                        INSERT INTO media_audio
-                        (
-                            media_type,
-                            media_id,
-                            music_id,
-                            original_audio_id,
-                            start_time,
-                            end_time,
-                            original_volume,
-                            music_volume
-                        )
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
+                    original_audio_id = extract_original_audio(
+                        dest,
+                        user_id,
                         "reel",
-                        reel_id,
-                        music_id if music_id else None,
+                        reel_id
+                    )
+
+            # 🎙 ORIGINAL AUDIO / MUSIC DATABASE ME SAVE KARO
+            if music_id or original_audio_id:
+                c.execute("""
+                    INSERT INTO media_audio
+                    (
+                        media_type,
+                        media_id,
+                        music_id,
                         original_audio_id,
-                        music_start,
-                        music_end,
+                        start_time,
+                        end_time,
                         original_volume,
                         music_volume
-                    ))
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    "reel",
+                    reel_id,
+                    music_id if music_id else None,
+                    original_audio_id,
+                    music_start,
+                    music_end,
+                    original_volume,
+                    music_volume
+                ))
 
             if music_id:
                 c.execute("""
@@ -722,50 +783,80 @@ def publish():
                         post_id
                     )
 
-            db_path = "/static/uploads/posts/" + dest_name
+        # 🎬 NORMAL POST VIDEO THUMBNAIL
+        post_thumbnail = None
 
-            c.execute("""
-                INSERT INTO post_images
-                (
-                    post_id,
-                    image_path
-                )
-                VALUES (?, ?)
-            """, (
+        if dest.lower().endswith((
+            ".mp4",
+            ".mov",
+            ".webm",
+            ".mkv",
+            ".avi",
+            ".m4v"
+        )):
+            thumb_base = os.path.splitext(dest_name)[0]
+            thumb_name = thumb_base + "_thumb.jpg"
+            thumb_path = os.path.join(POST_THUMB_FOLDER, thumb_name)
+
+            subprocess.run([
+                "ffmpeg",
+                "-y",
+                "-i", dest,
+                "-ss", "00:00:00.5",
+                "-frames:v", "1",
+                thumb_path
+            ], stdout=subprocess.DEVNULL,
+               stderr=subprocess.DEVNULL)
+
+            if os.path.exists(thumb_path):
+                post_thumbnail = thumb_name
+
+        # 🖼️ IMAGE/VIDEO PATH: SAVE EVERY NORMAL POST
+        db_path = "/static/uploads/posts/" + dest_name
+
+        c.execute("""
+            INSERT INTO post_images
+            (
                 post_id,
-                db_path
-            ))
+                image_path
+            )
+            VALUES (?, ?)
+        """, (
+            post_id,
+            db_path
+        ))
 
-            # 🎵 POST KA AUDIO DATABASE ME SAVE KARO
-            if music_id or original_audio_id:
-                c.execute("""
-                    INSERT INTO media_audio
-                    (
-                        media_type,
-                        media_id,
-                        music_id,
-                        original_audio_id,
-                        start_time,
-                        end_time,
-                        original_volume,
-                        music_volume
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    "post",
-                    post_id,
-                    music_id if music_id else None,
+        # 🎵 POST AUDIO SAVE
+        if music_id or original_audio_id:
+            c.execute("""
+                INSERT INTO media_audio
+                (
+                    media_type,
+                    media_id,
+                    music_id,
                     original_audio_id,
-                    music_start,
-                    music_end,
+                    start_time,
+                    end_time,
                     original_volume,
                     music_volume
-                ))
-            conn.commit()
-            conn.close()
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                "post",
+                post_id,
+                music_id if music_id else None,
+                original_audio_id,
+                music_start,
+                music_end,
+                original_volume,
+                music_volume
+            ))
 
-            flash("Post published successfully!", "success")
-            return redirect("/posts/feed")
+        conn.commit()
+        conn.close()
+
+        flash("Post published successfully!", "success")
+        return redirect("/posts/feed")
 
     media_path = request.args.get("media_path", "")
     mode = request.args.get("mode", "post")

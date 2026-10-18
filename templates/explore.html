@@ -143,9 +143,48 @@ class="w-16 h-16 rounded-full object-cover">
 
 <a href="/posts/{{ item.id }}">
 
+{% set lower_media = item.media|lower %}
+
+{% if lower_media.endswith('.mp4')
+      or lower_media.endswith('.webm')
+      or lower_media.endswith('.mov')
+      or lower_media.endswith('.mkv')
+      or lower_media.endswith('.avi')
+      or lower_media.endswith('.m4v') %}
+
+<div class="relative">
+
+<img
+src="/static/uploads/posts/thumbs/{{ item.media.split('/')[-1].rsplit('.', 1)[0] }}_thumb.jpg"
+class="w-full h-52 object-cover"
+alt="video post"
+loading="lazy"
+onerror="this.src='/static/default_post.png'">
+
+<div class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur flex items-center justify-center">
+
+<svg width="15"
+     height="15"
+     viewBox="0 0 24 24"
+     fill="white">
+
+<path d="M8 5v14l11-7z"/>
+
+</svg>
+
+</div>
+
+</div>
+
+{% else %}
+
 <img
 src="{{ item.media }}"
-class="w-full h-52 object-cover">
+class="w-full h-52 object-cover"
+alt="post"
+loading="lazy">
+
+{% endif %}
 
 </a>
 
@@ -168,9 +207,9 @@ preload="metadata">
 <div class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">
 
 <svg width="15"
-height="15"
-viewBox="0 0 24 24"
-fill="white">
+     height="15"
+     viewBox="0 0 24 24"
+     fill="white">
 
 <path d="M8 5v14l11-7z"/>
 

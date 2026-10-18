@@ -80,11 +80,167 @@ No saved reels yet
 </div>
 
     <!-- AUDIO TAB -->
-    <div id="audio" class="p-5 hidden">
-      <div class="text-gray-500 text-sm text-center py-10">
-        Saved Audio will show here...
+    <div id="audio" class="p-4 hidden">
+
+      <!-- AUTO PLAY -->
+      <div class="flex justify-end mb-4">
+        <button
+          type="button"
+          id="autoPlayBtn"
+          onclick="toggleAutoPlay()"
+          class="px-4 py-2 rounded-full bg-gray-200 text-gray-700 font-semibold shadow-sm">
+          🔁 Auto Play: OFF
+        </button>
       </div>
+
+      {% if saved_music and saved_music|length > 0 %}
+
+        <div class="space-y-3">
+
+          {% for song in saved_music %}
+
+            <div class="bg-white rounded-2xl shadow-sm border p-3 flex items-center gap-3">
+
+              <!-- COVER -->
+              {% if song.cover %}
+                <img
+                  src="{{ song.cover }}"
+                  class="w-16 h-16 rounded-xl object-cover bg-gray-200"
+                  onerror="this.src='/static/default_music_cover.png'">
+              {% else %}
+                <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl">
+                  🎵
+                </div>
+              {% endif %}
+
+              <!-- SONG INFO -->
+              <div class="flex-1 min-w-0">
+                <div class="font-bold text-gray-900 truncate">
+                  {{ song.title }}
+                </div>
+
+                <div class="text-sm text-gray-500 truncate">
+                  {{ song.artist or 'Unknown Artist' }}
+                </div>
+
+                {% if song.duration %}
+                  <div class="text-xs text-gray-400 mt-1">
+                    {{ song.duration }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- PLAY -->
+              <button
+                type="button"
+                onclick="playSavedSong(this)"
+                data-src="/static/music/uploads/{{ song.filename }}"
+                class="w-11 h-11 rounded-full bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 text-white flex items-center justify-center shadow-lg">
+                ▶
+              </button>
+
+              <!-- DETAILS -->
+<!-- DETAILS -->          <a
+            href="/music/{{ song.id }}"
+            class="text-gray-500 text-xl px-1">
+            ⋮
+          </a>
+
+        </div>
+
+      {% endfor %}
+
     </div>
+
+  {% else %}
+
+    <div class="text-gray-500 text-sm text-center py-10">
+      🎵 No saved songs yet
+    </div>
+
+  {% endif %}
+
+
+  <!-- SAVED ORIGINAL AUDIO -->
+  {% if saved_original_audio and saved_original_audio|length > 0 %}
+
+    <div class="mt-6">
+
+      <h3 class="font-bold text-lg text-gray-900 mb-3">
+        🎙️ Saved Original Audio
+      </h3>
+
+      <div class="space-y-3">
+
+        {% for audio in saved_original_audio %}
+
+          <div class="bg-white rounded-2xl shadow-sm border p-3">
+
+            <div class="flex items-center gap-3">
+
+              {% if audio.photo %}
+
+                <img
+                  src="{{ audio.photo }}"
+                  class="w-16 h-16 rounded-full object-cover">
+
+              {% else %}
+
+                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl">
+                  🎙️
+                </div>
+
+              {% endif %}
+
+
+              <div class="flex-1 min-w-0">
+
+                <a
+                  href="/music/original/{{ audio.id }}"
+                  class="font-bold text-gray-900 truncate block">
+                  {{ audio.title or "Original Audio" }}
+                </a>
+
+                <div class="text-sm text-gray-500 truncate">
+                  @{{ audio.username or "Unknown" }}
+                </div>
+
+                <div class="text-xs text-gray-400 mt-1">
+                  Original Audio
+                </div>
+
+              </div>
+
+              <!-- PLAY -->
+              <button
+                type="button"
+                onclick="playSavedSong(this)"
+                data-src="/static/uploads/original_audio/{{ audio.audio_file }}"
+                class="w-11 h-11 rounded-full bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 text-white flex items-center justify-center shadow-lg">
+                ▶
+              </button>
+
+              <!-- DETAILS -->
+              <a
+                href="/music/original/{{ audio.id }}"
+                class="text-gray-500 text-xl px-1">
+                ⋮
+              </a>
+
+            </div>
+
+
+          </div>
+
+        {% endfor %}
+
+      </div>
+
+    </div>
+
+  {% endif %}
+
+</div>
 
   </div>
 
@@ -105,6 +261,136 @@ window.me = {{ session.get("user_id")|tojson }};
 </script>
 
 <script src="/static/js/global_call.js"></script>
+
+<script>
+let savedAudio = null;
+let savedAudioButton = null;
+let autoPlayEnabled = false;
+let savedAudioQueue = [];
+let currentQueueIndex = -1;
+
+function buildSavedAudioQueue() {
+
+  savedAudioQueue = Array.from(
+    document.querySelectorAll('#audio button[data-src]')
+  );
+}
+
+function toggleAutoPlay() {
+
+  autoPlayEnabled = !autoPlayEnabled;
+
+  const btn = document.getElementById("autoPlayBtn");
+
+  if (autoPlayEnabled) {
+
+    btn.textContent = "🔁 Auto Play: ON";
+    btn.classList.remove("bg-gray-200", "text-gray-700");
+    btn.classList.add("bg-green-500", "text-white");
+
+    buildSavedAudioQueue();
+
+    if (savedAudioQueue.length === 0) {
+      autoPlayEnabled = false;
+      btn.textContent = "🔁 Auto Play: OFF";
+      btn.classList.remove("bg-green-500", "text-white");
+      btn.classList.add("bg-gray-200", "text-gray-700");
+      return;
+    }
+
+    if (!savedAudio || savedAudio.paused) {
+
+      let startIndex = currentQueueIndex >= 0
+        ? currentQueueIndex
+        : 0;
+
+      playQueueItem(startIndex);
+    }
+
+  } else {
+
+    btn.textContent = "🔁 Auto Play: OFF";
+    btn.classList.remove("bg-green-500", "text-white");
+    btn.classList.add("bg-gray-200", "text-gray-700");
+  }
+}
+
+function playQueueItem(index) {
+
+  if (!savedAudioQueue.length) {
+    buildSavedAudioQueue();
+  }
+
+  if (index < 0 || index >= savedAudioQueue.length) {
+    currentQueueIndex = -1;
+    return;
+  }
+
+  currentQueueIndex = index;
+
+  const button = savedAudioQueue[index];
+
+  playSavedSong(button, true);
+}
+
+function playSavedSong(button, fromQueue = false) {
+
+  const src = button.dataset.src;
+
+  if (savedAudio && savedAudio.src.includes(src)) {
+
+    if (savedAudio.paused) {
+
+      savedAudio.play();
+      button.textContent = "⏸";
+
+    } else {
+
+      savedAudio.pause();
+      button.textContent = "▶";
+    }
+
+    return;
+  }
+
+  if (savedAudio) {
+    savedAudio.pause();
+
+    if (savedAudioButton) {
+      savedAudioButton.textContent = "▶";
+    }
+  }
+
+  savedAudio = new Audio(src);
+  savedAudioButton = button;
+
+  button.textContent = "⏸";
+
+  savedAudio.play().catch(() => {
+    button.textContent = "▶";
+  });
+
+  savedAudio.onended = function() {
+
+    button.textContent = "▶";
+
+    if (autoPlayEnabled) {
+
+      const nextIndex = currentQueueIndex + 1;
+
+      if (nextIndex < savedAudioQueue.length) {
+        playQueueItem(nextIndex);
+      } else {
+        currentQueueIndex = -1;
+      }
+    }
+  };
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  buildSavedAudioQueue();
+});
+</script>
 
 </body>
 </html>

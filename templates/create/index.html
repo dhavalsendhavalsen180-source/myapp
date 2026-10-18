@@ -133,7 +133,13 @@ let video = document.getElementById("cam");
 let stream = null;
 let front = true;
 
-let mode = "post";
+let mode = "{{ mode or 'post' }}";
+
+const selectedOriginalAudio =
+  "{{ original_audio_id or '' }}";
+
+const selectedMusic =
+  "{{ music_id or '' }}";
 
 let mediaRecorder = null;
 let recording = false;
@@ -151,9 +157,16 @@ async function startCamera(){
     video.srcObject = stream;
     await video.play();
 
-  }catch(e){
-    alert("Camera access denied or not supported!");
-    console.log(e);
+  } catch (e) {
+    showCreateModal(
+      "Camera Access",
+      "InsChat ko camera use karne ki permission chahiye. Permission allow karke dobara try karo.",
+      "📸",
+      "Try Again",
+      () => startCamera()
+    );
+
+    console.log("Camera access error:", e);
   }
 }
 
@@ -240,10 +253,16 @@ function capturePhoto(){
     const fd=new FormData();
     fd.append("media", b, "photo.jpg");
 
-     fetch("/create/editor?mode=" + mode, {
-  method: "POST",
-  body: fd
-})
+     fetch(
+       "/create/editor?mode=" + encodeURIComponent(mode) +
+       "&original_audio_id=" + encodeURIComponent(selectedOriginalAudio) +
+       "&music_id=" + encodeURIComponent(selectedMusic),
+       {
+         method: "POST",
+         body: fd
+       }
+     )
+
       .then(r=>location.href=r.url);
 
   },"image/jpeg",0.92);
@@ -251,7 +270,17 @@ function capturePhoto(){
 
 /* RECORD REEL */
 function startRecording(){
-  if(!stream) return alert("Camera not ready!");
+  if (!stream) {
+    showCreateModal(
+      "Camera Not Ready",
+      "Camera abhi start nahi hua. Camera permission allow karke dobara try karo.",
+      "📷",
+      "Try Again",
+      () => startCamera()
+    );
+
+    return;
+  }
 
   chunks = [];
 
@@ -272,7 +301,15 @@ function startRecording(){
     const fd = new FormData();
     fd.append("media", blob, "reel.webm");
 
-    fetch("/create/editor?mode=" + mode, { method:"POST", body: fd })
+    fetch(
+      "/create/editor?mode=" + encodeURIComponent(mode) +
+      "&original_audio_id=" + encodeURIComponent(selectedOriginalAudio) +
+      "&music_id=" + encodeURIComponent(selectedMusic),
+      {
+        method: "POST",
+        body: fd
+      }
+    )
       .then(r=>location.href=r.url);
   };
 
@@ -293,7 +330,15 @@ function stopRecording(){
 /* GALLERY PICK */
 const galleryInput = document.getElementById("galleryInput");
 
-document.getElementById("openGallery").onclick=()=>galleryInput.click();
+document.getElementById("openGallery").onclick = () => {
+  showCreateModal(
+    "Choose Your Media",
+    "Gallery se photo ya video select karke apni post, story ya reel banao.",
+    "🖼️",
+    "Choose Photos",
+    () => galleryInput.click()
+  );
+};
 
 galleryInput.onchange=e=>{
   let f=e.target.files[0];
@@ -302,9 +347,135 @@ galleryInput.onchange=e=>{
   const fd=new FormData();
   fd.append("media",f);
 
-  fetch("/create/editor?mode=" + mode, { method:"POST", body: fd })
+  fetch(
+    "/create/editor?mode=" + encodeURIComponent(mode) +
+    "&original_audio_id=" + encodeURIComponent(selectedOriginalAudio) +
+    "&music_id=" + encodeURIComponent(selectedMusic),
+    {
+      method: "POST",
+      body: fd
+    }
+  )
     .then(r=>location.href=r.url);
 };
+</script>
+
+<!-- INSCHAT PREMIUM CAMERA / GALLERY MODAL -->
+<div id="createPermissionModal"
+     class="hidden fixed inset-0 z-[99999] items-center justify-center
+            bg-black/70 backdrop-blur-md p-4">
+
+  <div class="w-full max-w-sm overflow-hidden rounded-3xl bg-white text-gray-800 shadow-2xl"
+       style="animation:createModalIn .22s ease-out">
+
+    <div class="bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600
+                px-6 py-7 text-center text-white">
+
+      <div id="createModalIcon"
+           class="mx-auto mb-3 flex h-16 w-16 items-center justify-center
+                  rounded-full bg-white/20 text-4xl">
+        📸
+      </div>
+
+      <h2 id="createModalTitle" class="text-2xl font-extrabold">
+        Camera Access
+      </h2>
+
+      <p id="createModalMessage"
+         class="mt-2 text-sm leading-6 text-white/90">
+        Camera permission required.
+      </p>
+    </div>
+
+    <div class="p-6">
+      <div class="flex gap-3">
+
+        <button type="button"
+                onclick="closeCreateModal()"
+                class="flex-1 rounded-xl bg-gray-100 px-4 py-3
+                       font-bold text-gray-700 transition
+                       hover:bg-gray-200 active:scale-95">
+          Cancel
+        </button>
+
+        <button id="createModalPrimary"
+                type="button"
+                class="flex-1 rounded-xl bg-gradient-to-r
+                       from-cyan-500 to-purple-600 px-4 py-3
+                       font-bold text-white shadow-lg
+                       transition hover:brightness-110 active:scale-95">
+          Try Again
+        </button>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes createModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+</style>
+
+<script>
+let createModalAction = null;
+
+function showCreateModal(title, message, icon, buttonText, action) {
+  const modal = document.getElementById("createPermissionModal");
+
+  document.getElementById("createModalTitle").textContent = title;
+  document.getElementById("createModalMessage").textContent = message;
+  document.getElementById("createModalIcon").textContent = icon;
+  document.getElementById("createModalPrimary").textContent = buttonText;
+
+  createModalAction = action;
+
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+  document.body.style.overflow = "hidden";
+}
+
+function closeCreateModal() {
+  const modal = document.getElementById("createPermissionModal");
+
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+  document.body.style.overflow = "";
+  createModalAction = null;
+}
+
+document.getElementById("createModalPrimary").onclick = function () {
+  const action = createModalAction;
+
+  closeCreateModal();
+
+  if (typeof action === "function") {
+    action();
+  }
+};
+
+document.getElementById("createPermissionModal").addEventListener(
+  "click",
+  function (event) {
+    if (event.target === this) {
+      closeCreateModal();
+    }
+  }
+);
+
+document.addEventListener("keydown", function (event) {
+  if (event.key === "Escape") {
+    closeCreateModal();
+  }
+});
 </script>
 
 </body>

@@ -1,0 +1,901 @@
+<!doctype html>
+
+<html lang="en">
+<head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Notifications • InsChat</title><script src="https://cdn.tailwindcss.com"></script><style>
+
+body{
+    background:linear-gradient(
+        135deg,
+        #00e5ff 0%,
+        #2563eb 35%,
+        #7c3aed 65%,
+        #facc15 100%
+    );
+    color:#fff;
+    font-family:Arial,sans-serif;
+    min-height:100vh;
+}
+
+/* =========================================
+   ✨ SOFT BRANDING GLOW
+   ========================================= */
+
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+
+    pointer-events:none;
+
+    background:
+        linear-gradient(
+            120deg,
+            rgba(255,255,255,.08),
+            transparent 30%,
+            rgba(255,255,255,.04) 50%,
+            transparent 70%,
+            rgba(255,255,255,.06)
+        );
+
+    mix-blend-mode:screen;
+    z-index:-1;
+}
+
+
+/* =========================================
+   🌌 SUBTLE MOVING LIGHT
+   ========================================= */
+
+body::after{
+    content:"";
+    position:fixed;
+
+    width:500px;
+    height:500px;
+
+    left:-150px;
+    top:20%;
+
+    border-radius:50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(0,229,255,.18),
+            rgba(124,58,237,.10),
+            transparent 70%
+        );
+
+    filter:blur(35px);
+
+    pointer-events:none;
+
+    animation:inschatGlow 9s ease-in-out infinite alternate;
+
+    z-index:-1;
+}
+
+
+@keyframes inschatGlow{
+
+    0%{
+        transform:
+            translate(0,0)
+            scale(1);
+    }
+
+    50%{
+        transform:
+            translate(45vw,8vh)
+            scale(1.35);
+    }
+
+    100%{
+        transform:
+            translate(75vw,35vh)
+            scale(.9);
+    }
+}
+
+
+/* =========================================
+   🔥 SELECTION
+   ========================================= */
+
+::selection{
+    background:#00e5ff;
+    color:#000;
+}
+
+
+/* =========================================
+   📱 MOBILE
+   ========================================= */
+
+@media(max-width:640px){
+
+    body{
+        background-attachment:scroll;
+    }
+
+}
+
+::-webkit-scrollbar{
+    width:0;
+}
+
+/* =========================================================
+   INSCHAT BRAND GRADIENT
+   CYAN → BLUE → PURPLE → YELLOW
+========================================================= */
+
+.brand-gradient{
+    background:linear-gradient(
+        90deg,
+        #00f5ff 0%,
+        #2563eb 35%,
+        #7c3aed 70%,
+        #facc15 100%
+    );
+}
+
+.brand-text{
+    background:linear-gradient(
+        90deg,
+        #00f5ff,
+        #2563eb,
+        #7c3aed,
+        #facc15
+    );
+
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+}
+
+/* =========================================================
+   NOTIFICATION CARD
+========================================================= */
+
+.notify-card{
+    transition:.18s;
+    border-left:2px solid transparent;
+}
+
+.notify-card:hover{
+    background:#090909;
+    border-left-color:#2563eb;
+}
+
+/* =========================================================
+   STORY / PROFILE RING
+========================================================= */
+
+.story-ring{
+    background:
+    linear-gradient(#000,#000) padding-box,
+    linear-gradient(
+        45deg,
+        #00f5ff,
+        #2563eb,
+        #7c3aed,
+        #facc15
+    ) border-box;
+
+    border:2px solid transparent;
+}
+
+/* =========================================================
+   FOLLOW BUTTON
+========================================================= */
+
+.follow-btn{
+    background:linear-gradient(
+        90deg,
+        #00cfff,
+        #2563eb,
+        #7c3aed
+    );
+
+    transition:.18s;
+}
+
+.follow-btn:hover{
+    transform:scale(1.03);
+    filter:brightness(1.15);
+}
+
+/* =========================================================
+   MESSAGE BUTTON
+========================================================= */
+
+.msg-btn{
+    background:#15151a;
+    border:1px solid #29293a;
+    transition:.18s;
+}
+
+.msg-btn:hover{
+    border-color:#7c3aed;
+    background:#1b1728;
+}
+
+/* =========================================================
+   SECTION
+========================================================= */
+
+.section-title{
+    color:#a1a1aa;
+    font-size:14px;
+    font-weight:700;
+    padding:18px 16px 8px;
+}
+
+/* =========================================================
+   BLUE / BRAND DOT
+========================================================= */
+
+.blue-dot{
+    width:8px;
+    height:8px;
+    border-radius:999px;
+
+    background:linear-gradient(
+        135deg,
+        #00f5ff,
+        #2563eb,
+        #7c3aed
+    );
+
+    box-shadow:
+        0 0 8px rgba(37,99,235,.7);
+}
+
+/* =========================================================
+   REEL THUMBNAIL
+========================================================= */
+
+.reel-thumb{
+    width:58px;
+    height:76px;
+    border-radius:8px;
+    overflow:hidden;
+
+    background:#111;
+
+    flex-shrink:0;
+
+    border:1px solid #292929;
+
+    transition:.18s;
+}
+
+.reel-thumb:hover{
+    border-color:#7c3aed;
+    transform:scale(1.03);
+}
+
+.reel-thumb img,
+.reel-thumb video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+/* =========================================================
+   TOP BAR
+========================================================= */
+
+.top-brand-line{
+    height:2px;
+
+    background:linear-gradient(
+        90deg,
+        #00f5ff,
+        #2563eb,
+        #7c3aed,
+        #facc15
+    );
+}
+
+</style>
+</head>
+
+<body><!-- =========================================================
+     TOP BRAND LINE
+========================================================= --><div class="top-brand-line"></div><!-- =========================================================
+     TOP BAR
+========================================================= --><div class="sticky top-0 z-50 bg-black/95 backdrop-blur border-b border-[#1f1f1f]"><div class="max-w-xl mx-auto flex items-center justify-between px-4 py-4">
+
+    <div class="text-2xl font-bold brand-text">
+        Notifications
+    </div>
+
+    <a
+        href="/posts/feed"
+        class="text-2xl">
+
+        🏠
+
+    </a>
+
+</div>
+
+</div><div class="max-w-xl mx-auto pb-32">
+
+<!-- =========================================================
+     🔒 FOLLOW REQUESTS
+========================================================= -->
+
+{% if follow_requests and follow_requests|length > 0 %}
+
+<div class="section-title">
+    Follow requests
+</div>
+
+{% for req in follow_requests %}
+
+<div id="follow-request-{{ req.id }}"
+     class="px-4 py-4 border-b border-[#121212]">
+
+    <div class="flex items-center gap-3">
+
+        <!-- PROFILE -->
+        <a href="/profile/{{ req.sender_id }}">
+
+            <div class="story-ring rounded-full p-[2px]">
+
+                <img
+                    src="{{ req.photo }}"
+                    onerror="this.src='/static/default_dp.png'"
+                    class="w-14 h-14 rounded-full object-cover bg-[#111]">
+
+            </div>
+
+        </a>
+
+        <!-- USER INFO -->
+        <div class="flex-1 min-w-0">
+
+            <a href="/profile/{{ req.sender_id }}"
+               class="font-semibold text-[15px]">
+
+                {{ req.username }}
+
+            </a>
+
+            <div class="text-gray-400 text-sm mt-1">
+
+                wants to follow you
+
+            </div>
+
+            <div class="text-gray-600 text-xs mt-1">
+
+                {{ req.created_at }}
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ACTION BUTTONS -->
+
+    <div class="flex gap-2 mt-3 ml-[58px]">
+
+        <button
+            onclick="acceptFollowRequest({{ req.id }})"
+            class="flex-1 py-2 rounded-xl
+                   bg-gradient-to-r
+                   from-cyan-400
+                   via-blue-500
+                   to-purple-600
+                   text-white
+                   text-sm
+                   font-bold">
+
+            ✓ Accept
+
+        </button>
+
+
+        <button
+            onclick="rejectFollowRequest({{ req.id }})"
+            class="flex-1 py-2 rounded-xl
+                   bg-[#18181b]
+                   border border-[#333]
+                   text-gray-300
+                   text-sm
+                   font-bold">
+
+            ✕ Delete
+
+        </button>
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+{% endif %}
+
+<!-- =========================================================
+     TODAY
+========================================================= -->
+
+<div class="section-title">
+    Today
+</div>
+
+<!-- =========================================================
+     NOTIFICATIONS
+========================================================= -->
+
+{% for n in notifications %}
+
+<div class="notify-card px-4 py-4 flex items-center gap-3 border-b border-[#121212]"><!-- =====================================================
+     PROFILE
+===================================================== -->
+
+<a href="/profile/{{ n.actor_id }}">
+
+    <div class="story-ring rounded-full p-[2px]">
+
+        <img
+            src="{% if n.actor_photo and n.actor_photo != 'None' and n.actor_photo != 'null' %}{% if n.actor_photo.startswith('/static/') %}{{ n.actor_photo }}{% else %}/static/profile/{{ n.actor_photo }}{% endif %}{% else %}/static/default_dp.png{% endif %}"
+
+            onerror="this.src='/static/default_dp.png'"
+
+            class="w-14 h-14 rounded-full object-cover bg-[#111]">
+
+    </div>
+
+</a>
+
+
+<!-- =====================================================
+     TEXT
+===================================================== -->
+
+<div class="flex-1 min-w-0">
+
+    <div class="text-[15px] leading-5 break-words">
+
+        <a
+            href="/profile/{{ n.actor_id }}"
+            class="font-semibold hover:underline">
+
+            {{ n.actor_username }}
+
+        </a>
+
+        {% if n.type == "follow" %}
+
+            started following you 👤
+
+        {% elif n.type == "follow_accepted" %}
+
+            accepted your follow request ✅
+
+        {% elif n.type == "post_like" %}
+
+            liked your post ❤️
+
+
+        {% elif n.type == "post_comment" %}
+
+            commented on your post 💬
+
+
+        {% elif n.type == "post_reply" %}
+
+            replied to your comment 💬↩️
+
+
+        {% elif n.type == "post_comment_like" %}
+
+            liked your comment ❤️
+
+
+        {% elif n.type == "reel_like" %}
+
+            liked your reel ❤️🎬
+
+
+        {% elif n.type == "reel_comment" %}
+
+            commented on your reel 🎬💬
+
+
+        {% elif n.type == "reel_reply" %}
+
+            replied to your comment 💬↩️
+
+
+        {% elif n.type == "reel_comment_like" %}
+
+            liked your comment ❤️
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- =================================================
+         TIME
+    ================================================= -->
+
+    <div class="flex items-center gap-2 mt-1">
+
+        <div class="text-gray-500 text-xs">
+
+            {{ n.created_at }}
+
+        </div>
+
+
+        {% if not n.is_read %}
+
+            <div class="blue-dot"></div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- =================================================
+         REEL COMMENT / REPLY BUTTON
+    ================================================= -->
+
+{% if n.type == "comment"
+   or n.type == "post_comment"
+   or n.type == "post_reply"
+   or n.type == "post_comment_like" %}
+
+    <div class="flex items-center gap-2 mt-3">
+
+        <a
+            href="/posts/comments/{{ n.post_id }}"
+            class="msg-btn text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
+
+            💬 Reply
+
+        </a>
+
+    </div>
+
+{% elif n.type == "reel_comment"
+   or n.type == "reel_reply"
+   or n.type == "reel_comment_like" %}
+
+    <div class="flex items-center gap-2 mt-3">
+
+        <a
+            href="/reels/comments_page/{{ n.reel_id }}"
+            class="msg-btn text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
+
+            💬 Reply
+
+        </a>
+
+    </div>
+
+{% endif %}
+
+</div>
+
+<!-- =====================================================
+     RIGHT SIDE MEDIA
+===================================================== -->
+
+<div class="shrink-0">
+
+<!-- =============================================
+     POST NOTIFICATION
+============================================= -->
+
+{% if n.type == "post_like"
+   or n.type == "comment"
+   or n.type == "post_comment"
+   or n.type == "post_reply"
+   or n.type == "post_comment_like" %}
+
+    <a
+        href="/posts/{{ n.post_id }}"
+        class="reel-thumb block">
+
+        {% if n.post_image %}
+
+            <img
+                src="{{ n.post_image }}"
+                onerror="this.src='/static/default_reel.jpg'"
+                class="w-full h-full object-cover">
+
+        {% else %}
+
+            <div class="w-full h-full flex items-center justify-center text-2xl">
+                🖼️
+            </div>
+
+        {% endif %}
+
+    </a>
+
+    <!-- =============================================
+         REEL NOTIFICATION
+    ============================================= -->
+
+    {% elif n.type == "reel_like"
+       or n.type == "reel_comment"
+       or n.type == "reel_reply"
+       or n.type == "reel_comment_like" %}
+
+        <a
+            href="/reels/{{ n.reel_id }}"
+            class="reel-thumb block">
+
+            {% if n.reel_thumbnail %}
+
+                <img
+                    src="{{ n.reel_thumbnail }}"
+                    onerror="this.src='/static/default_reel.jpg'">
+
+            {% elif n.reel_video %}
+
+                <video
+                    src="{{ n.reel_video }}"
+                    muted
+                    preload="metadata">
+                </video>
+
+            {% else %}
+
+                <div class="w-full h-full flex items-center justify-center text-2xl">
+                    🎬
+                </div>
+
+            {% endif %}
+
+        </a>
+
+
+    {% elif n.type == "follow" %}
+
+        <button
+            class="follow-btn text-white text-sm font-semibold px-4 py-1.5 rounded-lg">
+
+            Follow
+
+        </button>
+
+{% elif n.type == "follow_accepted" %}
+
+    <div
+        class="w-12 h-12 rounded-xl
+               bg-gradient-to-br
+               from-cyan-400
+               via-blue-500
+               to-purple-600
+               flex items-center justify-center
+               text-xl font-bold
+               shadow-lg">
+
+        ✓
+
+    </div>
+
+    {% elif n.type == "like" %}
+
+        <div
+            class="w-12 h-12 rounded bg-[#111] flex items-center justify-center text-xl">
+
+            ❤️
+
+        </div>
+
+
+    {% elif n.type == "comment" %}
+
+        <button
+            class="msg-btn text-white text-sm px-4 py-1.5 rounded-lg">
+
+            Reply
+
+        </button>
+
+    {% endif %}
+
+</div>
+
+</div>{% else %}
+
+<!-- =========================================================
+     NO NOTIFICATIONS
+========================================================= --><div class="text-center text-gray-500 py-16"><div class="text-4xl mb-3">
+    🔔
+</div>
+
+<div class="text-sm">
+    No notifications yet
+</div>
+
+</div>{% endfor %}
+
+<!-- =========================================================
+     SUGGESTIONS
+========================================================= --><div class="section-title mt-2">
+    People you may know
+</div><!-- USER 1 --><div class="px-4 py-4 flex items-center gap-3 border-b border-[#121212]"><img
+    src="/static/default_dp.png"
+    class="w-14 h-14 rounded-full object-cover">
+
+<div class="flex-1">
+
+    <div class="font-semibold">
+        testing vishal sen
+    </div>
+
+    <div class="text-gray-500 text-sm">
+        3 mutual followers
+    </div>
+
+</div>
+
+<button
+    class="follow-btn px-4 py-1.5 rounded-lg text-sm font-semibold">
+
+    Follow
+
+</button>
+
+</div><!-- USER 2 --><div class="px-4 py-4 flex items-center gap-3 border-b border-[#121212]"><img
+    src="/static/default_dp.png"
+    class="w-14 h-14 rounded-full object-cover">
+
+<div class="flex-1">
+
+    <div class="font-semibold">
+        testing vijay
+    </div>
+
+    <div class="text-gray-500 text-sm">
+        Followed by Vishal + 2 more
+    </div>
+
+</div>
+
+<button
+    class="follow-btn px-4 py-1.5 rounded-lg text-sm font-semibold">
+
+    Follow
+
+</button>
+
+</div>
+
+</div>
+
+<!-- =========================================================
+     FOLLOW REQUEST ACTIONS + AUTO MARK READ
+========================================================= -->
+
+<script>
+
+async function acceptFollowRequest(requestId){
+
+    const card = document.getElementById(
+        "follow-request-" + requestId
+    );
+
+    try {
+
+        const response = await fetch(
+            `/social/follow-request/${requestId}/accept`,
+            {
+                method: "POST"
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.ok) {
+
+            if (card) {
+
+                card.style.transition = "0.25s";
+                card.style.opacity = "0";
+                card.style.transform = "translateX(30px)";
+
+                setTimeout(() => {
+                    card.remove();
+                }, 250);
+
+            }
+
+        } else {
+
+            alert("Request already handled.");
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+        alert("Network error");
+
+    }
+}
+
+
+async function rejectFollowRequest(requestId){
+
+    const card = document.getElementById(
+        "follow-request-" + requestId
+    );
+
+    try {
+
+        const response = await fetch(
+            `/social/follow-request/${requestId}/reject`,
+            {
+                method: "POST"
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.ok) {
+
+            if (card) {
+
+                card.style.transition = "0.25s";
+                card.style.opacity = "0";
+                card.style.transform = "translateX(-30px)";
+
+                setTimeout(() => {
+                    card.remove();
+                }, 250);
+
+            }
+
+        } else {
+
+            alert("Request already handled.");
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+        alert("Network error");
+
+    }
+}
+
+
+async function autoRead(){
+
+    {% for n in notifications %}
+
+        {% if not n.is_read %}
+
+            fetch(
+                "/social/notifications/mark_read/{{ n.id }}",
+                {
+                    method: "POST"
+                }
+            );
+
+        {% endif %}
+
+    {% endfor %}
+
+}
+
+autoRead();
+
+</script>

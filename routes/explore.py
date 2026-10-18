@@ -15,10 +15,12 @@ def explore_page():
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    # USERS
+    # USERS — hide suspended/banned accounts
     c.execute("""
         SELECT id, username, photo
         FROM users
+        WHERE COALESCE(suspended, 0) = 0
+          AND COALESCE(banned, 0) = 0
         ORDER BY id DESC
     """)
     users = c.fetchall()
@@ -29,9 +31,12 @@ def explore_page():
     # POSTS
     # =========================
     c.execute("""
-        SELECT id, user_id
+        SELECT posts.id, posts.user_id
         FROM posts
-        ORDER BY id DESC
+        JOIN users ON posts.user_id = users.id
+        WHERE COALESCE(users.suspended, 0) = 0
+          AND COALESCE(users.banned, 0) = 0
+        ORDER BY posts.id DESC
     """)
 
     posts_raw = c.fetchall()
@@ -58,9 +63,12 @@ def explore_page():
     # REELS
     # =========================
     c.execute("""
-        SELECT id, video_path
+        SELECT reels.id, reels.video_path
         FROM reels
-        ORDER BY id DESC
+        JOIN users ON reels.user_id = users.id
+        WHERE COALESCE(users.suspended, 0) = 0
+          AND COALESCE(users.banned, 0) = 0
+        ORDER BY reels.id DESC
     """)
 
     reels = c.fetchall()
@@ -131,6 +139,8 @@ def explore_search():
             SELECT id, username, photo
             FROM users
             WHERE username LIKE ?
+              AND COALESCE(suspended, 0) = 0
+              AND COALESCE(banned, 0) = 0
             ORDER BY username ASC
         """, (f"%{q}%",))
 

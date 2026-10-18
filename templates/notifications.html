@@ -665,12 +665,19 @@ body::after{
 
     {% elif n.type == "follow" %}
 
-        <button
-            class="follow-btn text-white text-sm font-semibold px-4 py-1.5 rounded-lg">
+    {% elif n.type == "follow" %}
 
-            Follow
+        <form method="POST"
+              action="/social/follow/{{ n.actor_id }}"
+              class="shrink-0">
 
-        </button>
+            <button
+                type="submit"
+                class="follow-btn text-white text-sm font-semibold px-4 py-1.5 rounded-lg">
+                Follow
+            </button>
+
+        </form>
 
 {% elif n.type == "follow_accepted" %}
 
@@ -726,58 +733,114 @@ body::after{
 </div>{% endfor %}
 
 <!-- =========================================================
-     SUGGESTIONS
-========================================================= --><div class="section-title mt-2">
-    People you may know
-</div><!-- USER 1 --><div class="px-4 py-4 flex items-center gap-3 border-b border-[#121212]"><img
-    src="/static/default_dp.png"
-    class="w-14 h-14 rounded-full object-cover">
+     👥 PEOPLE YOU MAY KNOW
+========================================================= -->
 
-<div class="flex-1">
+<div class="section-title mt-4">
+    👥 People You May Know
+</div>
+
+<div class="px-4 pb-3 text-sm text-white/70">
+    Discover people connected to your network.
+</div>
+
+{% for person in suggestions %}
+
+<div class="px-4 py-4 flex items-center gap-3
+            border-b border-white/10">
+
+    <!-- PROFILE PHOTO -->
+    <a href="/profile/{{ person.id }}"
+       class="story-ring rounded-full p-[2px] shrink-0">
+
+        <img
+            src="{{ person.photo }}"
+            onerror="this.src='/static/default_dp.png'"
+            class="w-14 h-14 rounded-full object-cover bg-[#111]"
+            alt="Profile photo">
+
+    </a>
+
+    <!-- USER DETAILS -->
+    <div class="flex-1 min-w-0">
+
+        <a href="/profile/{{ person.id }}"
+           class="font-semibold block truncate hover:underline">
+
+            {{ person.username }}
+
+        </a>
+
+        <div class="text-white/60 text-sm mt-1">
+
+            {% if person.mutual_count > 0 %}
+
+                {{ person.mutual_count }} mutual connection{% if person.mutual_count != 1 %}s{% endif %}
+
+            {% else %}
+
+                Suggested for you
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    <!-- FOLLOW / REQUEST BUTTON -->
+    {% if person.request_pending %}
+
+        <button
+            type="button"
+            disabled
+            class="shrink-0 px-3 py-2 rounded-xl
+                   bg-white/10 border border-white/20
+                   text-white/70 text-xs font-bold">
+
+            Requested
+
+        </button>
+
+    {% else %}
+
+        <form method="POST"
+              action="/social/follow/{{ person.id }}"
+              class="shrink-0">
+
+            <button
+                type="submit"
+                class="follow-btn px-4 py-2 rounded-xl
+                       text-white text-sm font-bold">
+
+                Follow
+
+            </button>
+
+        </form>
+
+    {% endif %}
+
+</div>
+
+{% else %}
+
+<div class="mx-4 my-3 p-5 rounded-2xl
+            bg-black/20 border border-white/10
+            text-center">
+
+    <div class="text-3xl mb-2">✨</div>
 
     <div class="font-semibold">
-        testing vishal sen
+        You're all caught up!
     </div>
 
-    <div class="text-gray-500 text-sm">
-        3 mutual followers
-    </div>
-
-</div>
-
-<button
-    class="follow-btn px-4 py-1.5 rounded-lg text-sm font-semibold">
-
-    Follow
-
-</button>
-
-</div><!-- USER 2 --><div class="px-4 py-4 flex items-center gap-3 border-b border-[#121212]"><img
-    src="/static/default_dp.png"
-    class="w-14 h-14 rounded-full object-cover">
-
-<div class="flex-1">
-
-    <div class="font-semibold">
-        testing vijay
-    </div>
-
-    <div class="text-gray-500 text-sm">
-        Followed by Vishal + 2 more
+    <div class="text-sm text-white/70 mt-1">
+        No new people to suggest right now.
     </div>
 
 </div>
 
-<button
-    class="follow-btn px-4 py-1.5 rounded-lg text-sm font-semibold">
-
-    Follow
-
-</button>
-
-</div>
-
-</div>
+{% endfor %}
 
 <!-- =========================================================
      FOLLOW REQUEST ACTIONS + AUTO MARK READ

@@ -150,10 +150,26 @@ def groups():
     cleanup_expired()
     stories = load_stories()
 
+    conn = get_db()
+    try:
+        rows = conn.execute("""
+            SELECT id
+            FROM users
+            WHERE COALESCE(suspended, 0) = 0
+              AND COALESCE(banned, 0) = 0
+        """).fetchall()
+
+        active_user_ids = {str(row["id"]) for row in rows}
+    finally:
+        conn.close()
+
     grouped = {}
 
     for s in stories:
-        uid = s["user_id"]
+        uid = str(s.get("user_id", ""))
+
+        if uid not in active_user_ids:
+            continue
 
         if uid not in grouped:
             grouped[uid] = {
@@ -173,6 +189,20 @@ def groups():
 # ---------------- VIEW STORIES ----------------
 @stories_bp.route("/view/<username>")
 def view(username):
+    conn = get_db()
+    try:
+        owner = conn.execute("""
+            SELECT COALESCE(suspended, 0) AS suspended,
+                   COALESCE(banned, 0) AS banned
+            FROM users
+            WHERE id = ?
+        """, (username,)).fetchone()
+    finally:
+        conn.close()
+
+    if not owner or owner["suspended"] or owner["banned"]:
+        return "Story not found", 404
+
     cleanup_expired()
 
     stories = load_stories()
@@ -440,11 +470,46 @@ def reply():
 # ---------------- MEDIA ----------------
 @stories_bp.route("/media/<filename>")
 def media(filename):
+    if not filename or "_" not in filename:
+        return "Story not found", 404
+
+    owner_id = filename.split("_", 1)[0]
+
+    if not owner_id.isdigit():
+        return "Story not found", 404
+
+    conn = get_db()
+    try:
+        owner = conn.execute("""
+            SELECT COALESCE(suspended, 0) AS suspended,
+                   COALESCE(banned, 0) AS banned
+            FROM users
+            WHERE id = ?
+        """, (int(owner_id),)).fetchone()
+    finally:
+        conn.close()
+
+    if not owner or owner["suspended"] or owner["banned"]:
+        return "Story not found", 404
+
     return send_from_directory(STORY_FOLDER, filename)
 
 def load_stories_for_feed():
     cleanup_expired()
     stories = load_stories()
+
+    conn = get_db()
+    try:
+        rows = conn.execute("""
+            SELECT id
+            FROM users
+            WHERE COALESCE(suspended, 0) = 0
+              AND COALESCE(banned, 0) = 0
+        """).fetchall()
+
+        active_user_ids = {str(row["id"]) for row in rows}
+    finally:
+        conn.close()
 
     return [
         {
@@ -455,6 +520,7 @@ def load_stories_for_feed():
             "viewers": s.get("viewers", [])
         }
         for s in stories
+        if str(s.get("user_id")) in active_user_ids
     ]
 
     bar = []
@@ -525,25 +591,26 @@ def get_storybar_for_user(current_user):
             SELECT
                 username,
                 photo,
-                is_private
+                is_private,
+                COALESCE(suspended, 0) AS suspended,
+                COALESCE(banned, 0) AS banned
             FROM users
             WHERE id=?
         """, (uid,))
 
         u = c.fetchone()
 
-        username = str(uid)
+        # Hide suspended or banned users
+        if not u or u["suspended"] or u["banned"]:
+            continue
+
+        username = u["username"]
         photo = "/static/default_dp.png"
-        is_private = False
 
-        if u:
+        if u["photo"]:
+            photo = u["photo"]
 
-            username = u["username"]
-
-            if u["photo"]:
-                photo = u["photo"]
-
-            is_private = bool(u["is_private"])
+        is_private = bool(u["is_private"])
 
         # --------------------------------
         # CHECK FOLLOW PERMISSION

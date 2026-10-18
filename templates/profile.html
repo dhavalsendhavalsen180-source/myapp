@@ -656,7 +656,7 @@ body{
 <!-- BUTTON -->
 <div class="mt-5">
 
-    {% if current_user and (current_user != profile.id) %}
+    {% if not is_owner %}
 
         <!-- =========================================
              FOLLOWED PRIVATE ACCOUNT
@@ -867,13 +867,56 @@ body{
             <a href="/posts/{{ p.id }}"
                class="aspect-square rounded-2xl overflow-hidden bg-slate-100 shadow hover:scale-[0.97] transition">
 
-                {% if p.image and not p.image.endswith(".mp4") %}
+            {% if p.image %}
 
-                <img src="{{ p.image }}"
-                     class="w-full h-full object-cover"
-                     alt="post">
+                {% set lower_image = p.image|lower %}
+
+                {% if lower_image.endswith('.mp4')
+                      or lower_image.endswith('.webm')
+                      or lower_image.endswith('.mov')
+                      or lower_image.endswith('.mkv')
+                      or lower_image.endswith('.avi')
+                      or lower_image.endswith('.m4v') %}
+
+                    <div class="relative w-full h-full bg-black">
+
+                        <img
+                            src="/static/uploads/posts/thumbs/{{ p.image.split('/')[-1].rsplit('.', 1)[0] }}_thumb.jpg"
+                            class="w-full h-full object-cover"
+                            alt="video post"
+                            loading="lazy"
+                            onerror="this.src='/static/default_post.png'">
+
+                        <!-- VIDEO ICON -->
+                        <div class="absolute top-2 right-2
+                                    w-8 h-8 rounded-full
+                                    bg-black/60
+                                    flex items-center justify-center">
+
+                            <svg width="15"
+                                 height="15"
+                                 viewBox="0 0 24 24"
+                                 fill="white">
+
+                                <path d="M8 5v14l11-7z"/>
+
+                            </svg>
+
+                        </div>
+
+                    </div>
 
                 {% else %}
+
+                    <img
+                        src="{{ p.image }}"
+                        class="w-full h-full object-cover"
+                        alt="post"
+                        loading="lazy">
+
+                {% endif %}
+
+            {% else %}
 
                 <div class="w-full h-full flex items-center justify-center text-slate-400">
 
@@ -884,15 +927,23 @@ body{
                          stroke="currentColor"
                          stroke-width="2">
 
-                        <rect x="4" y="4" width="16" height="16" rx="3"/>
-                        <circle cx="9" cy="9" r="1.5"/>
+                        <rect x="4"
+                              y="4"
+                              width="16"
+                              height="16"
+                              rx="3"/>
+
+                        <circle cx="9"
+                                cy="9"
+                                r="1.5"/>
+
                         <path d="M4 16l5-5 4 4 3-3 4 4"/>
 
                     </svg>
 
                 </div>
 
-                {% endif %}
+            {% endif %}
 
             </a>
 
@@ -1002,6 +1053,12 @@ body{
         <input name="username"
                value="{{ profile.username }}"
                class="mt-2 w-full rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3 outline-none focus:border-blue-400">
+
+        {% if request.args.get('error') == 'invalid_username' %}
+        <p class="mt-2 text-sm text-red-600 font-semibold">
+            Username mein sirf letters, numbers, dot (.) aur underscore (_) allowed hain.
+        </p>
+        {% endif %}
 
       </div>
 

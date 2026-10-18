@@ -111,27 +111,19 @@ def feed():
             ON posts.user_id = users.id
 
         WHERE
-
-            -- Apne khud ke posts
-            posts.user_id = ?
-
-            OR
-
-            -- Public account ki post
-            users.is_private = 0
-
-            OR
-
-            -- Private account, lekin current user
-            -- accepted follower hai
-            (
-                users.is_private = 1
-
-                AND EXISTS (
-                    SELECT 1
-                    FROM follows
-                    WHERE follows.follower_id = ?
-                      AND follows.following_id = posts.user_id
+            COALESCE(users.suspended, 0) = 0
+            AND COALESCE(users.banned, 0) = 0
+            AND (
+                posts.user_id = ?
+                OR users.is_private = 0
+                OR (
+                    users.is_private = 1
+                    AND EXISTS (
+                        SELECT 1
+                        FROM follows
+                        WHERE follows.follower_id = ?
+                          AND follows.following_id = posts.user_id
+                    )
                 )
             )
 
@@ -226,6 +218,11 @@ def feed():
         """, (post_id,))
 
         audio = c.fetchone()
+
+        print("========== FEED AUDIO DEBUG ==========")
+        print("POST ID:", post_id)
+        print("AUDIO ROW:", tuple(audio) if audio else None)
+        print("======================================")
 
         # ===============================
         # 🎵 DETERMINE AUDIO FILE
@@ -561,6 +558,20 @@ def view_post(post_id):
 
     owner_id = row["user_id"]
 
+    c.execute(
+        """
+        SELECT COALESCE(suspended, 0), COALESCE(banned, 0)
+        FROM users
+        WHERE id = ?
+        """,
+        (owner_id,)
+    )
+    status_row = c.fetchone()
+
+    if not status_row or status_row[0] or status_row[1]:
+        conn.close()
+        return "Post not found", 404
+
     # Load only this owner's posts
     c.execute("""
         SELECT
@@ -631,20 +642,35 @@ def view_post(post_id):
 
     post = posts[0]
 
-    # MUSIC
+    # MUSIC / ORIGINAL AUDIO
     c.execute("""
         SELECT
             ma.music_id,
+            ma.original_audio_id,
             ma.original_volume,
             ma.music_volume,
             ma.start_time,
             ma.end_time,
-            m.filename
+
+            m.filename AS music_filename,
+            m.title AS music_title,
+
+            oa.audio_file AS original_audio_file,
+            oa.title AS original_audio_title
+
         FROM media_audio ma
-        JOIN music m
+
+        LEFT JOIN music m
             ON ma.music_id = m.id
+
+        LEFT JOIN original_audio oa
+            ON ma.original_audio_id = oa.id
+
         WHERE ma.media_type='post'
           AND ma.media_id=?
+
+        ORDER BY ma.id DESC
+        LIMIT 1
     """, (post["id"],))
 
     audio = c.fetchone()
@@ -724,10 +750,61 @@ def view_post(post_id):
     } for r in c.fetchall()]
 
     # ADD THIS
-    post["music_file"] = (
-        "/static/music/uploads/" + audio["filename"]
-        if audio else None
+    post["music_id"] = (
+        audio["music_id"]
+        if audio and audio["music_id"]
+        else None
     )
+
+    post["music_file"] = (
+        "/static/music/uploads/" + audio["music_filename"]
+        if audio and audio["music_filename"]
+        else None
+    )
+
+    post["music_title"] = (
+        audio["music_title"]
+        if audio and audio["music_title"]
+        else None
+    )
+
+    post["original_audio_id"] = (
+        audio["original_audio_id"]
+        if audio and audio["original_audio_id"]
+        else None
+    )
+
+    post["original_audio_file"] = (
+        audio["original_audio_file"]
+        if audio and audio["original_audio_file"]
+        else None
+    )
+
+    post["original_audio_title"] = (
+        audio["original_audio_title"]
+        if audio and audio["original_audio_title"]
+        else None
+    )
+
+    post["audio_type"] = (
+        "original"
+        if audio and audio["original_audio_id"]
+        else "music"
+        if audio and audio["music_id"]
+        else None
+    )
+
+    print("POST DICT BEFORE AUDIO:", dict(post))
+    print("POST MUSIC ID:", post["music_id"] if "music_id" in post.keys() else "NO KEY")
+    print("POST ORIGINAL AUDIO ID:", post["original_audio_id"] if "original_audio_id" in post.keys() else "NO KEY")
+    print("========== VIEW POST AUDIO DEBUG ==========")
+    print("POST ID:", post["id"])
+    print("AUDIO ROW:", dict(audio) if audio else None)
+    print("MUSIC FILE:", post["music_file"])
+    print("MUSIC ID:", post["music_id"])
+    print("ORIGINAL AUDIO FILE:", post["original_audio_file"])
+    print("AUDIO TYPE:", post["audio_type"])
+    print("===========================================")
 
     # Current user profile photo
     current_user_photo = "/static/default_dp.png"
@@ -758,13 +835,22 @@ def view_post(post_id):
             current_user=session.get("user_id"),
             current_user_photo=current_user_photo,
 
-            music_file=(
-               "/static/music/uploads/" + audio["filename"]
-                if audio else None
+            music_file=post["music_file"],
+            music_start=(
+                audio["start_time"]
+                if audio
+                else 0
             ),
-            music_start=audio["start_time"] if audio else 0,
-            music_end=audio["end_time"] if audio else 30,
-            music_volume=audio["music_volume"] if audio else 100,
+            music_end=(
+                audio["end_time"]
+                if audio
+                else 30
+            ),
+            music_volume=(
+                audio["music_volume"]
+                if audio
+                else 100
+            ),
             owner_posts=owner_posts,
             owner_reels=owner_reels
         )
