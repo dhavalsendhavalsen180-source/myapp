@@ -1860,49 +1860,68 @@ def post_comment_like(comment_id):
         "liked": liked,
         "likes": likes
     }
+
 # ===============================
 # 🖼️ SHARED POST THUMBNAIL
 # ===============================
 @posts_bp.route("/shared_post/<int:post_id>")
 def shared_post_info(post_id):
+    current_uid = session.get("user_id", 0)
 
     conn = sqlite3.connect("database.db")
     conn.row_factory = sqlite3.Row
-    c = conn.cursor()
 
-    c.execute("""
-        SELECT image_path
-        FROM post_images
-        WHERE post_id=?
-        ORDER BY id ASC
-        LIMIT 1
-    """, (post_id,))
+    try:
+        row = conn.execute("""
+            SELECT
+                pi.image_path,
+                u.id AS owner_id,
+                COALESCE(u.is_private, 0) AS is_private,
+                COALESCE(u.suspended, 0) AS suspended,
+                COALESCE(u.banned, 0) AS banned
+            FROM posts p
+            JOIN users u ON u.id = p.user_id
+            LEFT JOIN post_images pi ON pi.post_id = p.id
+            WHERE p.id = ?
+            ORDER BY pi.id ASC
+            LIMIT 1
+        """, (post_id,)).fetchone()
 
-    row = c.fetchone()
+        if not row:
+            return {"ok": False}, 404
 
-    conn.close()
+        if row["suspended"] or row["banned"]:
+            return {"ok": False}, 404
 
-    if not row:
+        # Private account: owner or approved follower only.
+        if row["is_private"] and current_uid != row["owner_id"]:
+            allowed = conn.execute("""
+                SELECT 1
+                FROM follows
+                WHERE follower_id = ?
+                  AND following_id = ?
+                LIMIT 1
+            """, (current_uid, row["owner_id"])).fetchone()
+
+            if not allowed:
+                return {"ok": False}, 404
+
+        image = row["image_path"]
+
+        if not image:
+            image = "/static/default_post.png"
+        elif image.startswith("static/"):
+            image = "/" + image
+        elif not image.startswith("/"):
+            image = "/static/uploads/" + image
+
         return {
-            "ok": False,
-            "image": "/static/default_post.png"
+            "ok": True,
+            "image": image
         }
 
-    image = row["image_path"]
-
-    if not image:
-        image = "/static/default_post.png"
-
-    elif image.startswith("static/"):
-        image = "/" + image
-
-    elif not image.startswith("/"):
-        image = "/static/uploads/" + image
-
-    return {
-        "ok": True,
-        "image": image
-    }
+    finally:
+        conn.close()
 
 # ===============================
 # 🎵 ORIGINAL AUDIO PAGE

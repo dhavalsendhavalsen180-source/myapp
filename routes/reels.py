@@ -335,9 +335,19 @@ def reels_page():
 
         WHERE COALESCE(users.suspended, 0) = 0
           AND COALESCE(users.banned, 0) = 0
+          AND (
+              reels.user_id = ?
+              OR COALESCE(users.is_private, 0) = 0
+              OR EXISTS (
+                  SELECT 1
+                  FROM follows f
+                  WHERE f.follower_id = ?
+                    AND f.following_id = reels.user_id
+              )
+          )
 
         ORDER BY reels.id DESC
-    """)
+    """, (get_user_id(), get_user_id()))
 
     reels = []
     for r in c.fetchall():
@@ -450,11 +460,16 @@ def view_reel(reel_id):
     conn = get_conn()
     c = conn.cursor()
 
-    # Clicked reel owner
-    c.execute(
-        "SELECT user_id FROM reels WHERE id=?",
-        (reel_id,)
-    )
+    # Clicked reel owner and privacy status
+    c.execute("""
+        SELECT r.user_id,
+               COALESCE(u.is_private, 0) AS is_private,
+               COALESCE(u.suspended, 0) AS suspended,
+               COALESCE(u.banned, 0) AS banned
+        FROM reels r
+        JOIN users u ON u.id = r.user_id
+        WHERE r.id = ?
+    """, (reel_id,))
 
     row = c.fetchone()
 
@@ -463,6 +478,26 @@ def view_reel(reel_id):
         return "Reel not found", 404
 
     owner_id = row["user_id"]
+    current_uid = get_user_id()
+
+    # Hide suspended/banned users' reels.
+    if row["suspended"] or row["banned"]:
+        conn.close()
+        return "Reel not found", 404
+
+    # Private reels are visible only to the owner or approved followers.
+    if row["is_private"] and current_uid != owner_id:
+        c.execute("""
+            SELECT 1
+            FROM follows
+            WHERE follower_id = ?
+              AND following_id = ?
+            LIMIT 1
+        """, (current_uid, owner_id))
+
+        if not c.fetchone():
+            conn.close()
+            return "Reel not found", 404
 
     # Load only this user's reels
     c.execute("""
@@ -603,9 +638,6 @@ def view_reel(reel_id):
         current_user_photo=current_user_photo
     )
 
-# ===============================
-# ⬆️ UPLOAD REEL
-# ===============================
 # ===============================
 # ⬆️ UPLOAD REEL
 # ===============================
@@ -1749,42 +1781,61 @@ def add_view(reel_id):
         "ok": True,
         "views": views
     })
+
 # =========================
 # 🎬 SHARED REEL THUMBNAIL
 # =========================
 @reels_bp.route("/shared_reel/<int:reel_id>")
 def shared_reel(reel_id):
 
+    current_uid = get_user_id()
     conn = get_conn()
     c = conn.cursor()
 
-    c.execute("""
-        SELECT thumbnail
-        FROM reels
-        WHERE id=?
-    """, (reel_id,))
+    try:
+        c.execute("""
+            SELECT r.thumbnail,
+                   u.id AS owner_id,
+                   COALESCE(u.is_private, 0) AS is_private,
+                   COALESCE(u.suspended, 0) AS suspended,
+                   COALESCE(u.banned, 0) AS banned
+            FROM reels r
+            JOIN users u ON u.id = r.user_id
+            WHERE r.id = ?
+        """, (reel_id,))
 
-    reel = c.fetchone()
+        reel = c.fetchone()
 
-    conn.close()
+        if not reel or reel["suspended"] or reel["banned"]:
+            return jsonify({"ok": False}), 404
 
-    if not reel:
-        return jsonify({
-            "ok": False
-        }), 404
+        # Private account: owner or approved follower only.
+        if reel["is_private"] and current_uid != reel["owner_id"]:
+            c.execute("""
+                SELECT 1
+                FROM follows
+                WHERE follower_id = ?
+                  AND following_id = ?
+                LIMIT 1
+            """, (current_uid, reel["owner_id"]))
 
-    thumbnail = reel["thumbnail"]
+            if not c.fetchone():
+                return jsonify({"ok": False}), 404
 
-    if not thumbnail:
+        thumbnail = reel["thumbnail"]
+
+        if not thumbnail:
+            return jsonify({
+                "ok": True,
+                "image": "/static/default_post.png"
+            })
+
+        image = "/static/uploads/reels/thumbs/" + str(thumbnail)
+
         return jsonify({
             "ok": True,
-            "image": "/static/default_post.png"
+            "image": image
         })
 
-    # Tumhare upload system ke hisaab se thumbnail
-    image = "/static/uploads/reels/thumbs/" + str(thumbnail)
-
-    return jsonify({
-        "ok": True,
-        "image": image
-    })
+    finally:
+        conn.close()
