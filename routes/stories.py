@@ -482,14 +482,15 @@ def media(filename):
     try:
         owner = conn.execute("""
             SELECT COALESCE(suspended, 0) AS suspended,
-                   COALESCE(banned, 0) AS banned
+                   COALESCE(banned, 0) AS banned,
+                   deletion_requested_at
             FROM users
             WHERE id = ?
         """, (int(owner_id),)).fetchone()
     finally:
         conn.close()
 
-    if not owner or owner["suspended"] or owner["banned"]:
+    if not owner or owner["suspended"] or owner["banned"] or owner["deletion_requested_at"]:
         return "Story not found", 404
 
     return send_from_directory(STORY_FOLDER, filename)
@@ -505,6 +506,7 @@ def load_stories_for_feed():
             FROM users
             WHERE COALESCE(suspended, 0) = 0
               AND COALESCE(banned, 0) = 0
+              AND deletion_requested_at IS NULL
         """).fetchall()
 
         active_user_ids = {str(row["id"]) for row in rows}

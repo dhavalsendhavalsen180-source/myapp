@@ -137,55 +137,112 @@ InsChat
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        print("REGISTER VERIFY POST HIT")
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
 
         conn = sqlite3.connect("database.db")
-        c = conn.cursor()
+        conn.row_factory = sqlite3.Row
 
-        # Username se user fetch karo
-        c.execute(
-            """
-            SELECT id, password, suspended, banned
-            FROM users
-            WHERE username=?
-            """,
-            (username,)
-        )
-
-        row = c.fetchone()
-
-        conn.close()
+        try:
+            row = conn.execute("""
+                SELECT id, password, suspended, banned,
+                       deletion_requested_at, deletion_expires_at
+                FROM users
+                WHERE lower(username) = lower(?)
+            """, (username,)).fetchone()
+        finally:
+            conn.close()
 
         if not row:
             flash("Invalid username or password!", "error")
             return render_template("login.html")
 
-        user_id = row[0]
-        stored_pass = row[1]
-        suspended = row[2]
-        banned = row[3]
+        user_id = row["id"]
 
-        if banned:
+        if row["banned"]:
             flash("Your account has been permanently banned.", "error")
             return render_template("login.html")
 
-        if suspended:
+        if row["suspended"]:
             flash("Your account has been suspended.", "error")
             return render_template("login.html")
 
-        # Password verify
-        if check_password_hash(stored_pass, password):
-            session["user_id"] = user_id
-            session.permanent = True
-
-            flash("Login successful!", "success")
-            return redirect(url_for("posts.feed"))
-
-        else:
+        if not check_password_hash(row["password"], password):
             flash("Invalid username or password!", "error")
             return render_template("login.html")
+
+        # Recover a pending deletion only before its deadline.
+        if row["deletion_requested_at"]:
+            expiry_text = row["deletion_expires_at"]
+
+            try:
+                if not expiry_text:
+                    raise ValueError("Missing deletion expiry")
+
+                expiry = datetime.strptime(
+                    expiry_text, "%Y-%m-%d %H:%M:%S"
+                )
+            except (ValueError, TypeError):
+                flash(
+                    "Account recovery deadline could not be verified. "
+                    "Please contact support.",
+                    "error"
+                )
+                return render_template("login.html")
+
+            if datetime.now() >= expiry:
+                flash(
+                    "The account recovery period has expired. "
+                    "Please contact support.",
+                    "error"
+                )
+                return render_template("login.html")
+
+            recovery_conn = sqlite3.connect("database.db")
+
+            try:
+                result = recovery_conn.execute("""
+                    UPDATE users
+                    SET deletion_requested_at = NULL,
+                        deletion_expires_at = NULL
+                    WHERE id = ?
+                      AND deletion_requested_at IS NOT NULL
+                      AND deletion_expires_at = ?
+                      AND deletion_expires_at > ?
+                      AND COALESCE(suspended, 0) = 0
+                      AND COALESCE(banned, 0) = 0
+                """, (
+                    user_id,
+                    expiry_text,
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                ))
+
+                recovery_conn.commit()
+
+                if result.rowcount != 1:
+                    flash(
+                        "Account recovery could not be completed. "
+                        "Please try again or contact support.",
+                        "error"
+                    )
+                    return render_template("login.html")
+
+            except Exception:
+                recovery_conn.rollback()
+                raise
+            finally:
+                recovery_conn.close()
+
+            flash(
+                "Pending account deletion cancelled successfully.",
+                "success"
+            )
+
+        session["user_id"] = user_id
+        session.permanent = True
+
+        flash("Login successful!", "success")
+        return redirect(url_for("posts.feed"))
 
     return render_template("login.html")
 
@@ -429,12 +486,14 @@ def google_callback():
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
 
-    # Agar pehle se account bana hua hai
+    # Existing Google account check
     c.execute("""
         SELECT
             id,
             suspended,
-            banned
+            banned,
+            deletion_requested_at,
+            deletion_expires_at
         FROM users
         WHERE google_id=?
     """, (google_id,))
@@ -442,20 +501,94 @@ def google_callback():
     user = c.fetchone()
 
     if user:
+        user_id = user[0]
+        suspended = user[1]
+        banned = user[2]
+        deletion_requested_at = user[3]
+        deletion_expires_at = user[4]
 
-        if user[2]:
+        if banned:
             conn.close()
             flash("Your account has been permanently banned.", "error")
             return redirect(url_for("auth.login"))
 
-        if user[1]:
+        if suspended:
             conn.close()
-            flash("Your account has been suspended due to policy violations.", "error")
+            flash(
+                "Your account has been suspended due to policy violations.",
+                "error"
+            )
             return redirect(url_for("auth.login"))
+
+        # Pending deletion: verify recovery deadline
+        if deletion_requested_at:
+            try:
+                if not deletion_expires_at:
+                    raise ValueError("Missing deletion expiry")
+
+                expiry = datetime.strptime(
+                    deletion_expires_at,
+                    "%Y-%m-%d %H:%M:%S"
+                )
+            except (ValueError, TypeError):
+                conn.close()
+                flash(
+                    "Recovery deadline could not be verified. "
+                    "Please contact support.",
+                    "error"
+                )
+                return redirect(url_for("auth.login"))
+
+            if datetime.now() >= expiry:
+                conn.close()
+                flash(
+                    "The account recovery period has expired. "
+                    "Please contact support.",
+                    "error"
+                )
+                return redirect(url_for("auth.login"))
+
+            try:
+                result = conn.execute("""
+                    UPDATE users
+                    SET deletion_requested_at = NULL,
+                        deletion_expires_at = NULL
+                    WHERE id = ?
+                      AND deletion_requested_at IS NOT NULL
+                      AND deletion_expires_at = ?
+                      AND deletion_expires_at > ?
+                      AND COALESCE(suspended, 0) = 0
+                      AND COALESCE(banned, 0) = 0
+                """, (
+                    user_id,
+                    deletion_expires_at,
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                ))
+
+                conn.commit()
+
+                if result.rowcount != 1:
+                    conn.close()
+                    flash(
+                        "Account recovery could not be completed. "
+                        "Please contact support.",
+                        "error"
+                    )
+                    return redirect(url_for("auth.login"))
+
+            except Exception:
+                conn.rollback()
+                conn.close()
+                raise
+
+            flash(
+                "Pending account deletion cancelled successfully.",
+                "success"
+            )
 
         conn.close()
 
-        session["user_id"] = user[0]
+        session["user_id"] = user_id
         session.permanent = True
 
         return redirect(url_for("posts.feed"))
@@ -816,3 +949,8 @@ def new_password():
         return redirect(url_for("auth.login"))
 
     return render_template("new_password.html")
+
+@auth_bp.route("/logout", methods=["GET", "POST"])
+def logout():
+    session.clear()
+    return redirect(url_for("auth.login"))

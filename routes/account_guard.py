@@ -23,7 +23,7 @@ def get_db():
 
 
 def is_user_blocked(user_id):
-    """Return True if a user is suspended or banned."""
+    """Return True if a user is restricted or awaiting deletion."""
     if user_id is None:
         return False
 
@@ -32,14 +32,21 @@ def is_user_blocked(user_id):
         row = conn.execute(
             """
             SELECT COALESCE(suspended, 0) AS suspended,
-                   COALESCE(banned, 0) AS banned
+                   COALESCE(banned, 0) AS banned,
+                   deletion_requested_at
             FROM users
             WHERE id = ?
             """,
             (user_id,),
         ).fetchone()
 
-        return bool(row and (row["suspended"] or row["banned"]))
+        return bool(
+            row and (
+                row["suspended"]
+                or row["banned"]
+                or row["deletion_requested_at"]
+            )
+        )
     finally:
         conn.close()
 
@@ -62,8 +69,11 @@ def find_blocked_media_owner(filename):
                     """
                     SELECT 1 FROM users
                     WHERE id = ?
-                      AND (COALESCE(suspended, 0) = 1
-                           OR COALESCE(banned, 0) = 1)
+                      AND (
+                          COALESCE(suspended, 0) = 1
+                          OR COALESCE(banned, 0) = 1
+                          OR deletion_requested_at IS NOT NULL
+                      )
                     """,
                     (int(parts[0]),),
                 ).fetchone()
@@ -76,8 +86,11 @@ def find_blocked_media_owner(filename):
                 """
                 SELECT 1 FROM users
                 WHERE REPLACE(COALESCE(photo, ''), '\\', '/') IN (?, ?)
-                  AND (COALESCE(suspended, 0) = 1
-                       OR COALESCE(banned, 0) = 1)
+                  AND (
+                      COALESCE(suspended, 0) = 1
+                      OR COALESCE(banned, 0) = 1
+                      OR deletion_requested_at IS NOT NULL
+                  )
                 LIMIT 1
                 """,
                 (stored_path, "static/" + filename),
@@ -96,8 +109,11 @@ def find_blocked_media_owner(filename):
                     FROM reels r
                     JOIN users u ON u.id = r.user_id
                     WHERE r.thumbnail = ?
-                      AND (COALESCE(u.suspended, 0) = 1
-                           OR COALESCE(u.banned, 0) = 1)
+                      AND (
+                          COALESCE(u.suspended, 0) = 1
+                          OR COALESCE(u.banned, 0) = 1
+                              OR u.deletion_requested_at IS NOT NULL
+                      )
                     LIMIT 1
                     """,
                     (thumb_name,),
@@ -109,8 +125,11 @@ def find_blocked_media_owner(filename):
                     FROM reels r
                     JOIN users u ON u.id = r.user_id
                     WHERE r.video_path = ?
-                      AND (COALESCE(u.suspended, 0) = 1
-                           OR COALESCE(u.banned, 0) = 1)
+                      AND (
+                          COALESCE(u.suspended, 0) = 1
+                          OR COALESCE(u.banned, 0) = 1
+                          OR u.deletion_requested_at IS NOT NULL
+                      )
                     LIMIT 1
                     """,
                     (relative,),
@@ -131,7 +150,7 @@ def find_blocked_media_owner(filename):
 
                 rows = conn.execute(
                     """
-                    SELECT u.suspended, u.banned, pi.image_path
+                    SELECT u.suspended, u.banned, u.deletion_requested_at, pi.image_path
                     FROM post_images pi
                     JOIN posts p ON p.id = pi.post_id
                     JOIN users u ON u.id = p.user_id
@@ -147,7 +166,9 @@ def find_blocked_media_owner(filename):
                     )[0]
 
                     if image_base == source_base and (
-                        row["suspended"] or row["banned"]
+                        row["suspended"]
+                        or row["banned"]
+                        or row["deletion_requested_at"]
                     ):
                         return True
 
@@ -155,7 +176,7 @@ def find_blocked_media_owner(filename):
 
             rows = conn.execute(
                 """
-                SELECT u.suspended, u.banned, pi.image_path
+                SELECT u.suspended, u.banned, u.deletion_requested_at, pi.image_path
                 FROM post_images pi
                 JOIN posts p ON p.id = pi.post_id
                 JOIN users u ON u.id = p.user_id
@@ -170,13 +191,10 @@ def find_blocked_media_owner(filename):
                 if image_path.startswith("static/"):
                     image_path = image_path[len("static/"):]
 
-                if image_path == filename and (
-                    row["suspended"] or row["banned"]
-                ):
-                    return True
-
                 if os.path.basename(image_path) == basename and (
-                    row["suspended"] or row["banned"]
+                    row["suspended"]
+                    or row["banned"]
+                    or row["deletion_requested_at"]
                 ):
                     return True
 
@@ -186,7 +204,7 @@ def find_blocked_media_owner(filename):
         if filename.startswith("uploads/") and "/" not in filename[len("uploads/"):]:
             rows = conn.execute(
                 """
-                SELECT u.suspended, u.banned, pi.image_path
+                SELECT u.suspended, u.banned, u.deletion_requested_at, pi.image_path
                 FROM post_images pi
                 JOIN posts p ON p.id = pi.post_id
                 JOIN users u ON u.id = p.user_id
@@ -199,7 +217,9 @@ def find_blocked_media_owner(filename):
                 ).replace("\\", "/")
 
                 if os.path.basename(image_path) == basename and (
-                    row["suspended"] or row["banned"]
+                    row["suspended"]
+                    or row["banned"]
+                    or row["deletion_requested_at"]
                 ):
                     return True
 
@@ -244,7 +264,8 @@ def enforce_account_status():
         row = conn.execute(
             """
             SELECT COALESCE(suspended, 0) AS suspended,
-                   COALESCE(banned, 0) AS banned
+                   COALESCE(banned, 0) AS banned,
+                   deletion_requested_at
             FROM users
             WHERE id = ?
             """,
@@ -256,9 +277,11 @@ def enforce_account_status():
     if not row:
         return None
 
-    if row["banned"] or row["suspended"]:
+    if row["banned"] or row["suspended"] or row["deletion_requested_at"]:
         session["account_blocked_status"] = (
-            "banned" if row["banned"] else "suspended"
+            "banned" if row["banned"]
+            else "suspended" if row["suspended"]
+            else "deletion_pending"
         )
         return redirect(url_for("account_guard.account_status"))
 
@@ -278,7 +301,8 @@ def account_status():
             row = conn.execute(
                 """
                 SELECT COALESCE(suspended, 0) AS suspended,
-                       COALESCE(banned, 0) AS banned
+                       COALESCE(banned, 0) AS banned,
+                       deletion_requested_at
                 FROM users
                 WHERE id = ?
                 """,
@@ -287,13 +311,20 @@ def account_status():
         finally:
             conn.close()
 
-        if row and not row["banned"] and not row["suspended"]:
+        if (
+            row
+            and not row["banned"]
+            and not row["suspended"]
+            and not row["deletion_requested_at"]
+        ):
             session.pop("account_blocked_status", None)
             return redirect(url_for("posts.feed"))
 
         if row:
             session["account_blocked_status"] = (
-                "banned" if row["banned"] else "suspended"
+                "banned" if row["banned"]
+                else "suspended" if row["suspended"]
+                else "deletion_pending"
             )
 
     status = session.get("account_blocked_status", "restricted")
@@ -304,11 +335,12 @@ def account_status():
             "Your account has been banned. "
             "Please contact the administrator for assistance."
         )
-    elif status == "suspended":
-        title = "Account Suspended"
+    elif status == "deletion_pending":
+        title = "Account Deletion Pending"
         message = (
-            "Your account is currently suspended. "
-            "Please contact the administrator for assistance."
+            "Your account is hidden while deletion is pending. "
+            "Log in again and verify your identity to cancel deletion "
+            "within the recovery period."
         )
     else:
         title = "Account Status"

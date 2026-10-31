@@ -1,233 +1,246 @@
-<!-- =========================
-     INS SHARE SHEET PRO FINAL
-========================= -->
+<!-- INSCHAT SHARE SHEET -->
 
 <div id="shareModal"
-style="
-position:fixed;
-inset:0;
-background:rgba(0,0,0,.55);
-display:none;
-z-index:99999;
-align-items:flex-end;
-justify-content:center;
-font-family:system-ui;
-">
+style="position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:99999;align-items:flex-end;justify-content:center;font-family:system-ui;">
 
-<!-- PANEL -->
-<div style="
-width:100%;
-max-width:520px;
-background:#fff;
-border-radius:18px 18px 0 0;
-height:80vh;
-display:flex;
-flex-direction:column;
-overflow:hidden;
-">
+  <div style="width:100%;max-width:520px;background:#fff;border-radius:18px 18px 0 0;height:80vh;display:flex;flex-direction:column;overflow:hidden;">
 
-<!-- HANDLE -->
-<div style="
-width:40px;
-height:4px;
-background:#ccc;
-border-radius:20px;
-margin:10px auto;
-"></div>
+    <div style="width:40px;height:4px;background:#ccc;border-radius:20px;margin:10px auto;"></div>
 
-<!-- TITLE -->
-<div style="
-text-align:center;
-font-size:17px;
-font-weight:700;
-padding:10px 0;
-border-bottom:1px solid #eee;
-">
-Share
-</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #eee;">
+      <span style="width:24px;"></span>
+      <span style="font-size:17px;font-weight:700;">Share</span>
+      <button onclick="closeShare()" aria-label="Close"
+      style="font-size:24px;color:#666;">×</button>
+    </div>
 
-<!-- SEARCH -->
-<div style="padding:10px;">
-  <input id="shareSearch"
-  placeholder="Search..."
-  oninput="filterUsers()"
-  style="
-  width:100%;
-  padding:10px;
-  border:1px solid #ddd;
-  border-radius:10px;
-  outline:none;
-  font-size:13px;
-  ">
-</div>
+    <div style="padding:10px;">
+      <input id="shareSearch"
+      placeholder="Search..."
+      oninput="filterUsers()"
+      style="width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;outline:none;font-size:13px;">
+    </div>
 
-<!-- USERS -->
-<div id="shareUsers"
-style="
-flex:1;
-overflow-y:auto;
-padding:10px;
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:12px;
-">
-</div>
+    <div id="shareUsers"
+    style="flex:1;overflow-y:auto;padding:10px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-content:start;gap:12px;">
+    </div>
 
-<!-- ACTIONS -->
-<div style="
-border-top:1px solid #eee;
-display:flex;
-justify-content:space-around;
-padding:12px;
-background:#fff;
-">
+    <div style="border-top:1px solid #eee;padding:12px;background:#fff;">
 
-<div onclick="shareWhatsApp()" style="text-align:center;cursor:pointer;">
-  <div style="width:50px;height:50px;border-radius:50%;background:#f2f2f2;display:flex;align-items:center;justify-content:center;">📱</div>
-  <div style="font-size:11px;margin-top:4px;">WhatsApp</div>
-</div>
+      <div style="display:flex;justify-content:space-around;margin-bottom:12px;">
 
-<div onclick="shareTelegram()" style="text-align:center;cursor:pointer;">
-  <div style="width:50px;height:50px;border-radius:50%;background:#f2f2f2;display:flex;align-items:center;justify-content:center;">✈</div>
-  <div style="font-size:11px;margin-top:4px;">Telegram</div>
-</div>
+        <button onclick="shareWhatsApp()" style="text-align:center;">
+          <div style="width:46px;height:46px;border-radius:50%;background:#f2f2f2;display:flex;align-items:center;justify-content:center;">📱</div>
+          <div style="font-size:11px;margin-top:4px;">WhatsApp</div>
+        </button>
 
-<div onclick="copyLink()" style="text-align:center;cursor:pointer;">
-  <div style="width:50px;height:50px;border-radius:50%;background:#f2f2f2;display:flex;align-items:center;justify-content:center;">🔗</div>
-  <div style="font-size:11px;margin-top:4px;">Copy</div>
-</div>
+        <button onclick="shareTelegram()" style="text-align:center;">
+          <div style="width:46px;height:46px;border-radius:50%;background:#f2f2f2;display:flex;align-items:center;justify-content:center;">✈️</div>
+          <div style="font-size:11px;margin-top:4px;">Telegram</div>
+        </button>
 
-</div>
+        <button onclick="copyLink()" style="text-align:center;">
+          <div style="width:46px;height:46px;border-radius:50%;background:#f2f2f2;display:flex;align-items:center;justify-content:center;">🔗</div>
+          <div style="font-size:11px;margin-top:4px;">Copy</div>
+        </button>
 
-</div>
+      </div>
+
+      <button id="shareSendBtn" onclick="sendSelectedPosts()"
+      disabled
+      style="width:100%;padding:12px;border-radius:12px;background:#2563eb;color:white;font-weight:700;opacity:.5;">
+        Select a friend
+      </button>
+
+      <div id="shareStatus" role="status"
+      style="font-size:12px;text-align:center;margin-top:8px;color:#555;"></div>
+
+    </div>
+  </div>
 </div>
 
 <script>
-
 let currentSharePost = null;
 let allUsers = [];
+let selectedShareUsers = new Set();
+let shareSending = false;
 
-/* OPEN */
-async function openShare(postId){
-
+async function openShare(postId) {
   currentSharePost = postId;
+  selectedShareUsers.clear();
+  shareSending = false;
+
   document.getElementById("shareModal").style.display = "flex";
+  document.getElementById("shareSearch").value = "";
+  document.getElementById("shareStatus").textContent = "";
 
   const box = document.getElementById("shareUsers");
-  box.innerHTML = "Loading...";
+  box.innerHTML = '<div style="grid-column:span 4;text-align:center;color:#777;">Loading...</div>';
+  updateShareSendButton();
 
-  const res = await fetch("/posts/get_followers");
-  const data = await res.json();
+  try {
+    const res = await fetch("/posts/get_followers");
+    if (!res.ok) throw new Error("Could not load users");
 
-  allUsers = data.followers || [];
-
-  renderUsers(allUsers);
+    const data = await res.json();
+    allUsers = data.followers || [];
+    renderUsers(allUsers);
+  } catch (err) {
+    box.innerHTML = '<div style="grid-column:span 4;text-align:center;color:#b91c1c;">Could not load users. Try again.</div>';
+  }
 }
 
-/* RENDER USERS */
-function renderUsers(users){
-
+function renderUsers(users) {
   const box = document.getElementById("shareUsers");
+  box.innerHTML = "";
 
-  if(!users || users.length === 0){
-    box.innerHTML = `
-      <div style="grid-column:span 4;text-align:center;color:#777;font-size:13px">
-        No users
-      </div>`;
+  if (!users || users.length === 0) {
+    box.innerHTML = '<div style="grid-column:span 4;text-align:center;color:#777;font-size:13px;">No users found</div>';
     return;
   }
 
-  box.innerHTML = "";
-
   users.forEach(user => {
+    const selected = selectedShareUsers.has(String(user.id));
+    const item = document.createElement("button");
+    item.type = "button";
+    item.style.cssText = "position:relative;text-align:center;cursor:pointer;min-width:0;padding:4px;border-radius:12px;border:2px solid " + (selected ? "#2563eb" : "transparent") + ";background:" + (selected ? "#eff6ff" : "white") + ";";
 
-    box.innerHTML += `
-      <div onclick="sendPost(${user.id})"
-      style="text-align:center;cursor:pointer;">
+    const img = document.createElement("img");
+    img.src = user.photo || "/static/default_dp.png";
+    img.onerror = function() { this.src = "/static/default_dp.png"; };
+    img.style.cssText = "width:60px;height:60px;margin:auto;border-radius:50%;object-fit:cover;border:2px solid " + (selected ? "#2563eb" : "#eee") + ";";
 
-        <img src="${user.photo || '/static/default_dp.png'}"
-        onerror="this.src='/static/default_dp.png'"
-        style="
-          width:60px;
-          height:60px;
-          border-radius:50%;
-          object-fit:cover;
-          border:2px solid #eee;
-        ">
+    const name = document.createElement("div");
+    name.textContent = user.username || "User";
+    name.style.cssText = "font-size:12px;margin-top:6px;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
 
-        <div style="
-          font-size:12px;
-          margin-top:6px;
-          color:#111;
-          white-space:nowrap;
-          overflow:hidden;
-          text-overflow:ellipsis;
-        ">
-          ${user.username}
-        </div>
+    item.appendChild(img);
+    item.appendChild(name);
 
-      </div>
-    `;
+    if (selected) {
+      const tick = document.createElement("span");
+      tick.textContent = "✓";
+      tick.style.cssText = "position:absolute;top:0;right:0;width:23px;height:23px;border-radius:50%;background:#2563eb;color:white;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid white;";
+      item.appendChild(tick);
+    }
+
+    item.onclick = () => {
+      const id = String(user.id);
+      if (selectedShareUsers.has(id)) {
+        selectedShareUsers.delete(id);
+      } else {
+        selectedShareUsers.add(id);
+      }
+
+      document.getElementById("shareStatus").textContent = "";
+      renderUsers(users);
+      updateShareSendButton();
+    };
+
+    box.appendChild(item);
   });
 }
 
-/* SEARCH */
-function filterUsers(){
+function filterUsers() {
   const val = document.getElementById("shareSearch").value.toLowerCase();
-  renderUsers(allUsers.filter(u => u.username.toLowerCase().includes(val)));
+  renderUsers(allUsers.filter(u => (u.username || "").toLowerCase().includes(val)));
 }
 
-/* CLOSE */
-function closeShare(){
+function updateShareSendButton() {
+  const btn = document.getElementById("shareSendBtn");
+  const count = selectedShareUsers.size;
+
+  btn.disabled = count === 0 || shareSending;
+  btn.style.opacity = btn.disabled ? ".5" : "1";
+  btn.textContent = shareSending
+    ? "Sending..."
+    : count === 0
+      ? "Select a friend"
+      : `Send${count > 1 ? " (" + count + ")" : ""} ➤`;
+}
+
+function closeShare() {
   document.getElementById("shareModal").style.display = "none";
 }
 
-/* SEND */
-async function sendPost(userId){
+async function sendSelectedPosts() {
+  if (shareSending || !currentSharePost || selectedShareUsers.size === 0) return;
 
-  const res = await fetch("/posts/share_to_user",{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json"
-    },
-    body: JSON.stringify({
-      to_user_id: userId,
-      post_id: currentSharePost
-    })
-  });
+  shareSending = true;
+  updateShareSendButton();
 
-  const data = await res.json();
+  const btn = document.getElementById("shareSendBtn");
+  const status = document.getElementById("shareStatus");
+  let sent = 0;
+  const failures = [];
 
-  if(data.ok){
-    closeShare();
-    alert("Sent");
-  }else{
-    alert(data.error || "Failed");
+  for (const userId of selectedShareUsers) {
+    try {
+      const res = await fetch("/posts/share_to_user", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          to_user_id: Number(userId),
+          post_id: currentSharePost
+        })
+      });
+
+      const data = await res.json();
+
+      console.log("SHARE RESPONSE:", res.status, data);
+
+      if (res.ok && data.ok) {
+        sent++;
+      } else {
+        failures.push(data.error || "A share failed");
+      }
+    } catch (err) {
+      failures.push("Network error");
+    }
+  }
+
+  shareSending = false;
+  updateShareSendButton();
+
+  if (sent > 0) {
+      closeShare();
+      return;
+  }
+
+  if (failures.length === 0) {
+    status.style.color = "#15803d";
+    btn.textContent = "Sent ✓";
+    btn.style.background = "#16a34a";
+    btn.disabled = true;
+
+    setTimeout(closeShare, 900);
+  } else {
+    status.style.color = "#b91c1c";
   }
 }
 
-/* COPY */
-function copyLink(){
+function copyLink() {
   const url = `${window.location.origin}/posts/${currentSharePost}`;
-  navigator.clipboard.writeText(url);
-  alert("Copied");
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(url)
+      .then(() => alert("Copied"))
+      .catch(() => prompt("Copy post link:", url));
+  } else {
+    prompt("Copy post link:", url);
+  }
 }
 
-/* WHATSAPP */
-function shareWhatsApp(){
+function shareWhatsApp() {
   const url = `${window.location.origin}/posts/${currentSharePost}`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(url)}`);
+  window.open(`https://wa.me/?text=${encodeURIComponent(url)}`, "_blank");
 }
 
-/* TELEGRAM */
-function shareTelegram(){
+function shareTelegram() {
   const url = `${window.location.origin}/posts/${currentSharePost}`;
-  window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}`);
+  window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}`, "_blank");
 }
 
-/* OUTSIDE CLOSE */
-document.getElementById("shareModal").onclick = function(e){
-  if(e.target.id === "shareModal") closeShare();
-}
-
+document.getElementById("shareModal").onclick = function(e) {
+  if (e.target.id === "shareModal") closeShare();
+};
 </script>

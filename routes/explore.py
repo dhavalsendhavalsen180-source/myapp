@@ -21,6 +21,7 @@ def explore_page():
         FROM users
         WHERE COALESCE(suspended, 0) = 0
           AND COALESCE(banned, 0) = 0
+          AND deletion_requested_at IS NULL
         ORDER BY id DESC
     """)
     users = c.fetchall()
@@ -36,6 +37,7 @@ def explore_page():
         JOIN users ON posts.user_id = users.id
         WHERE COALESCE(users.suspended, 0) = 0
           AND COALESCE(users.banned, 0) = 0
+          AND users.deletion_requested_at IS NULL
         ORDER BY posts.id DESC
     """)
 

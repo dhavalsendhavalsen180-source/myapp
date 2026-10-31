@@ -113,6 +113,7 @@ def feed():
         WHERE
             COALESCE(users.suspended, 0) = 0
             AND COALESCE(users.banned, 0) = 0
+            AND users.deletion_requested_at IS NULL
             AND (
                 posts.user_id = ?
                 OR users.is_private = 0
@@ -1042,6 +1043,7 @@ def get_followers():
 # ===============================
 @posts_bp.route("/share_to_user", methods=["POST"])
 def share_to_user():
+    from socketio_init import socketio
 
     if "user_id" not in session:
         return {"ok": False, "error": "login required"}
@@ -1910,10 +1912,24 @@ def shared_post_info(post_id):
 
         if not image:
             image = "/static/default_post.png"
-        elif image.startswith("static/"):
-            image = "/" + image
-        elif not image.startswith("/"):
-            image = "/static/uploads/" + image
+        else:
+            filename = image.rsplit("/", 1)[-1]
+            extension = (
+                "." + filename.rsplit(".", 1)[-1].lower()
+                if "." in filename else ""
+            )
+
+            video_extensions = {
+                ".mp4", ".webm", ".mov", ".mkv", ".avi", ".m4v"
+            }
+
+            if extension in video_extensions:
+                stem = filename.rsplit(".", 1)[0]
+                image = f"/static/uploads/posts/thumbs/{stem}_thumb.jpg"
+            elif image.startswith("static/"):
+                image = "/" + image
+            elif not image.startswith("/"):
+                image = "/static/uploads/" + image
 
         return {
             "ok": True,

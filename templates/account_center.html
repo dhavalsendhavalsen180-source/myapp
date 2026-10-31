@@ -73,38 +73,87 @@ content="width=device-width,initial-scale=1">
 
         <hr>
 
+<!-- FORGOT PASSWORD -->    <a href="/auth/forgot-password"
+       class="flex items-center justify-between px-5 py-5 hover:bg-gray-50 transition">
 
-        <!-- FORGOT PASSWORD -->
+        <div>
 
-        <a href="/auth/forgot-password"
-           class="flex items-center justify-between px-5 py-5 hover:bg-gray-50 transition">
-
-            <div>
-
-                <div class="font-bold text-gray-900">
-                    🔐 Forgot Password
-                </div>
-
-                <div class="text-sm text-gray-500">
-                    Reset your password using OTP
-                </div>
-
+            <div class="font-bold text-gray-900">
+                🔐 Forgot Password
             </div>
 
-            <span class="text-gray-400 text-xl">
-                ›
-            </span>
+            <div class="text-sm text-gray-500">
+                Reset your password using OTP
+            </div>
 
-        </a>
+        </div>
 
+        <span class="text-gray-400 text-xl">
+            ›
+        </span>
+
+    </a>
+
+
+    <hr>
+
+
+    <!-- DELETE ACCOUNT -->
+
+    <div class="px-5 py-5 space-y-3">
+
+        <div class="font-bold text-red-600">
+            🗑️ Delete Account
+        </div>
+
+        <p class="text-sm text-gray-600">
+            Your account will be hidden after you confirm the request.
+            You will have 6 months to recover it. Permanent deletion
+            will be handled separately after the recovery period.
+        </p>
+
+        <form method="POST"
+              action="/profile/request-account-deletion"
+              class="space-y-3">
+
+            <label for="current_password"
+                   class="block text-sm font-semibold text-gray-700">
+                Enter your current password
+            </label>
+
+            <input
+                type="password"
+                id="current_password"
+                name="current_password"
+                required
+                autocomplete="current-password"
+                class="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-400"
+                placeholder="Current password"
+            >
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+                         role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endwith %}
+
+            <button
+                type="submit"
+                class="w-full rounded-xl bg-red-600 px-4 py-3 font-bold text-white hover:bg-red-700">
+                Request Account Deletion
+            </button>
+
+        </form>
 
     </div>
 
 
 </div>
 
-
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</div><script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
 

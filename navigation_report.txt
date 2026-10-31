@@ -1,0 +1,65 @@
+templates/profile.html:965:            <div onclick="window.location.href='/reels/{{ r.id }}'"
+templates/profile.html:1382:            window.location.reload();
+templates/profile.html:1442:            window.location.reload();
+templates/profile.html:1548:            onclick="window.location.href='/stories/view/{{ profile.id }}'"
+templates/profile.html:1689:                window.location.reload();
+templates/profile.html:1752:                window.location.reload();
+templates/splash.html:139:      window.location.href = "/home";
+templates/feed.html:356:            window.location.href = res.url;
+templates/feed.html:361:                    window.location.href = "/stories/view/{{ session.get('user_id') }}";
+templates/feed.html:1145:    window.location.href = "/posts/comments/" + postId;
+templates/feed.html:1151:    window.location.href = "/stories/view/" + user_id;
+templates/post_view.html:871:    window.location.href = "/posts/comments/" + postId;
+templates/reels_feed.html:1091:  const reelUrl = `${window.location.origin}/reels?open=${id}`;
+templates/reels_feed.html:1119:  location.href="/reels/audio?name="+encodeURIComponent(n);
+templates/reels_feed.html:1181:  window.location.href = "/reels/comments_page/" + id;
+templates/create/index.html:266:      .then(r=>location.href=r.url);
+templates/create/index.html:313:      .then(r=>location.href=r.url);
+templates/create/index.html:359:    .then(r=>location.href=r.url);
+templates/create/editor.html:284:    const musicId = new URLSearchParams(window.location.search).get("music_id") || "";
+templates/create/editor.html:286:    const originalAudioId = new URLSearchParams(window.location.search).get("original_audio_id") || "";
+templates/create/editor.html:288:    const mediaPath = new URLSearchParams(window.location.search).get("media_path") || "";
+templates/create/editor.html:306:      window.location = resp.url;
+templates/create/editor.html:308:      window.location = '/create/publish';
+templates/editor_upload.html:46:      location.href="/posts/upload?media_path="+res.filename;
+templates/base.html:56:            window.location.replace("/auth/login");
+templates/story_view.html:586:                 onclick="window.location='/profile/{{ owner_id }}'"
+templates/story_view.html:593:                     onclick="window.location='/profile/{{ owner_id }}'"
+templates/story_view.html:1774:        window.location.href =
+templates/story_view.html:1783:    window.location.href =
+templates/story_view.html:1822:        window.location.href =
+templates/story_view.html:2249:            location.href =
+templates/messages_chat.html:67:    location.href = `/call/${window.chat_id}?type=audio&caller=1`;
+templates/messages_chat.html:70:    location.href = `/call/${window.chat_id}?type=video&caller=1`;
+templates/following.html:547:                    window.location.reload();
+templates/post_share.html:223:  const url = `${window.location.origin}/posts/${currentSharePost}`;
+templates/post_share.html:234:  const url = `${window.location.origin}/posts/${currentSharePost}`;
+templates/post_share.html:239:  const url = `${window.location.origin}/posts/${currentSharePost}`;
+templates/reel_comments.html:1734:    window.location.href =
+templates/reel_comments.html:2100:    window.location.href =
+templates/reels_sher_nano.html:234:  const url = new URL("/reels", window.location.origin);
+templates/story_create.html:70:        window.location.replace("/posts/feed");
+templates/post_comments.html:1930:    window.location.href =
+templates/post_comments.html:2425:    window.location.href =
+templates/jscheck/script_2.js:210:            window.location.reload();
+templates/jscheck/script_2.js:268:            window.location.reload();
+templates/jscheck2/script_2.js:217:            window.location.reload();
+templates/jscheck2/script_2.js:277:            window.location.reload();
+templates/feed_backup.html:477:            window.location.href = res.url;
+templates/feed_backup.html:482:                    window.location.href = "/stories/view/{{ session.get('user_id') }}";
+templates/feed_backup.html:1258:    window.location.href = "/posts/comments/" + postId;
+templates/feed_backup.html:1264:    window.location.href = "/stories/view/" + user_id;
+static/js/camera.js:32:      if(r.redirected) window.location = r.url;
+static/js/editor.js:172:    if(res.redirected) window.location = res.url;
+static/js/story.js:9:        else window.location="/";
+static/js/story.js:14:        else window.location="/";
+static/js/messages.js:169:            window.location.href = `/posts/${postId}`;
+static/js/messages.js:269:        window.location.href = `/reels/${reelId}`;
+static/js/messages.js:359:        window.location.href =
+static/js/messages.js:457:        window.location.href =
+static/js/messages.js:1301:window.addEventListener("beforeunload", ()=>{
+static/js/call.js:186:  window.location.href = `/messages/chat/${chatId}`;
+static/js/call.js:208:  if (!window.location.pathname.startsWith("/call/")) {
+static/js/call.js:209:    window.location.href = `/call/${d.chat_id}?caller=1&type=${d.type}`;
+static/js/call.js:328:  window.location.href = `/messages/chat/${chatId}`;
+static/js/global_call.js:35:        window.location.href =

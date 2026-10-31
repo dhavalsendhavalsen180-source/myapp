@@ -380,7 +380,10 @@ def profile(username):
 
     # User
     c.execute("""
-        SELECT id, username, is_private, photo, bio
+        SELECT id, username, is_private, photo, bio,
+               COALESCE(suspended, 0) AS suspended,
+               COALESCE(banned, 0) AS banned,
+               deletion_requested_at
         FROM users
         WHERE username=?
     """, (username,))
@@ -388,6 +391,10 @@ def profile(username):
     u = c.fetchone()
 
     if not u:
+        conn.close()
+        return "User not found", 404
+
+    if u["suspended"] or u["banned"] or u["deletion_requested_at"]:
         conn.close()
         return "User not found", 404
 

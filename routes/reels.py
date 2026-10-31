@@ -335,6 +335,7 @@ def reels_page():
 
         WHERE COALESCE(users.suspended, 0) = 0
           AND COALESCE(users.banned, 0) = 0
+          AND users.deletion_requested_at IS NULL
           AND (
               reels.user_id = ?
               OR COALESCE(users.is_private, 0) = 0
@@ -465,7 +466,8 @@ def view_reel(reel_id):
         SELECT r.user_id,
                COALESCE(u.is_private, 0) AS is_private,
                COALESCE(u.suspended, 0) AS suspended,
-               COALESCE(u.banned, 0) AS banned
+               COALESCE(u.banned, 0) AS banned,
+               u.deletion_requested_at
         FROM reels r
         JOIN users u ON u.id = r.user_id
         WHERE r.id = ?
@@ -481,7 +483,7 @@ def view_reel(reel_id):
     current_uid = get_user_id()
 
     # Hide suspended/banned users' reels.
-    if row["suspended"] or row["banned"]:
+    if row["suspended"] or row["banned"] or row["deletion_requested_at"]:
         conn.close()
         return "Reel not found", 404
 
@@ -538,6 +540,7 @@ def view_reel(reel_id):
         WHERE reels.user_id=?
           AND COALESCE(users.suspended, 0) = 0
           AND COALESCE(users.banned, 0) = 0
+          AND users.deletion_requested_at IS NULL
 
         ORDER BY
             CASE WHEN reels.id=? THEN 0 ELSE 1 END,
