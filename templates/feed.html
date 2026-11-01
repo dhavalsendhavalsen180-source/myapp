@@ -387,12 +387,12 @@ async function uploadStoryInstant(event) {
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-cyan-500 via-blue-600 via-purple-600 to-yellow-400">
-<div class="pb-24">
+<div class="pb-24 pt-[49px]">
 
 <input type="file" id="storyPicker" accept="image/*,video/*" style="display:none" onchange="uploadStoryInstant(event)">
 
 <!-- 💬NAVBAR🔔 -->
-<div class="flex items-center justify-between px-4 py-3 bg-white border-b sticky top-0 z-50">
+<div class="fixed top-0 left-0 right-0 flex items-center justify-between px-4 py-1.5 bg-white border-b z-50">
 
   <!-- LOGO -->
   <h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 bg-clip-text text-transparent">inschat</h1>
@@ -497,7 +497,7 @@ async function uploadStoryInstant(event) {
     <div class="post-card bg-white/95 backdrop-blur-xl rounded-2xl shadow-lg overflow-hidden border border-white/40">
 
 <!-- HEADER -->
-<div class="flex items-center justify-between px-4 py-3">
+<div class="flex items-center justify-between px-3 py-2">
 
     <!-- USER -->
     <a href="/profile/{{ post.owner_id }}"
@@ -747,7 +747,7 @@ async function uploadStoryInstant(event) {
   <div class="flex items-center justify-between">
 
     <!-- LEFT SIDE -->
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-2">
 
       <!-- LIKE -->
 <button id="like-btn-{{ post.id }}"
@@ -772,6 +772,12 @@ async function uploadStoryInstant(event) {
   </svg>
 
 </button>
+
+<!-- LIKE COUNT: HEART KE BAAD -->
+<div id="likes-count-{{ post.id }}"
+     class="text-sm font-semibold whitespace-nowrap -ml-1 -mr-1">
+    {{ post.likes }} likes
+</div>
 
         <!-- COMMENT BUTTON -->
 <button onclick="openComment({{ post.id }})" class="icon-btn">
@@ -904,12 +910,6 @@ async function uploadStoryInstant(event) {
 
 </div>
 
-</div>
-
-<!-- LIKE COUNT -->
-<div id="likes-count-{{ post.id }}"
-     class="mt-2 font-semibold text-sm">
-    {{ post.likes }} likes
 </div>
 
 </div> <!-- END ACTION ROW -->
