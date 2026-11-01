@@ -30,7 +30,7 @@
 .carousel-track > * {
     flex: 0 0 100%;
     width: 100%;
-    height: clamp(360px, 110vw, 560px);
+    height: clamp(300px, 55vh, 460px);
     scroll-snap-align: start;
     position: relative;
 }
@@ -53,7 +53,7 @@
 .carousel-track > * {
     flex: 0 0 100%;
     width: 100%;
-    height: clamp(360px, 110vw, 560px);
+    height: clamp(300px, 55vh, 460px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -61,17 +61,27 @@
     overflow: hidden;
 }
 
-/* Image aur video full media area me */
+/* Images preserve their full content */
 .carousel-track img,
-.carousel-track video,
-.post-card > .relative > img,
-.post-card > .relative > video {
+.post-card > .relative > img {
     width: 100%;
-    height: clamp(360px, 110vw, 560px);
+    height: 100%;
     max-width: 100%;
     display: block;
     object-fit: contain;
     background: #000;
+}
+
+/* Videos fill the bounded frame with a clean crop */
+.carousel-track video,
+.post-card > .relative > div.relative {
+    width: 100%;
+    height: clamp(300px, 55vh, 460px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
 }
 
 /* Single video wrapper */
@@ -589,7 +599,6 @@ async function uploadStoryInstant(event) {
                   id="video-{{ post.id }}-{{ loop.index }}"
                   poster="/static/uploads/posts/thumbs/{{ img.split('/')[-1].rsplit('.', 1)[0] }}_thumb.jpg"
                   class="post-video"
-                  autoplay
                   muted
                   loop
                   playsinline
@@ -670,7 +679,6 @@ async function uploadStoryInstant(event) {
             id="video-{{ post.id }}-single"
             poster="/static/uploads/posts/thumbs/{{ media.split('/')[-1].rsplit('.', 1)[0] }}_thumb.jpg"
             class="post-video"
-            autoplay
             muted
             loop
             playsinline
@@ -967,7 +975,8 @@ async function uploadStoryInstant(event) {
 
 <!-- 🏠🔍➕🎬BOTTOM NAV -->
 <div class="bottom-nav fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-white/30 shadow-2xl flex justify-around py-3 text-2xl">
-  <a href="/posts/feed" class="flex items-center justify-center">
+  <a href="/posts/feed" class="flex items-center justify-center"
+     onclick="sessionStorage.setItem('inschat_feed_scroll', window.scrollY)">
 <svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
   <path d="M4 11.5L12 4l8 7.5"/>
   <path d="M6 10.5V20h12v-9.5"/>
@@ -1176,8 +1185,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let activeAudio = null;
     let activeCard = null;
+    let activePostVideo = null;
     let scrollFrame = null;
-
 
     /* ================================
        STOP ONE AUDIO
@@ -1308,8 +1317,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         /*
-         * Pehle check karo:
-         * screen center kis post ke andar hai
+         * Screen center wali post select karo
          */
         for (const card of postCards) {
 
@@ -1323,14 +1331,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 selectedCard = card;
                 break;
+
             }
 
         }
 
 
         /*
-         * Agar center kisi post me nahi hai,
-         * closest visible post choose karo
+         * Center par post na ho to
+         * nearest visible post select karo
          */
         if (!selectedCard) {
 
@@ -1377,49 +1386,105 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!selectedCard) {
 
             stopAllAudios();
+
+            document.querySelectorAll(".post-video").forEach(video => {
+                video.pause();
+                video.muted = true;
+                video.volume = 0;
+            });
+
             activeCard = null;
+            activePostVideo = null;
 
             return;
         }
 
 
         /*
-         * Same post hai
+         * Selected post ka visible video chuno
          */
-        if (
-            activeCard === selectedCard
-        ) {
+        let selectedVideo = null;
+        let closestVideoDistance = Infinity;
+
+        selectedCard.querySelectorAll(".post-video").forEach(video => {
+
+            const rect =
+                video.getBoundingClientRect();
+
+            const visible =
+                rect.bottom > 0 &&
+                rect.top < window.innerHeight &&
+                rect.right > 0 &&
+                rect.left < window.innerWidth;
+
+            if (!visible) return;
+
+            const videoCenter =
+                rect.top + rect.height / 2;
+
+            const distance =
+                Math.abs(videoCenter - screenCenter);
+
+            if (distance < closestVideoDistance) {
+
+                closestVideoDistance = distance;
+                selectedVideo = video;
+
+            }
+
+        });
+
+
+        /*
+         * Baaki videos pause aur mute karo
+         */
+        document.querySelectorAll(".post-video").forEach(video => {
+
+            if (video !== selectedVideo) {
+
+                video.pause();
+                video.muted = true;
+                video.volume = 0;
+
+            }
+
+        });
+
+
+        /*
+         * Naya selected video play karo
+         */
+        if (selectedVideo !== activePostVideo) {
+
+            activePostVideo = selectedVideo;
+
+            if (selectedVideo) {
+
+                selectedVideo.muted = true;
+                selectedVideo.volume = 0;
+
+                selectedVideo.play().catch(() => {});
+
+            }
+
+        }
+
+
+        /*
+         * Same post hai to music logic preserve karo
+         */
+        if (activeCard === selectedCard) {
 
             const currentAudio =
-                selectedCard.querySelector(
-                    ".post-audio"
-                );
+                selectedCard.querySelector(".post-audio");
 
-            /*
-             * Agar audio nahi hai
-             * to ensure all audio stopped
-             */
-            if (!currentAudio) {
+            if (!currentAudio && activeAudio) {
                 stopAllAudios();
             }
 
             return;
         }
 
-
-    /*
-     * Selected post ke alawa sab video mute
-     */
-    document.querySelectorAll(".post-video").forEach(video => {
-
-        if (!selectedCard.contains(video)) {
-
-            video.muted = true;
-            video.volume = 0;
-
-        }
-
-    });
 
         /*
          * NEW POST
@@ -1428,6 +1493,104 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
+    /* =================================
+       COMMON POST SOUND TOGGLE
+    ================================= */
+
+    window.inschatTogglePostSound = function (card, video) {
+
+        if (!card) return;
+
+        const audio = card.querySelector(".post-audio");
+
+        /* Selected music ko ON/OFF karo */
+        if (audio) {
+
+            if (activeAudio === audio && !audio.paused) {
+
+                audio.pause();
+
+                try {
+                    audio.currentTime = 0;
+                } catch (err) {}
+
+                activeAudio = null;
+                return;
+            }
+
+            stopAllAudios();
+
+            document.querySelectorAll(".post-audio").forEach(otherAudio => {
+
+                if (otherAudio !== audio) {
+                    otherAudio.pause();
+
+                    try {
+                        otherAudio.currentTime = 0;
+                    } catch (err) {}
+                }
+
+            });
+
+            document.querySelectorAll(".post-video").forEach(otherVideo => {
+
+                otherVideo.muted = true;
+                otherVideo.volume = 0;
+
+            });
+
+            activeCard = card;
+            activeAudio = audio;
+            audio.volume = 1;
+
+            if (audio.readyState === 0) {
+                audio.load();
+            }
+
+            audio.play().catch(err => {
+
+                activeAudio = null;
+
+                console.log(
+                    "INSCHAT AUDIO BLOCKED:",
+                    err.message
+                );
+
+            });
+
+            return;
+        }
+
+        /* Original video sound ko ON/OFF karo */
+        if (video) {
+
+            if (video.muted) {
+
+                if (activeAudio) {
+                    activeAudio.pause();
+
+                    try {
+                        activeAudio.currentTime = 0;
+                    } catch (err) {}
+
+                    activeAudio = null;
+                }
+
+                document.querySelectorAll(".post-audio").forEach(otherAudio => {
+                    otherAudio.pause();
+                });
+
+                video.muted = false;
+                video.volume = 1;
+
+            } else {
+
+                video.muted = true;
+                video.volume = 0;
+
+            }
+        }
+    };
 
     /* ================================
        SCROLL
@@ -1528,104 +1691,11 @@ document.addEventListener(
          */
         if (activeCard === card) {
 
-            const audio =
-                card.querySelector(".post-audio");
+            const video = card.querySelector(".post-video");
 
-            /*
-             * No music/audio
-             */
-            if (!audio) {
-                return;
+            if (typeof window.inschatTogglePostSound === "function") {
+                window.inschatTogglePostSound(card, video);
             }
-
-            /*
-             * 🎵 ON -> 🔇 OFF
-             */
-            if (!audio.paused) {
-
-                audio.pause();
-
-                try {
-                    audio.currentTime = 0;
-                } catch (err) {}
-
-                if (activeAudio === audio) {
-                    activeAudio = null;
-                }
-
-                console.log(
-                    "INSCHAT AUDIO OFF:",
-                    audio.src
-                );
-
-                return;
-            }
-
-            /*
-             * 🔇 OFF -> 🎵 ON
-             *
-             * Sabhi doosre audio ko pehle
-             * completely stop karo.
-             */
-            audios.forEach(otherAudio => {
-
-                if (otherAudio !== audio) {
-
-                    otherAudio.pause();
-
-                    try {
-                        otherAudio.currentTime = 0;
-                    } catch (err) {}
-
-                }
-
-            });
-
-            activeAudio = audio;
-            activeCard = card;
-
-            audio.volume = 1.0;
-
-            if (audio.readyState === 0) {
-                audio.load();
-            }
-
-            audio.play()
-                .then(() => {
-
-                    /*
-                     * Safety:
-                     * play hone ke baad bhi sirf
-                     * isi audio ko active rakho.
-                     */
-                    audios.forEach(otherAudio => {
-
-                        if (otherAudio !== audio) {
-                            otherAudio.pause();
-
-                            try {
-                                otherAudio.currentTime = 0;
-                            } catch (err) {}
-                        }
-
-                    });
-
-                    console.log(
-                        "INSCHAT AUDIO ON:",
-                        audio.src
-                    );
-
-                })
-                .catch(err => {
-
-                    activeAudio = null;
-
-                    console.log(
-                        "INSCHAT AUDIO BLOCKED:",
-                        err.message
-                    );
-
-                });
 
             return;
         }
@@ -1821,25 +1891,18 @@ document.querySelectorAll(".video-touch-layer").forEach(layer => {
 
         tapTimer = setTimeout(() => {
 
-            if(tapCount === 1){
+            if (tapCount === 1) {
 
-                /* 1 TAP = SOUND */
+                /* 1 TAP = COMMON SOUND */
+                const card = layer.closest(".post-card");
 
-                if(video.muted){
-
-                    video.muted = false;
-                    video.volume = 1;
-
-                }else{
-
-                    video.muted = true;
-
+                if (typeof window.inschatTogglePostSound === "function") {
+                    window.inschatTogglePostSound(card, video);
                 }
 
-            }else if(tapCount >= 2){
+            } else if (tapCount >= 2) {
 
                 /* 2 TAP = LIKE */
-
                 doubleTapLike(Number(postId));
 
             }
@@ -1847,9 +1910,7 @@ document.querySelectorAll(".video-touch-layer").forEach(layer => {
             tapCount = 0;
 
         }, 250);
-
     });
-
 
     /* =====================
        FINGER CANCEL
@@ -1989,6 +2050,105 @@ document.addEventListener("keydown", function(event) {
         closeDeleteModal();
     }
 });
+</script>
+
+<script>
+(function () {
+    const KEY = "inschat_feed_scroll";
+
+    function saveFeedScroll() {
+        try {
+            sessionStorage.setItem(KEY, String(window.scrollY));
+        } catch (e) {}
+    }
+
+    window.addEventListener("scroll", saveFeedScroll, { passive: true });
+    window.addEventListener("pagehide", saveFeedScroll);
+
+    function restoreFeedScroll() {
+        try {
+            const saved = sessionStorage.getItem(KEY);
+            if (saved === null) return;
+
+            const y = parseInt(saved, 10);
+            if (Number.isFinite(y) && y >= 0) {
+                window.scrollTo(0, y);
+            }
+        } catch (e) {}
+    }
+
+    window.addEventListener("pageshow", function () {
+        requestAnimationFrame(function () {
+            restoreFeedScroll();
+            setTimeout(restoreFeedScroll, 300);
+            setTimeout(restoreFeedScroll, 800);
+        });
+    });
+})();
+</script>
+
+<script>
+(function () {
+    function resumeVisibleVideos() {
+        if (document.visibilityState === "hidden") return;
+
+        const videos = Array.from(
+            document.querySelectorAll(".post-video")
+        );
+
+        const viewportCenter = window.innerHeight / 2;
+        let activeVideo = null;
+        let closestDistance = Infinity;
+
+        videos.forEach(function (video) {
+            const rect = video.getBoundingClientRect();
+
+            const visible =
+                rect.bottom > 0 &&
+                rect.top < window.innerHeight &&
+                rect.right > 0 &&
+                rect.left < window.innerWidth;
+
+            if (!visible) return;
+
+            const center = rect.top + rect.height / 2;
+            const distance = Math.abs(center - viewportCenter);
+
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                activeVideo = video;
+            }
+        });
+
+        videos.forEach(function (video) {
+            if (video !== activeVideo) {
+                video.pause();
+                video.muted = true;
+                video.volume = 0;
+            }
+        });
+
+        if (activeVideo && activeVideo.paused) {
+            activeVideo.muted = true;
+            activeVideo.volume = 0;
+
+            activeVideo.play().catch(function () {
+                // Browser playback block kare to error ko safely handle karo.
+            });
+        }
+    }
+
+    window.addEventListener("pageshow", function () {
+        setTimeout(resumeVisibleVideos, 300);
+        setTimeout(resumeVisibleVideos, 800);
+    });
+
+    document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") {
+            setTimeout(resumeVisibleVideos, 200);
+        }
+    });
+})();
 </script>
 
 </body>

@@ -1,0 +1,2077 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="manifest" href="/manifest.json?v=1">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>inschat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+.carousel { 
+    position: relative; 
+    overflow: hidden; 
+}
+
+.carousel-track {
+    display: flex;
+    transition: transform 0.3s ease-in-out;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.carousel-track::-webkit-scrollbar {
+    display: none;
+}
+
+.carousel-track > * {
+    flex: 0 0 100%;
+    width: 100%;
+    height: clamp(300px, 55vh, 460px);
+    scroll-snap-align: start;
+    position: relative;
+}
+
+.carousel-track video {
+    display: block;
+}
+
+/* ================================
+   INSTAGRAM STYLE POST MEDIA
+================================ */
+
+.carousel,
+.post-card > .relative {
+    width: 100%;
+    background: #000;
+}
+
+/* Har carousel slide same proper size */
+.carousel-track > * {
+    flex: 0 0 100%;
+    width: 100%;
+    height: clamp(300px, 55vh, 460px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
+}
+
+/* Images preserve their full content */
+.carousel-track img,
+.post-card > .relative > img {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    display: block;
+    object-fit: contain;
+    background: #000;
+}
+
+/* Videos fill the bounded frame with a clean crop */
+.carousel-track video,
+.post-card > .relative > div.relative {
+    width: 100%;
+    height: clamp(300px, 55vh, 460px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
+}
+
+/* Single video wrapper */
+.post-card > .relative > div.relative {
+    width: 100%;
+    height: clamp(360px, 110vw, 560px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+/* Video touch layer bhi exact media size cover kare */
+.video-touch-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+}
+
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.45);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 9999px;
+    font-size: 22px;
+    z-index: 10;
+}
+
+.carousel-btn.left {
+    left: 10px;
+}
+
+.carousel-btn.right {
+    right: 10px;
+}
+
+.heart{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%) scale(0);
+    font-size:110px;
+    opacity:0;
+    pointer-events:none;
+    z-index:999;
+
+    filter: drop-shadow(0 0 15px rgba(255,0,80,.8))
+            drop-shadow(0 0 35px rgba(255,0,80,.5));
+}
+
+.heart.show{
+    animation: heartPop 0.9s ease forwards;
+}
+
+@keyframes heartPop{
+
+    0%{
+        opacity:0;
+        transform:translate(-50%,-50%) scale(0);
+    }
+
+    20%{
+        opacity:1;
+        transform:translate(-50%,-50%) scale(1.45);
+    }
+
+    35%{
+        transform:translate(-50%,-50%) scale(1.1);
+    }
+
+    50%{
+        transform:translate(-50%,-50%) scale(1.3);
+    }
+
+    70%{
+        opacity:1;
+        transform:translate(-50%,-50%) scale(1);
+    }
+
+    100%{
+        opacity:0;
+        transform:translate(-50%,-50%) scale(1.8);
+    }
+}
+
+
+    .no-scrollbar::-webkit-scrollbar { display:none; }
+
+.story-ring{
+  padding:3px;
+  background: linear-gradient(135deg,#00b4d8,#0077b6,#023e8a);
+  border-radius:9999px;
+}
+
+    .story-bar {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 15px;
+
+      overflow-x: auto;
+      white-space: nowrap;
+
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      background: white;
+
+     -webkit-overflow-scrolling: touch;
+    }
+
+.story-item {
+  flex: 0 0 auto;
+  text-align: center;
+  width: 70px;
+}
+
+.my-story-wrapper{
+  position: relative;
+  display: inline-block;
+}
+    .story-ring2 { border: 2px solid white;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      padding: 3px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .story-ring2 img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+.my-story{
+  background:linear-gradient(135deg,#22c55e,#16a34a,#15803d)!important;
+}
+
+    .story-ring2.seen {
+      background: #ccc;
+    }
+
+
+    .story-label {
+      font-size: 12px;
+      margin-top: 5px;
+      width: 70px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+      color:#555;
+    }
+
+.bottom-nav svg{
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: .25s ease;
+}
+
+.bottom-nav a:hover svg{
+    transform: scale(1.12);
+}
+
+.bottom-nav .active svg{
+    color:#3b82f6;
+}
+
+.add-story-btn{
+    position:absolute;
+    bottom:0;
+    right:0;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:#2563eb;
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    border:2px solid #fff;
+    font-size:13px;
+    font-weight:bold;
+}
+
+.story-active{
+    border-radius:50%;
+    animation:storyGlow 1.7s infinite ease-in-out;
+}
+
+.story-seen{
+    border-radius:50%;
+    animation:none;          /* Animation band */
+    filter:none;
+    opacity: 1;              /* Thoda grey/seen look */
+}
+
+@keyframes storyGlow{
+
+    0%{
+        transform:scale(1);
+        filter:drop-shadow(0 0 0px #22c55e);
+    }
+
+    50%{
+        transform:scale(1.08);
+        filter:
+            drop-shadow(0 0 8px #22c55e)
+            drop-shadow(0 0 16px #22c55e);
+    }
+
+    100%{
+        transform:scale(1);
+        filter:drop-shadow(0 0 0px #22c55e);
+    }
+}
+
+.post-video{
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    touch-action: manipulation;
+}
+
+.video-touch-layer{
+    position:absolute;
+    inset:0;
+    z-index:20;
+
+    background:transparent;
+
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+
+    touch-action:pan-y;
+}
+
+html,
+body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.post-card {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.post-card img,
+.post-card video {
+    max-width: 100%;
+}
+
+</style>
+
+<script>
+async function uploadStoryInstant(event) {
+    try {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const form = new FormData();
+        form.append("story", file);
+
+        const res = await fetch("/stories/add", {
+            method: "POST",
+            body: form
+        });
+
+        if (res.redirected) {
+            window.location.href = res.url;
+            return;
+        }
+
+        if (res.ok) {
+                    window.location.href = "/stories/view/{{ session.get('user_id') }}";
+                } else {
+                    const text = await res.text();
+                    console.error("Upload failed:", res.status, text);
+                    alert("Upload failed (" + res.status + ")");
+                }
+
+            } catch (e) {
+                console.error("Story Upload Error:", e);
+                alert("JS ERROR:\n" + (e.message || e));
+            } finally {
+              event.target.value = "";
+    }
+}
+</script>
+
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-cyan-500 via-blue-600 via-purple-600 to-yellow-400">
+<div class="pb-24">
+
+<input type="file" id="storyPicker" accept="image/*,video/*" style="display:none" onchange="uploadStoryInstant(event)">
+
+<!-- 💬NAVBAR🔔 -->
+<div class="flex items-center justify-between px-4 py-3 bg-white border-b sticky top-0 z-50">
+
+  <!-- LOGO -->
+  <h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-600 via-purple-600 to-yellow-500 bg-clip-text text-transparent">inschat</h1>
+
+  <!-- RIGHT ICONS -->
+  <div class="flex items-center gap-5">
+
+    <!-- NOTIFICATION -->
+    <a href="/social/notifications" class="relative flex items-center justify-center">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 01-6 0"/>
+      </svg>
+
+      <span
+        id="notif-badge"
+        class="hidden absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1
+               rounded-full bg-red-500 text-white text-[10px] font-bold
+               flex items-center justify-center border-2 border-white">
+      </span>      
+    </a>
+
+    <!-- MESSAGES (DM) -->
+    <a href="/messages" class="flex items-center justify-center">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/>
+      </svg>
+    </a>
+
+  </div>
+
+</div>
+
+<!-- STORY BAR -->
+<div class="story-bar">
+
+  <!-- YOUR STORY -->
+  <div class="story-item my-story-wrapper">
+
+    <div class="story-ring2 {% if has_my_story and my_story_seen %}seen{% elif has_my_story %}my-story{% endif %}"
+         onclick="openStory('{{ current_user }}')">
+
+      <img src="{{ current_user_photo }}"
+           onerror="this.src='/static/default_dp.png'">
+    </div>
+
+    <div class="add-story-btn"
+         onclick="document.getElementById('storyPicker').click()">
+      ✦
+    </div>
+
+    <div class="story-label">Your Story</div>
+  </div>
+
+
+<!-- OTHER USERS -->
+{% for s in stories_bar %}
+
+  {% if s.user_id != current_user %}
+
+    <!--
+    Story sirf tab dikhegi:
+    1. Account public ho
+    2. Ya current user owner ka accepted follower ho
+    -->
+    {% if not s.is_private or s.can_view %}
+
+      <div class="story-item"
+           onclick="openStory('{{ s.user_id }}')">
+
+        <div class="story-ring2
+             {% if s.seen %}
+                seen
+             {% else %}
+                my-story
+             {% endif %}">
+
+          <img src="{{ s.last_img }}"
+               onerror="this.src='/static/default_dp.png'">
+
+        </div>
+
+        <div class="story-label">
+          {{ s.username }}
+        </div>
+
+      </div>
+
+    {% endif %}
+
+  {% endif %}
+
+{% endfor %}
+
+</div>
+<!-- FEED -->
+    <div class="w-full max-w-[560px] mx-auto mt-3 px-0 space-y-4 pb-24">
+
+    {% for post in posts %}
+    {% if not post.is_private or post.is_following or post.owner_id == current_user %}
+    <div class="post-card bg-white/95 backdrop-blur-xl rounded-2xl shadow-lg overflow-hidden border border-white/40">
+
+<!-- HEADER -->
+<div class="flex items-center justify-between px-4 py-3">
+
+    <!-- USER -->
+    <a href="/profile/{{ post.owner_id }}"
+       class="flex items-center space-x-3">
+
+    <div class="
+    {% if post.has_story and not post.story_seen %}
+    story-active
+    {% elif post.story_seen %}
+    story-seen
+    {% endif %}
+    ">
+    <img src="{{ post.photo }}"
+         class="w-10 h-10 rounded-full object-cover"
+         onerror="this.src='/static/default_dp.png'">
+</div>
+
+        <div class="font-semibold hover:text-cyan-400 transition">
+            @{{ post.username }}
+        </div>
+
+    </a>
+
+        <!-- DELETE ONLY OWN POST -->
+<!-- POST MENU -->
+<div class="relative">
+
+  <button onclick="toggleMenu({{ post.id }})"
+          class="text-2xl text-gray-600">
+    ⋮
+  </button>
+
+  <div id="menu-{{ post.id }}"
+       class="hidden absolute right-0 top-8 bg-white border rounded-lg shadow-lg w-40 z-50">
+
+    <a href="/posts/{{ post.id }}"
+       class="block px-4 py-2 hover:bg-gray-100">
+      👁 View
+    </a>
+
+    {% if post.owner_id == current_user %}
+
+      <button type="button"
+              onclick="openDeleteModal({{ post.id }})"
+              class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition">
+        🗑 Delete
+      </button>
+
+    {% else %}
+
+<form method="GET" action="/report">
+    <input type="hidden" name="target_type" value="post">
+    <input type="hidden" name="target_id" value="{{ post.id }}">
+    <input type="hidden" name="owner_id" value="{{ post.owner_id }}">
+
+    <button type="submit"
+            class="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100">
+        📃 Report
+    </button>
+</form>
+
+    {% endif %}
+
+  </div>
+
+</div>
+
+</div> <!-- END HEADER -->
+
+<!-- MEDIA (IMAGE + VIDEO CAROUSEL + DOUBLE TAP) -->
+<div class="relative">
+
+  {% if post.images and post.images|length > 1 %}
+
+    <!-- MULTIPLE MEDIA -->
+    <div class="carousel">
+
+      <div id="track-{{ post.id }}"
+           class="carousel-track no-scrollbar">
+
+        {% for img in post.images %}
+
+          {% set lower_media = img|lower %}
+
+          <!-- EVERY MEDIA = SAME 4:5 SLIDE -->
+          <div class="post-media">
+
+            {% if lower_media.endswith('.mp4')
+                  or lower_media.endswith('.webm')
+                  or lower_media.endswith('.mov')
+                  or lower_media.endswith('.mkv')
+                  or lower_media.endswith('.avi')
+                  or lower_media.endswith('.m4v') %}
+
+              <!-- VIDEO -->
+              <div class="video-media-wrapper">
+
+                <video
+                  id="video-{{ post.id }}-{{ loop.index }}"
+                  poster="/static/uploads/posts/thumbs/{{ img.split('/')[-1].rsplit('.', 1)[0] }}_thumb.jpg"
+                  class="post-video"
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                  preload="metadata"
+                  disablepictureinpicture
+                  controlslist="nodownload nofullscreen noremoteplayback"
+                  oncontextmenu="return false;"
+                >
+                  <source src="{{ img }}">
+                  Your browser does not support video.
+                </video>
+
+                <!-- VIDEO TOUCH -->
+                <div
+                  class="video-touch-layer"
+                  data-video-id="video-{{ post.id }}-{{ loop.index }}"
+                  data-post-id="{{ post.id }}">
+                </div>
+
+              </div>
+
+            {% else %}
+
+              <!-- IMAGE -->
+              <img
+                src="{{ img }}"
+                alt="Post"
+                ondblclick="doubleTapLike({{ post.id }})"
+                ontouchend="onImageTap({{ post.id }})"
+                oncontextmenu="return false;"
+              >
+            {% endif %}
+
+          </div>
+
+        {% endfor %}
+
+      </div>
+
+      <!-- LEFT BUTTON -->
+      <button
+        type="button"
+        class="carousel-btn left"
+        onclick="scrollByTrack('{{ post.id }}', -1)">
+        ‹
+      </button>
+
+      <!-- RIGHT BUTTON -->
+      <button
+        type="button"
+        class="carousel-btn right"
+        onclick="scrollByTrack('{{ post.id }}', 1)">
+        ›
+      </button>
+
+    </div>
+
+  {% elif post.images and post.images|length == 1 %}
+
+    {% set media = post.images[0] %}
+    {% set lower_media = media|lower %}
+
+    <!-- SINGLE MEDIA -->
+    <div class="post-media">
+
+      {% if lower_media.endswith('.mp4')
+            or lower_media.endswith('.webm')
+            or lower_media.endswith('.mov')
+            or lower_media.endswith('.mkv')
+            or lower_media.endswith('.avi')
+            or lower_media.endswith('.m4v') %}
+
+        <!-- SINGLE VIDEO -->
+
+        <div class="video-media-wrapper">
+
+          <video
+            id="video-{{ post.id }}-single"
+            poster="/static/uploads/posts/thumbs/{{ media.split('/')[-1].rsplit('.', 1)[0] }}_thumb.jpg"
+            class="post-video"
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="metadata"
+            disablepictureinpicture
+            controlslist="nodownload nofullscreen noremoteplayback"
+            oncontextmenu="return false;"
+          >
+            <source src="{{ media }}">
+            Your browser does not support video.
+          </video>
+
+          <!-- VIDEO TOUCH -->
+          <div
+            class="video-touch-layer"
+            data-video-id="video-{{ post.id }}-single"
+            data-post-id="{{ post.id }}">
+          </div>
+
+        </div>
+
+      {% else %}
+
+        <!-- SINGLE IMAGE -->
+
+        <img
+          src="{{ media }}"
+          alt="Post"
+          ondblclick="doubleTapLike({{ post.id }})"
+          ontouchend="onImageTap({{ post.id }})"
+          oncontextmenu="return false;"
+        >
+      {% endif %}
+
+    </div>
+
+  {% else %}
+
+    <!-- NO MEDIA -->
+
+    <div class="p-12 text-center text-gray-400">
+      No Media
+    </div>
+
+  {% endif %}
+
+</div>
+
+        <!-- HEART ANIMATION -->
+<div class="heart" id="heart-{{ post.id }}">
+    <span class="h h1">💞</span>
+</div>
+
+{% if post.music_file or post.original_audio_id %}
+<audio
+    class="post-audio"
+    src="{{ post.music_file }}"
+    preload="metadata"
+    loop>
+</audio>
+{% endif %}
+
+<!-- ACTION ROW -->
+<div class="px-4 pt-3">
+
+  <div class="flex items-center justify-between">
+
+    <!-- LEFT SIDE -->
+    <div class="flex items-center gap-4">
+
+      <!-- LIKE -->
+<button id="like-btn-{{ post.id }}"
+        onclick="toggleLike({{ post.id }}, this)">
+
+  <svg class="w-8 h-8 transition-all duration-300 hover:scale-125 {% if post.liked_by_me %}text-pink-500{% endif %}"
+       viewBox="0 0 24 24"
+       fill="{% if post.liked_by_me %}currentColor{% else %}none{% endif %}"
+       stroke="currentColor"
+       stroke-width="1.8"
+       stroke-linecap="round"
+       stroke-linejoin="round">
+
+    <path d="
+      M12 21
+      C11.2 20.4 3.5 15.4 3.5 9
+      C3.5 5.8 5.8 3.5 8.8 3.5
+      C10.7 3.5 11.8 4.4 12 5.7
+      C12.2 4.4 13.3 3.5 15.2 3.5
+      C18.2 3.5 20.5 5.8 20.5 9
+      C20.5 15.4 12.8 20.4 12 21Z"/>
+  </svg>
+
+</button>
+
+        <!-- COMMENT BUTTON -->
+<button onclick="openComment({{ post.id }})" class="icon-btn">
+
+  <svg class="w-7 h-7"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="1.8">
+
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/>
+  </svg>
+
+</button>
+
+        <!-- SHARE BUTTON -->
+<button onclick="openShare({{ post.id }})" class="icon-btn">
+
+  <svg class="w-7 h-7"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="1.8">
+
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M16 6l-4-4-4 4M12 2v14"/>
+  </svg>
+
+</button>
+
+</div>
+
+<!-- RIGHT SIDE: MUSIC + SAVE -->
+<div class="flex items-center gap-3">
+
+    <!-- 🎵 MUSIC BUTTON -->
+    {% if post.music_file or post.original_audio_id %}
+
+        {% if post.audio_type == "original" %}
+
+            <a href="/music/original/{{ post.original_audio_id }}"
+               class="flex items-center gap-1.5
+                      max-w-[150px]
+                      overflow-hidden
+                      text-gray-800
+                      active:scale-95
+                      transition">
+
+                <svg
+                    class="w-5 h-5 flex-shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true">
+
+                    <path d="M12 3v11.55A4.5 4.5 0 1 0 14 18V7.65l7-1.75v8.65A4.5 4.5 0 1 0 23 18V3.4L12 6.15V3z"/>
+
+                </svg>
+
+                <span class="truncate text-sm font-medium">
+
+                    {{
+                        post.original_audio_title
+                        or "Original Audio"
+                    }}
+
+                </span>
+
+            </a>
+
+        {% else %}
+
+            <a href="/create?music_id={{ post.music_id }}&mode=post"
+               class="flex items-center gap-1.5
+                      max-w-[150px]
+                      overflow-hidden
+                      text-gray-800
+                      active:scale-95
+                      transition">
+
+                <svg
+                    class="w-5 h-5 flex-shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true">
+
+                    <path d="M12 3v11.55A4.5 4.5 0 1 0 14 18V7.65l7-1.75v8.65A4.5 4.5 0 1 0 23 18V3.4L12 6.15V3.4L12 6.15V3z"/>
+
+                </svg>
+
+                <span class="truncate text-sm font-medium">
+
+                    {{
+                        post.music_title
+                        or "Music"
+                    }}
+
+                </span>
+
+            </a>
+
+        {% endif %}
+
+    {% endif %}
+
+
+    <!-- 🔖 SAVE BUTTON -->
+    <button
+        id="save-btn-{{ post.id }}"
+        onclick="toggleSave({{ post.id }}, this)">
+
+        <svg class="w-7 h-7 {% if post.saved_by_me %}text-black{% endif %}"
+             viewBox="0 0 24 24"
+             fill="{% if post.saved_by_me %}currentColor{% else %}none{% endif %}"
+             stroke="currentColor"
+             stroke-width="1.8">
+  
+            <path stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/>
+        </svg>
+
+    </button>
+
+</div>
+
+</div>
+
+<!-- LIKE COUNT -->
+<div id="likes-count-{{ post.id }}"
+     class="mt-2 font-semibold text-sm">
+    {{ post.likes }} likes
+</div>
+
+</div> <!-- END ACTION ROW -->
+
+<!-- yaha existing post ka visible content khatam -->
+
+{% else %}
+
+<div class="min-h-[360px]
+            flex flex-col
+            items-center
+            justify-center
+            text-center
+            px-6
+            bg-gradient-to-br
+            from-slate-50
+            via-cyan-50
+            to-purple-50">
+
+    <div class="w-20 h-20
+                rounded-full
+                bg-white
+                shadow-lg
+                flex
+                items-center
+                justify-center
+                text-4xl
+                mb-5">
+        🔒
+    </div>
+
+    <h3 class="text-xl font-extrabold text-slate-800">
+        This Post Is Private
+    </h3>
+
+    <p class="mt-2 text-sm text-slate-500 max-w-xs">
+        @{{ post.username }}'s post is only available
+        to approved allies.
+    </p>
+
+    <a href="/profile/{{ post.owner_id }}"
+       class="mt-5 px-5 py-2.5
+              rounded-full
+              text-white
+              font-bold
+              bg-gradient-to-r
+              from-cyan-500
+              via-blue-500
+              to-purple-600
+              shadow-lg">
+        View Profile
+    </a>
+
+</div>
+
+{% endif %}
+
+</div> <!-- END POST CARD -->
+
+{% endfor %}
+
+</div> <!-- END FEED -->
+
+<!-- 🏠🔍➕🎬BOTTOM NAV -->
+<div class="bottom-nav fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-white/30 shadow-2xl flex justify-around py-3 text-2xl">
+  <a href="/posts/feed" class="flex items-center justify-center"
+     onclick="sessionStorage.setItem('inschat_feed_scroll', window.scrollY)">
+<svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+  <path d="M4 11.5L12 4l8 7.5"/>
+  <path d="M6 10.5V20h12v-9.5"/>
+  <path d="M10 20v-5h4v5"/>
+</svg>
+</a>
+  <a href="/explore" class="flex items-center justify-center">
+<svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+  <circle cx="12" cy="12" r="9"/>
+  <path d="M15.8 8.2L13.6 13.6L8.2 15.8L10.4 10.4L15.8 8.2Z"/>
+  </svg>
+</a>
+  <a href="/create" class="flex items-center justify-center">
+<svg class="w-7 h-7" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+  <rect x="4" y="4" width="16" height="16" rx="4"/>
+  <path d="M12 8v8M8 12h8"/>
+</svg>
+</a>
+  <a href="/reels" class="flex items-center justify-center">
+<svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+  <rect x="4" y="4" width="16" height="16" rx="4"/>
+  <path d="M8 4l3 4"/>
+  <path d="M13 4l3 4"/>
+  <path d="M10 10l5 3-5 3z" fill="currentColor" stroke="none"/>
+</svg>
+</a>
+  <a href="/profile/{{ current_user }}">
+  <img src="{{ current_user_photo }}"
+       class="w-7 h-7 rounded-full object-cover border"
+       onerror="this.src='/static/default_dp.png'">
+</a>
+</div>
+
+<script>
+async function toggleLike(postId, btn){
+
+try{
+
+    const res = await fetch("/posts/like_toggle/" + postId, {
+        method: "POST"
+    });
+
+    if(res.ok){
+
+        const svg = btn.querySelector("svg");
+
+        const countBox = document.getElementById(
+            "likes-count-" + postId
+        );
+
+        let current = parseInt(countBox.innerText) || 0;
+
+        if(svg.getAttribute("fill") === "currentColor"){
+
+            svg.setAttribute("fill", "none");
+            svg.classList.remove("text-red-500");
+
+            countBox.innerText = (current - 1) + " likes";
+
+        }else{
+
+            svg.setAttribute("fill", "currentColor");
+            svg.classList.add("text-red-500");
+
+            countBox.innerText = (current + 1) + " likes";
+
+            // ❤️ Heart Animation
+            const heart = document.getElementById(
+                "heart-" + postId
+            );
+
+            if(heart){
+
+                heart.classList.remove("show");
+
+                void heart.offsetWidth;
+
+                heart.classList.add("show");
+
+                setTimeout(() => {
+                    heart.classList.remove("show");
+                }, 900);
+            }
+        }
+
+    }
+
+}catch(e){
+    console.log(e);
+}
+
+}
+
+function doubleTapLike(postId){
+
+    const heart = document.getElementById("heart-" + postId);
+
+    if (heart){
+        heart.classList.remove("show");
+        void heart.offsetWidth;
+        heart.classList.add("show");
+
+        setTimeout(() => {
+            heart.classList.remove("show");
+        }, 900);
+    }
+
+    const btn = document.getElementById("like-btn-" + postId);
+    const svg = btn.querySelector("svg");
+
+    if (svg.getAttribute("fill") !== "currentColor"){
+        toggleLike(postId, btn);
+    }
+}
+
+</script>
+
+<script>
+async function toggleSave(postId, btn){
+
+    try{
+
+        const res = await fetch("/posts/save_toggle/" + postId,{
+            method:"POST"
+        });
+
+        const data = await res.json();
+
+        if(data.ok){
+
+            const svg = btn.querySelector("svg");
+
+            if(data.action === "saved"){
+                svg.setAttribute("fill","currentColor");
+            }else{
+                svg.setAttribute("fill","none");
+            }
+
+        }
+
+    }catch(e){
+        console.log(e);
+    }
+
+}
+</script>
+
+<script>
+function toggleMenu(postId){
+
+  document.querySelectorAll("[id^='menu-']").forEach(el=>{
+    if(el.id !== "menu-" + postId){
+      el.classList.add("hidden");
+    }
+  });
+
+  document
+    .getElementById("menu-" + postId)
+    .classList.toggle("hidden");
+}
+
+document.addEventListener("click", function(e){
+
+  if(!e.target.closest(".relative")){
+    document.querySelectorAll("[id^='menu-']").forEach(el=>{
+      el.classList.add("hidden");
+    });
+  }
+
+});
+</script>
+
+<script>
+function openComment(postId){
+    window.location.href = "/posts/comments/" + postId;
+}
+</script>
+
+<script>
+function openStory(user_id){
+    window.location.href = "/stories/view/" + user_id;
+}
+</script>
+
+{% include "post_share.html" %}
+
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+window.me = {{ session.get("user_id")|tojson }};
+</script>
+
+<script src="/static/js/global_call.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const postCards = Array.from(
+        document.querySelectorAll(".post-card")
+    );
+
+    const audios = Array.from(
+        document.querySelectorAll(".post-audio")
+    );
+
+    let activeAudio = null;
+    let activeCard = null;
+    let scrollFrame = null;
+
+
+    /* ================================
+       STOP ONE AUDIO
+    ================================= */
+
+    function stopAudio(audio) {
+
+        if (!audio) return;
+
+        audio.pause();
+
+        try {
+            audio.currentTime = 0;
+        } catch (e) {}
+
+    }
+
+
+    /* ================================
+       STOP ALL AUDIO
+    ================================= */
+
+    function stopAllAudios() {
+
+        audios.forEach(audio => {
+            stopAudio(audio);
+        });
+
+        /*
+         * Feed ke sab video ka sound bhi band
+         */
+        document.querySelectorAll(".post-video").forEach(video => {
+            video.muted = true;
+            video.volume = 0;
+        });
+
+        activeAudio = null;
+    }
+
+    /* ================================
+       PLAY SELECTED POST AUDIO
+    ================================= */
+
+    function playPostAudio(card) {
+
+        const audio =
+            card.querySelector(".post-audio");
+
+        /*
+         * Is post me audio nahi hai
+         */
+        if (!audio) {
+
+            stopAllAudios();
+
+            activeCard = card;
+
+            return;
+        }
+
+
+        /*
+         * Same audio already playing
+         */
+        if (
+            activeAudio === audio &&
+            !audio.paused
+        ) {
+
+            activeCard = card;
+
+            return;
+        }
+
+
+        /*
+         * Purana audio turant band
+         */
+        audios.forEach(otherAudio => {
+
+            if (otherAudio !== audio) {
+                stopAudio(otherAudio);
+            }
+
+        });
+
+
+        activeAudio = audio;
+        activeCard = card;
+
+        audio.volume = 1.0;
+
+        if (audio.readyState === 0) {
+            audio.load();
+        }
+
+        audio.play()
+            .then(() => {
+
+                console.log(
+                    "INSCHAT AUDIO PLAY:",
+                    audio.src
+                );
+
+            })
+            .catch(err => {
+
+                console.log(
+                    "INSCHAT AUDIO BLOCKED:",
+                    err.message
+                );
+
+            });
+
+    }
+
+
+    /* ================================
+       FIND POST AT SCREEN CENTER
+    ================================= */
+
+    function updateActivePost() {
+
+        const screenCenter =
+            window.innerHeight / 2;
+
+        let selectedCard = null;
+
+
+        /*
+         * Pehle check karo:
+         * screen center kis post ke andar hai
+         */
+        for (const card of postCards) {
+
+            const rect =
+                card.getBoundingClientRect();
+
+            if (
+                rect.top <= screenCenter &&
+                rect.bottom >= screenCenter
+            ) {
+
+                selectedCard = card;
+                break;
+            }
+
+        }
+
+
+        /*
+         * Agar center kisi post me nahi hai,
+         * closest visible post choose karo
+         */
+        if (!selectedCard) {
+
+            let closestDistance = Infinity;
+
+            for (const card of postCards) {
+
+                const rect =
+                    card.getBoundingClientRect();
+
+                if (
+                    rect.bottom <= 0 ||
+                    rect.top >= window.innerHeight
+                ) {
+                    continue;
+                }
+
+                const cardCenter =
+                    rect.top +
+                    rect.height / 2;
+
+                const distance =
+                    Math.abs(
+                        cardCenter - screenCenter
+                    );
+
+                if (
+                    distance < closestDistance
+                ) {
+
+                    closestDistance = distance;
+                    selectedCard = card;
+
+                }
+
+            }
+
+        }
+
+
+        /*
+         * Koi post visible nahi
+         */
+        if (!selectedCard) {
+
+            stopAllAudios();
+            activeCard = null;
+
+            return;
+        }
+
+
+        /*
+         * Same post hai
+         */
+        if (
+            activeCard === selectedCard
+        ) {
+
+            const currentAudio =
+                selectedCard.querySelector(
+                    ".post-audio"
+                );
+
+            /*
+             * Agar audio nahi hai
+             * to ensure all audio stopped
+             */
+            if (!currentAudio) {
+                stopAllAudios();
+            }
+
+            return;
+        }
+
+
+    /*
+     * Selected post ke alawa sab video mute
+     */
+    document.querySelectorAll(".post-video").forEach(video => {
+
+        if (!selectedCard.contains(video)) {
+
+            video.muted = true;
+            video.volume = 0;
+
+        }
+
+    });
+
+        /*
+         * NEW POST
+         */
+        playPostAudio(selectedCard);
+
+    }
+
+
+    /* ================================
+       SCROLL
+    ================================= */
+
+    window.addEventListener(
+        "scroll",
+        () => {
+
+            /*
+             * Scroll ke time purana audio
+             * turant band karo
+             */
+            if (activeAudio) {
+
+                const rect =
+                    activeCard?.getBoundingClientRect();
+
+                if (
+                    !rect ||
+                    rect.bottom <= 0 ||
+                    rect.top >= window.innerHeight
+                ) {
+
+                    stopAllAudios();
+                    activeCard = null;
+
+                }
+
+            }
+
+
+            /*
+             * Ek hi frame me calculation
+             */
+            if (!scrollFrame) {
+
+                scrollFrame =
+                    requestAnimationFrame(() => {
+
+                        scrollFrame = null;
+
+                        updateActivePost();
+
+                    });
+
+            }
+
+        },
+        {
+            passive: true
+        }
+    );
+
+
+    /* ================================
+       FIRST LOAD
+    ================================= */
+
+    setTimeout(() => {
+
+        updateActivePost();
+
+    }, 300);
+
+
+/* ================================
+   TOUCH / CLICK
+================================ */
+
+document.addEventListener(
+    "pointerdown",
+    (e) => {
+
+        /* Video ko audio toggle se alag rakho */
+        if (e.target.closest(".video-touch-layer")) {
+            return;
+        }
+
+        /* Buttons / links par post audio toggle mat karo */
+        if (
+            e.target.closest("button") ||
+            e.target.closest("a") ||
+            e.target.closest("input") ||
+            e.target.closest("textarea")
+        ) {
+            return;
+        }
+
+        const card = e.target.closest(".post-card");
+
+        if (!card) {
+            return;
+        }
+
+        /*
+         * Current active post par tap
+         */
+        if (activeCard === card) {
+
+            const audio =
+                card.querySelector(".post-audio");
+
+            /*
+             * No music/audio
+             */
+            if (!audio) {
+                return;
+            }
+
+            /*
+             * 🎵 ON -> 🔇 OFF
+             */
+            if (!audio.paused) {
+
+                audio.pause();
+
+                try {
+                    audio.currentTime = 0;
+                } catch (err) {}
+
+                if (activeAudio === audio) {
+                    activeAudio = null;
+                }
+
+                console.log(
+                    "INSCHAT AUDIO OFF:",
+                    audio.src
+                );
+
+                return;
+            }
+
+            /*
+             * 🔇 OFF -> 🎵 ON
+             *
+             * Sabhi doosre audio ko pehle
+             * completely stop karo.
+             */
+            audios.forEach(otherAudio => {
+
+                if (otherAudio !== audio) {
+
+                    otherAudio.pause();
+
+                    try {
+                        otherAudio.currentTime = 0;
+                    } catch (err) {}
+
+                }
+
+            });
+
+            activeAudio = audio;
+            activeCard = card;
+
+            audio.volume = 1.0;
+
+            if (audio.readyState === 0) {
+                audio.load();
+            }
+
+            audio.play()
+                .then(() => {
+
+                    /*
+                     * Safety:
+                     * play hone ke baad bhi sirf
+                     * isi audio ko active rakho.
+                     */
+                    audios.forEach(otherAudio => {
+
+                        if (otherAudio !== audio) {
+                            otherAudio.pause();
+
+                            try {
+                                otherAudio.currentTime = 0;
+                            } catch (err) {}
+                        }
+
+                    });
+
+                    console.log(
+                        "INSCHAT AUDIO ON:",
+                        audio.src
+                    );
+
+                })
+                .catch(err => {
+
+                    activeAudio = null;
+
+                    console.log(
+                        "INSCHAT AUDIO BLOCKED:",
+                        err.message
+                    );
+
+                });
+
+            return;
+        }
+
+        /*
+         * Dusre post par tap.
+         *
+         * Pehle active post ko completely stop,
+         * phir selected post ko activate.
+         */
+        if (activeAudio) {
+
+            activeAudio.pause();
+
+            try {
+                activeAudio.currentTime = 0;
+            } catch (err) {}
+
+            activeAudio = null;
+        }
+
+        audios.forEach(otherAudio => {
+
+            otherAudio.pause();
+
+            try {
+                otherAudio.currentTime = 0;
+            } catch (err) {}
+
+        });
+
+        updateActivePost();
+
+    },
+    {
+        passive: true
+    }
+);
+
+    /* ================================
+       TAB HIDDEN
+    ================================= */
+
+    document.addEventListener(
+        "visibilitychange",
+        () => {
+
+            if (document.hidden) {
+
+                stopAllAudios();
+                activeCard = null;
+
+            }
+
+        }
+    );
+
+
+    /* ================================
+       PAGE LEAVE
+    ================================= */
+
+    window.addEventListener(
+        "pagehide",
+        () => {
+
+            stopAllAudios();
+
+            activeCard = null;
+
+        }
+    );
+
+
+    /* ================================
+       AUDIO ERROR
+    ================================= */
+
+    audios.forEach(audio => {
+
+        audio.addEventListener(
+            "error",
+            () => {
+
+                console.log(
+                    "INSCHAT AUDIO ERROR:",
+                    audio.error,
+                    audio.src
+                );
+
+            }
+        );
+
+    });
+
+});
+</script>
+
+<script>
+async function updateNotificationCount() {
+    try {
+        const res = await fetch("/social/notifications/count");
+        const data = await res.json();
+
+        const badge = document.getElementById("notif-badge");
+
+        if (!badge) return;
+
+        const count = Number(data.count || 0);
+
+        if (count > 0) {
+            badge.textContent = count > 99 ? "99+" : count;
+            badge.classList.remove("hidden");
+        } else {
+            badge.textContent = "";
+            badge.classList.add("hidden");
+        }
+
+    } catch (error) {
+        console.log("Notification count error:", error);
+    }
+}
+
+// Page open hote hi
+updateNotificationCount();
+
+// Har 5 second me count update
+setInterval(updateNotificationCount, 5000);
+</script>
+
+<script>
+
+document.querySelectorAll(".video-touch-layer").forEach(layer => {
+
+    const videoId = layer.dataset.videoId;
+    const postId = layer.dataset.postId;
+
+    const video = document.getElementById(videoId);
+
+    let holdTimer = null;
+    let holdActive = false;
+
+    let tapTimer = null;
+    let tapCount = 0;
+
+
+    /* =====================
+       FINGER DOWN
+       ===================== */
+
+    layer.addEventListener("pointerdown", function(e){
+
+        holdActive = false;
+
+        clearTimeout(holdTimer);
+
+        holdTimer = setTimeout(() => {
+
+            holdActive = true;
+
+            video.pause();
+
+            video.style.transform = "scale(0.97)";
+            video.style.transition = "transform 0.15s ease";
+
+        }, 2000);
+
+    });
+
+
+    /* =====================
+       FINGER RELEASE
+       ===================== */
+
+    layer.addEventListener("pointerup", function(e){
+
+        clearTimeout(holdTimer);
+
+        if(holdActive){
+
+            video.style.transform = "scale(1)";
+
+            video.play().catch(() => {});
+
+            holdActive = false;
+
+            return;
+        }
+
+        tapCount++;
+
+        clearTimeout(tapTimer);
+
+        tapTimer = setTimeout(() => {
+
+            if(tapCount === 1){
+
+                /* 1 TAP = SOUND */
+
+                if(video.muted){
+
+                    video.muted = false;
+                    video.volume = 1;
+
+                }else{
+
+                    video.muted = true;
+
+                }
+
+            }else if(tapCount >= 2){
+
+                /* 2 TAP = LIKE */
+
+                doubleTapLike(Number(postId));
+
+            }
+
+            tapCount = 0;
+
+        }, 250);
+
+    });
+
+
+    /* =====================
+       FINGER CANCEL
+       ===================== */
+
+    layer.addEventListener("pointercancel", function(){
+
+        clearTimeout(holdTimer);
+
+        if(holdActive){
+
+            video.style.transform = "scale(1)";
+
+            video.play().catch(() => {});
+
+            holdActive = false;
+
+        }
+
+    });
+
+
+    /* =====================
+       BLOCK LONG PRESS MENU
+       ===================== */
+
+    layer.addEventListener("contextmenu", function(e){
+
+        e.preventDefault();
+
+    });
+
+});
+
+</script>
+
+<!-- ✨ INSCHAT PREMIUM DELETE MODAL -->
+<div id="deletePostModal"
+     class="hidden fixed inset-0 z-[9999] flex items-center justify-center
+            bg-black/60 backdrop-blur-sm p-4">
+
+  <div class="w-full max-w-sm overflow-hidden rounded-3xl
+              bg-white shadow-2xl"
+       style="animation: deleteModalIn .22s ease-out;">
+
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-rose-500 via-red-500 to-orange-500
+                px-6 py-7 text-center text-white">
+
+      <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center
+                  rounded-full bg-white/20 text-4xl">
+        🗑️
+      </div>
+
+      <h2 class="text-2xl font-extrabold">
+        Delete Post?
+      </h2>
+
+      <p class="mt-2 text-sm text-white/90">
+        Are you sure you want to delete this post?
+      </p>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6">
+
+      <p class="mb-6 text-center text-sm leading-6 text-gray-500">
+        This action cannot be undone. Please confirm before continuing.
+      </p>
+
+      <div class="flex gap-3">
+
+        <button type="button"
+                onclick="closeDeleteModal()"
+                class="flex-1 rounded-xl border border-gray-200
+                       bg-gray-100 px-4 py-3 font-bold text-gray-700
+                       transition hover:bg-gray-200 active:scale-95">
+          Cancel
+        </button>
+
+        <form id="deletePostForm"
+              method="POST"
+              class="flex-1">
+
+          <button type="submit"
+                  class="w-full rounded-xl bg-gradient-to-r
+                         from-rose-500 to-red-600 px-4 py-3
+                         font-bold text-white shadow-lg shadow-red-200
+                         transition hover:brightness-110 active:scale-95">
+            Delete
+          </button>
+
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+@keyframes deleteModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+</style>
+
+<script>
+function openDeleteModal(postId) {
+    const modal = document.getElementById("deletePostModal");
+    const form = document.getElementById("deletePostForm");
+
+    form.action = "/posts/delete/" + postId;
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+}
+
+function closeDeleteModal() {
+    document.getElementById("deletePostModal").classList.add("hidden");
+    document.body.style.overflow = "";
+}
+
+document.getElementById("deletePostModal").addEventListener("click", function(event) {
+    if (event.target === this) {
+        closeDeleteModal();
+    }
+});
+
+document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") {
+        closeDeleteModal();
+    }
+});
+</script>
+
+<script>
+(function () {
+    const KEY = "inschat_feed_scroll";
+
+    function saveFeedScroll() {
+        try {
+            sessionStorage.setItem(KEY, String(window.scrollY));
+        } catch (e) {}
+    }
+
+    window.addEventListener("scroll", saveFeedScroll, { passive: true });
+    window.addEventListener("pagehide", saveFeedScroll);
+
+    function restoreFeedScroll() {
+        try {
+            const saved = sessionStorage.getItem(KEY);
+            if (saved === null) return;
+
+            const y = parseInt(saved, 10);
+            if (Number.isFinite(y) && y >= 0) {
+                window.scrollTo(0, y);
+            }
+        } catch (e) {}
+    }
+
+    window.addEventListener("pageshow", function () {
+        requestAnimationFrame(function () {
+            restoreFeedScroll();
+            setTimeout(restoreFeedScroll, 300);
+            setTimeout(restoreFeedScroll, 800);
+        });
+    });
+})();
+</script>
+
+<script>
+(function () {
+    function resumeVisibleVideos() {
+        if (document.visibilityState === "hidden") return;
+
+        document.querySelectorAll(".post-video").forEach(function (video) {
+            const rect = video.getBoundingClientRect();
+            const visible =
+                rect.bottom > 0 &&
+                rect.top < window.innerHeight &&
+                rect.right > 0 &&
+                rect.left < window.innerWidth;
+
+            if (!visible || !video.paused) return;
+
+            video.muted = true;
+
+            video.play().catch(function () {
+                // Browser ne playback block kiya to user manually play kar sakta hai.
+            });
+        });
+    }
+
+    window.addEventListener("pageshow", function () {
+        setTimeout(resumeVisibleVideos, 300);
+        setTimeout(resumeVisibleVideos, 800);
+    });
+
+    document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") {
+            setTimeout(resumeVisibleVideos, 200);
+        }
+    });
+})();
+</script>
+
+</body>
+</html>
