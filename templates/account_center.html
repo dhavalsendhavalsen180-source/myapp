@@ -24,8 +24,9 @@ content="width=device-width,initial-scale=1">
 
     <div class="max-w-xl mx-auto flex items-center justify-between px-4 py-4">
 
-        <a href="javascript:history.back()"
-           class="text-xl font-bold text-gray-700">
+        <a href="/profile/settings"
+           class="js-safe-back text-xl font-bold text-gray-700"
+           data-fallback="/profile/settings">
             ←
         </a>
 
@@ -162,7 +163,7 @@ window.me = {{ session.get("user_id")|tojson }};
 </script>
 
 <script src="/static/js/global_call.js"></script>
-
+<script src="/static/js/navigation.js"></script>
 
 </body>
 

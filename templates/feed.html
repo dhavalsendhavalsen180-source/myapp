@@ -2077,11 +2077,17 @@ document.addEventListener("keydown", function(event) {
         } catch (e) {}
     }
 
-    window.addEventListener("pageshow", function () {
+    window.addEventListener("pageshow", function (event) {
+        console.log("FEED PAGESHOW:", {
+            restoredFromCache: event.persisted,
+            scrollY: window.scrollY
+        });
+        // Browser ne purana Feed page cache se restore kiya ho,
+        // to uski existing scroll position ko dobara mat badlo.
+        if (event.persisted) return;
+
         requestAnimationFrame(function () {
             restoreFeedScroll();
-            setTimeout(restoreFeedScroll, 300);
-            setTimeout(restoreFeedScroll, 800);
         });
     });
 })();
@@ -2150,6 +2156,8 @@ document.addEventListener("keydown", function(event) {
     });
 })();
 </script>
+
+<script src="/static/js/navigation.js"></script>
 
 </body>
 </html>

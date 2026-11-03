@@ -64,58 +64,6 @@ if (window.socket) {
 <script src="/static/js/global_call.js"></script>
 
 <script>
-(function () {
-    function getScrollKey() {
-        return "inschat_scroll:" + location.pathname + location.search;
-    }
-
-    if ("scrollRestoration" in history) {
-        history.scrollRestoration = "manual";
-    }
-
-    // मौजूदा पेज की स्क्रॉल पोज़िशन सेव करें
-    function saveScrollPosition() {
-        try {
-            sessionStorage.setItem(
-                getScrollKey(),
-                JSON.stringify({
-                    x: window.scrollX,
-                    y: window.scrollY
-                })
-            );
-        } catch (e) {
-            console.log("Scroll save skipped");
-        }
-    }
-
-    window.addEventListener("pagehide", saveScrollPosition);
-
-    // Feed पर वापस आने पर पिछली जगह बहाल करें
-    window.addEventListener("pageshow", function () {
-        try {
-            const saved =
-                sessionStorage.getItem(getScrollKey());
-            if (!saved) return;
-
-            const pos = JSON.parse(saved);
-
-            function restoreFeedScroll() {
-                window.scrollTo(pos.x || 0, pos.y || 0);
-            }
-
-            requestAnimationFrame(function () {
-                restoreFeedScroll();
-                setTimeout(restoreFeedScroll, 300);
-                setTimeout(restoreFeedScroll, 800);
-            });
-        } catch (e) {
-            console.log("Scroll restore skipped");
-        }
-    });
-})();
-</script>
-
-<script>
 document.addEventListener("click", function (event) {
     const link = event.target.closest('a[href="/posts/feed"]');
     if (!link) return;
@@ -137,6 +85,8 @@ document.addEventListener("click", function (event) {
     }
 });
 </script>
+
+<script src="/static/js/navigation.js"></script>
 
 </body>
 </html>

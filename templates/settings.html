@@ -16,7 +16,8 @@
   <div class="max-w-xl mx-auto flex items-center justify-between px-4 py-4">
 
     <a href="/profile/{{ session.get('user_id') }}"
-       class="text-xl font-bold text-gray-700">
+       class="js-safe-back text-xl font-bold text-gray-700"
+       data-fallback="/profile/{{ session.get('user_id') }}">
       ←
     </a>
 
@@ -115,6 +116,7 @@ window.me = {{ session.get("user_id")|tojson }};
 </script>
 
 <script src="/static/js/global_call.js"></script>
+<script src="/static/js/navigation.js"></script>
 
 </body>
 </html>

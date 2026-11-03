@@ -774,8 +774,9 @@ scroll-snap-stop:always;
             h-16 text-white px-2">
 
   <!-- Home -->
-  <a href="/posts/feed" class="flex items-center justify-center w-12 h-12"
-     onclick="if (document.referrer && new URL(document.referrer).origin === location.origin && new URL(document.referrer).pathname === '/posts/feed') { event.preventDefault(); history.back(); }">
+  <a href="/posts/feed"
+     class="flex items-center justify-center w-12 h-12"
+     onclick="if (window.history.length > 1) { event.preventDefault(); window.history.back(); }">
     <svg class="w-8 h-8 text-white"
          viewBox="0 0 20 20"
          fill="none"
@@ -1430,6 +1431,8 @@ document.addEventListener("keydown", function(event) {
     }
 });
 </script>
+
+<script src="/static/js/navigation.js"></script>
 
 </body>
 </html>

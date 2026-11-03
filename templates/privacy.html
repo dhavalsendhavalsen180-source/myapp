@@ -13,7 +13,9 @@
 
 <!-- TOP -->
 <div class="flex items-center gap-4 p-4 bg-white shadow">
-  <a href="/profile/settings" class="text-xl font-bold">⬅</a>
+  <a href="/profile/settings"
+     class="js-safe-back text-xl font-bold"
+     data-fallback="/profile/settings">⬅</a>
 
   <h1 class="text-lg font-bold">
     Account privacy
@@ -70,6 +72,9 @@
   </p>
 
 </div>
+
+<script src="/static/js/global_call.js"></script>
+<script src="/static/js/navigation.js"></script>
 
 </body>
 </html>
