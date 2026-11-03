@@ -341,6 +341,43 @@ body {
     overflow-x: hidden;
 }
 
+/* =================================
+   INSCHAT WHITE BOTTOM SYSTEM AREA
+================================= */
+
+html {
+    background: #ffffff !important;
+}
+
+body {
+    background: #ffffff !important;
+    min-height: 100dvh;
+}
+
+/* InsChat Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    background: #ffffff !important;
+
+    border-top: 1px solid #eeeeee !important;
+    border-bottom: none !important;
+
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+
+    z-index: 999;
+}
+
+/* Bottom safe area */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .bottom-nav {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    }
+}
+
 .post-card {
     width: 100%;
     box-sizing: border-box;
