@@ -6,8 +6,8 @@
   "scope": "/",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
   "orientation": "portrait",
   "description": "Chat, Stories, Reels aur Posts. Distance khatam, privacy first. Made in India.",
   "icons": [
