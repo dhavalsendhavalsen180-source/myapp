@@ -11,6 +11,7 @@ from routes.music import music_bp
 from routes.report import report_bp
 from routes.admin import admin_bp
 from routes.account_guard import account_guard_bp
+from routes.pwa import pwa_bp
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -75,22 +76,12 @@ app.register_blueprint(music_bp)
 app.register_blueprint(report_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(account_guard_bp)
+app.register_blueprint(pwa_bp)
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
-@app.route("/manifest.json")
-def manifest():
-    return send_from_directory("static", "manifest.json", mimetype="application/manifest+json")
-
-@app.route('/service-worker.js')
-def service_worker():
-    return send_from_directory(
-        'static',
-        'service-worker.js',
-        mimetype='application/javascript'
-    )
 
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)
