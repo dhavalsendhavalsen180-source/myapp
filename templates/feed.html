@@ -390,6 +390,7 @@ async function uploadStoryInstant(event) {
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-cyan-500 via-blue-600 via-purple-600 to-yellow-400">
+<div id="inschat-page-content" data-tab="feed">
 <div class="pb-24 pt-[48px]">
 
 <input type="file" id="storyPicker" accept="image/*,video/*" style="display:none" onchange="uploadStoryInstant(event)">
@@ -978,7 +979,7 @@ async function uploadStoryInstant(event) {
 
 <!-- 🏠🔍➕🎬BOTTOM NAV -->
 <div class="bottom-nav fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-white/30 shadow-2xl flex justify-around py-3 text-2xl">
-  <a href="/posts/feed" class="flex items-center justify-center"
+  <a href="/posts/feed" class="js-tab-link flex items-center justify-center"
      onclick="sessionStorage.setItem('inschat_feed_scroll', window.scrollY)">
 <svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
   <path d="M4 11.5L12 4l8 7.5"/>
@@ -986,7 +987,7 @@ async function uploadStoryInstant(event) {
   <path d="M10 20v-5h4v5"/>
 </svg>
 </a>
-  <a href="/explore" class="flex items-center justify-center">
+  <a href="/explore" class="js-tab-link flex items-center justify-center">
 <svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
   <circle cx="12" cy="12" r="9"/>
   <path d="M15.8 8.2L13.6 13.6L8.2 15.8L10.4 10.4L15.8 8.2Z"/>
@@ -998,7 +999,7 @@ async function uploadStoryInstant(event) {
   <path d="M12 8v8M8 12h8"/>
 </svg>
 </a>
-  <a href="/reels" class="flex items-center justify-center">
+  <a href="/reels" class="js-tab-link flex items-center justify-center">
 <svg class="w-6 h-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
   <rect x="4" y="4" width="16" height="16" rx="4"/>
   <path d="M8 4l3 4"/>
@@ -1006,7 +1007,7 @@ async function uploadStoryInstant(event) {
   <path d="M10 10l5 3-5 3z" fill="currentColor" stroke="none"/>
 </svg>
 </a>
-  <a href="/profile/{{ current_user }}">
+  <a href="/profile/{{ current_user }}" class="js-tab-link">
   <img src="{{ current_user_photo }}"
        class="w-7 h-7 rounded-full object-cover border"
        onerror="this.src='/static/default_dp.png'">
@@ -1233,8 +1234,34 @@ document.addEventListener("DOMContentLoaded", () => {
        PLAY SELECTED POST AUDIO
     ================================= */
 
-    function playPostAudio(card) {
+window.inschatFeedTabActive = true;
 
+window.addEventListener("message", function(event) {
+
+    if (event.origin !== window.location.origin) return;
+    if (!event.data) return;
+
+    if (event.data.type === "inschat-tab-hidden") {
+
+        window.inschatFeedTabActive = false;
+
+        stopAllAudios();
+
+    }
+
+    if (event.data.type === "inschat-tab-visible") {
+
+        window.inschatFeedTabActive = true;
+
+    }
+
+});
+
+    function playPostAudio(card) {
+        if (window.inschatFeedTabActive === false) {
+            stopAllAudios();
+            return;
+        }
         const audio =
             card.querySelector(".post-audio");
 
@@ -2159,6 +2186,10 @@ document.addEventListener("keydown", function(event) {
     });
 })();
 </script>
+
+</div>
+
+<script src="/static/js/app_navigation/tab-manager.js"></script>
 
 <script src="/static/js/navigation.js"></script>
 

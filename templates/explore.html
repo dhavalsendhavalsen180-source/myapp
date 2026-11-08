@@ -51,6 +51,7 @@ transform:translateY(-3px);
 </head>
 
 <body class="text-slate-800 pb-24">
+<div id="inschat-page-content" data-tab="explore">
 
 <!-- TOP BAR -->
 <div class="sticky top-0 z-50 glass border-b border-blue-100">
@@ -238,7 +239,7 @@ preload="metadata">
 
 <div class="glass border border-blue-100 rounded-3xl px-6 py-3 shadow-2xl flex items-center gap-8">
 
-<a href="/posts/feed">
+<a href="/posts/feed" class="js-tab-link">
 
 <svg class="w-6 h-6 text-slate-700 hover:text-blue-600 transition"
 viewBox="0 0 24 24"
@@ -252,7 +253,7 @@ stroke-width="2">
 
 </a>
 
-<a href="/explore">
+<a href="/explore" class="js-tab-link">
 
 <svg class="w-6 h-6 text-cyan-600"
 viewBox="0 0 24 24"
@@ -285,7 +286,7 @@ stroke-linecap="round">
 
 </a>
 
-<a href="/reels">
+<a href="/reels" class="js-tab-link">
 
 <svg class="w-6 h-6 text-slate-700 hover:text-purple-600 transition"
 viewBox="0 0 24 24"
@@ -300,7 +301,7 @@ stroke-width="2">
 
 </a>
 
-<a href="/profile/{{ current_user }}">
+<a href="/profile/{{ current_user }}" class="js-tab-link">
 
 <div class="story-ring">
 
@@ -353,6 +354,9 @@ videos.forEach(v=>observer.observe(v));
 window.me = {{ session.get("user_id")|tojson }};
 </script>
 
+</div>
+
+<script src="/static/js/app_navigation/tab-manager.js"></script>
 <script src="/static/js/global_call.js"></script>
 <script src="/static/js/navigation.js"></script>
 

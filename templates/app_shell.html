@@ -1,0 +1,356 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+
+    <meta name="theme-color" content="#ffffff">
+    <title>InsChat</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        #inschat-tabs {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        .inschat-tab-frame {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: none;
+            background: #ffffff;
+        }
+
+        .inschat-tab-frame.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="inschat-tabs">
+
+    <iframe
+        id="tab-feed"
+        class="inschat-tab-frame active"
+        src="/posts/feed"
+        title="Feed"
+        allow="camera; microphone; geolocation">
+    </iframe>
+
+    <iframe
+        id="tab-explore"
+        class="inschat-tab-frame"
+        src="/explore"
+        title="Explore"
+        allow="camera; microphone; geolocation">
+    </iframe>
+
+    <iframe
+        id="tab-reels"
+        class="inschat-tab-frame"
+        src="/reels/"
+        title="Reels"
+        allow="camera; microphone; geolocation">
+    </iframe>
+
+    <iframe
+        id="tab-profile"
+        class="inschat-tab-frame"
+        src="/profile/{{ current_user }}"
+        title="Profile"
+        allow="camera; microphone; geolocation">
+    </iframe>
+
+</div>
+
+<!-- SHARED SOCKET.IO FOR INSCHAT -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+    window.me = {{ current_user|tojson }};
+</script>
+
+<script src="/static/js/global_call.js"></script>
+
+<!-- EXISTING TAB SWITCH SCRIPT -->
+<script>
+(function () {
+    "use strict";
+
+    const frames = {
+        feed: document.getElementById("tab-feed"),
+        explore: document.getElementById("tab-explore"),
+        reels: document.getElementById("tab-reels"),
+        profile: document.getElementById("tab-profile")
+    };
+
+    let activeTab = "feed";
+
+    function switchTab(tab) {
+        if (!frames[tab]) return;
+
+        if (activeTab === tab) return;
+
+        // Previous tab ko pause signal
+        frames[activeTab].contentWindow.postMessage({
+            type: "inschat-tab-hidden"
+        }, window.location.origin);
+
+        // Tab visibility change
+        Object.keys(frames).forEach(function (name) {
+            frames[name].classList.toggle(
+                "active",
+                name === tab
+            );
+        });
+
+        activeTab = tab;
+
+        document.documentElement.dataset.inschatTab = tab;
+
+        // New tab ko resume signal
+        frames[tab].contentWindow.postMessage({
+            type: "inschat-tab-visible"
+        }, window.location.origin);
+    }
+
+    window.InsChatTabs = {
+        switchTab: switchTab,
+
+        getActive: function () {
+            return activeTab;
+        },
+
+        frames: frames
+    };
+
+    window.addEventListener("message", function (event) {
+        if (event.origin !== window.location.origin) return;
+
+        const data = event.data;
+
+        if (!data || data.type !== "inschat-switch-tab") return;
+
+        switchTab(data.tab);
+    });
+
+})();
+</script>
+
+<!-- INSCHAT NOTIFICATION PERMISSION -->
+<script>
+window.InsChatPermissions = {
+
+    notifications: async function () {
+
+        if (!("Notification" in window)) {
+            alert("Notifications is not supported.");
+            return false;
+        }
+
+        if (Notification.permission === "granted") {
+            return true;
+        }
+
+        if (Notification.permission === "denied") {
+            alert("Notifications blocked hain. Chrome site settings mein allow karo.");
+            return false;
+        }
+
+        const result = await Notification.requestPermission();
+
+        return result === "granted";
+    }
+
+};
+</script>
+
+<!-- INSCHAT PREMIUM NOTIFICATION BOTTOM SHEET -->
+
+<style>
+#inschatPermissionBox {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(10, 15, 35, .48);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.inschat-permission-sheet {
+    width: 100%;
+    max-width: 520px;
+    background: #ffffff;
+    border-radius: 27px 27px 0 0;
+    padding: 12px 25px 35px;
+    text-align: center;
+    box-shadow: 0 -10px 45px rgba(0,0,0,.16);
+    animation: inschatSheetUp .35s ease-out;
+}
+
+@keyframes inschatSheetUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.inschat-sheet-handle {
+    width: 42px;
+    height: 5px;
+    border-radius: 20px;
+    background: #d9dce5;
+    margin: 0 auto 25px;
+}
+
+.inschat-notify-icon {
+    width: 76px;
+    height: 76px;
+    border-radius: 25px;
+    margin: 0 auto 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg,#00c6ff,#536dfe,#a855f7);
+    color: white;
+    font-size: 35px;
+}
+
+.inschat-permission-sheet h2 {
+    font-size: 23px;
+    color: #171923;
+    margin: 0 0 10px;
+    font-weight: 750;
+}
+
+.inschat-permission-sheet p {
+    color: #777b89;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0 0 25px;
+}
+
+.inschat-allow-btn {
+    width: 100%;
+    padding: 16px;
+    border: 0;
+    border-radius: 15px;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    background: linear-gradient(100deg,#00bde9,#536dfe,#9255e9);
+}
+
+.inschat-later-btn {
+    width: 100%;
+    padding: 15px;
+    border: 0;
+    background: transparent;
+    color: #777b89;
+    font-size: 14px;
+    font-weight: 600;
+}
+</style>
+
+<div id="inschatPermissionBox">
+
+    <div class="inschat-permission-sheet">
+
+        <div class="inschat-sheet-handle"></div>
+
+        <div class="inschat-notify-icon">
+            ♡
+        </div>
+
+        <h2>Stay Connected on InsChat</h2>
+
+        <p>
+            Messages, new activity aur important updates
+            ki notifications paate raho.
+            Apne connections se connected raho!
+        </p>
+
+        <button class="inschat-allow-btn"
+                onclick="enableInsChatNotifications()">
+            Allow Notifications
+        </button>
+
+        <button class="inschat-later-btn"
+                onclick="closeInsChatPermissionBox()">
+            Not Now
+        </button>
+
+    </div>
+</div>
+
+<script>
+function enableInsChatNotifications() {
+
+    window.InsChatPermissions.notifications().then(function(granted) {
+
+        if (granted) {
+            localStorage.setItem(
+                "inschat_notifications_done", "yes"
+            );
+
+            closeInsChatPermissionBox();
+        }
+
+    });
+}
+
+function closeInsChatPermissionBox() {
+    document.getElementById(
+        "inschatPermissionBox"
+    ).style.display = "none";
+}
+
+window.addEventListener("load", function() {
+
+    if (!("Notification" in window)) return;
+
+    if (Notification.permission === "granted") {
+        localStorage.setItem("inschat_notifications_done", "yes");
+        return;
+    }
+
+    if (Notification.permission === "denied") {
+        localStorage.setItem("inschat_notifications_done", "yes");
+        return;
+    }
+
+    if (!localStorage.getItem("inschat_notifications_done")) {
+        document.getElementById(
+            "inschatPermissionBox"
+        ).style.display = "flex";
+    }
+
+});
+</script>
+
+</body>
+</html>

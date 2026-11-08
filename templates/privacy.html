@@ -26,7 +26,7 @@
 <div class="max-w-xl mx-auto mt-5 bg-white rounded-xl shadow overflow-hidden">
 
   <!-- PRIVATE ACCOUNT -->
-  <form method="POST" action="/profile/toggle_private">
+  <form id="privacyToggleForm" method="POST" action="/profile/toggle_private">
 
     <div class="flex items-center justify-between p-5 border-b">
 
@@ -75,6 +75,44 @@
 
 <script src="/static/js/global_call.js"></script>
 <script src="/static/js/navigation.js"></script>
+
+<script>
+document.getElementById("privacyToggleForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const form = this;
+    const button = form.querySelector('button[type="submit"]');
+
+    if (button) button.disabled = true;
+
+    try {
+        const response = await fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            credentials: "same-origin",
+            redirect: "follow"
+        });
+
+        const finalUrl = new URL(response.url);
+
+        if (
+            response.ok &&
+            finalUrl.origin === window.location.origin &&
+            finalUrl.pathname.startsWith("/profile/")
+        ) {
+            window.history.back();
+            return;
+        }
+
+        alert("Account privacy update nahi ho paya. Dobara try karein.");
+
+    } catch (error) {
+        alert("Network error. Dobara try karein.");
+    }
+
+    if (button) button.disabled = false;
+});
+</script>
 
 </body>
 </html>

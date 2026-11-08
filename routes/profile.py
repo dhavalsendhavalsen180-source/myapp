@@ -69,6 +69,19 @@ def profile(user_id):
 
     # CURRENT USER
     current = session.get("user_id")
+    # CURRENT USER PROFILE PHOTO FOR BOTTOM NAV
+    current_user_photo = "/static/default_dp.png"
+
+    if current:
+        c.execute(
+            "SELECT photo FROM users WHERE id=?",
+            (current,)
+        )
+        current_photo_row = c.fetchone()
+
+        if current_photo_row and current_photo_row["photo"]:
+            current_user_photo = current_photo_row["photo"]
+
     # -------- STORY STATUS --------
     stories = load_stories_for_feed()
 
@@ -213,6 +226,7 @@ def profile(user_id):
         is_following=is_following,
         follow_requested=follow_requested,
         current_user=current,
+        current_user_photo=current_user_photo,
         is_owner=(current is not None and str(current) == str(user_id)),
         can_view=can_view,
         can_chat=can_chat,
@@ -524,7 +538,7 @@ def toggle_private():
     conn.commit()
     conn.close()
 
-    return redirect(f"/profile/{uid}")
+    return redirect("/profile/settings")
 
 # ------------------ ACCOUNT PRIVACY ------------------ #
 @profile_bp.route("/privacy")

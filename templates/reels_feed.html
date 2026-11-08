@@ -390,6 +390,7 @@ scroll-snap-stop:always;
 
 <body>
 
+<div id="inschat-page-content" data-tab="reels">
 <div class="reels-wrapper" id="wrapper">
 
 {% for reel in reels %}
@@ -775,8 +776,7 @@ scroll-snap-stop:always;
 
   <!-- Home -->
   <a href="/posts/feed"
-     class="flex items-center justify-center w-12 h-12"
-     onclick="if (window.history.length > 1) { event.preventDefault(); window.history.back(); }">
+       class="js-tab-link flex items-center justify-center w-12 h-12">
     <svg class="w-8 h-8 text-white"
          viewBox="0 0 20 20"
          fill="none"
@@ -791,7 +791,7 @@ scroll-snap-stop:always;
   </a>
 
   <!-- Explore -->
-  <a href="/explore" class="flex items-center justify-center w-12 h-12">
+  <a href="/explore" class="js-tab-link flex items-center justify-center w-12 h-12">
     <svg class="w-8 h-8 text-white"
          viewBox="0 0 20 20"
          fill="none"
@@ -820,7 +820,7 @@ scroll-snap-stop:always;
   </a>
 
   <!-- Reels -->
-  <a href="/reels" class="flex items-center justify-center w-12 h-12">
+  <a href="/reels" class="js-tab-link flex items-center justify-center w-12 h-12">
     <svg class="w-8 h-8 text-white"
          viewBox="0 0 20 20"
          fill="none"
@@ -838,7 +838,7 @@ scroll-snap-stop:always;
   </a>
 
   <!-- Profile -->
-  <a href="/profile/{{ current_user }}" class="flex items-center justify-center w-12 h-12">
+  <a href="/profile/{{ current_user }}" class="js-tab-link flex items-center justify-center w-12 h-12">
     <img src="{{ current_user_photo }}"
          class="w-8 h-8 rounded-full border border-white object-cover"
          onerror="this.src='/static/default_dp.png'">
@@ -854,7 +854,42 @@ scroll-snap-stop:always;
 const wrapper = document.getElementById("wrapper");
 const videos = document.querySelectorAll("video");
 
+let reelsTabActive = true;
+
+window.addEventListener("message", function(event) {
+
+    if (event.origin !== window.location.origin) return;
+
+    if (!event.data) return;
+
+    if (event.data.type === "inschat-tab-hidden") {
+
+        reelsTabActive = false;
+
+        document.querySelectorAll("video, audio").forEach(media => {
+            media.pause();
+        });
+
+    }
+
+    if (event.data.type === "inschat-tab-visible") {
+
+        reelsTabActive = true;
+
+        controlVideos();
+
+    }
+
+});
+
 function controlVideos(){
+
+  if (!reelsTabActive) {
+    document.querySelectorAll("video, audio").forEach(media => {
+      media.pause();
+    });
+    return;
+  }
 
   const middle = window.innerHeight / 2;
 
@@ -1279,7 +1314,7 @@ window.addEventListener('resize', fixReelHeight);
 document.querySelectorAll("audio").forEach(audio => {
 
   audio.addEventListener("timeupdate", () => {
-
+    if (!reelsTabActive) return;
     const start = parseFloat(audio.dataset.start || "0");
     const end = parseFloat(audio.dataset.end || "0");
 
@@ -1307,6 +1342,8 @@ document.querySelectorAll("audio").forEach(audio => {
 });
 
 function resumeActiveMusic(){
+
+  if (!reelsTabActive) return;
 
   document.querySelectorAll(".reel").forEach(reel => {
 
@@ -1432,6 +1469,9 @@ document.addEventListener("keydown", function(event) {
 });
 </script>
 
+</div>
+
+<script src="/static/js/app_navigation/tab-manager.js"></script>
 <script src="/static/js/navigation.js"></script>
 
 </body>

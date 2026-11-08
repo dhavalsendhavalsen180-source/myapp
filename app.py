@@ -12,6 +12,7 @@ from routes.report import report_bp
 from routes.admin import admin_bp
 from routes.account_guard import account_guard_bp
 from routes.pwa import pwa_bp
+from routes.tab_shell import tab_shell_bp
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -41,7 +42,7 @@ app.secret_key = "kuch_strong_secret_key"
 app.config["SECRET_KEY"] = "kuch_strong_secret_key"
 
 # Session 30 din tak login rakhega
-app.permanent_session_lifetime = timedelta(days=30)
+app.permanent_session_lifetime = timedelta(days=365)
 
 CORS(app, supports_credentials=True)
 
@@ -77,10 +78,11 @@ app.register_blueprint(report_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(account_guard_bp)
 app.register_blueprint(pwa_bp)
+app.register_blueprint(tab_shell_bp)
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("splash.html")
 
 
 if __name__ == "__main__":

@@ -889,262 +889,174 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const postCards = document.querySelectorAll(".post-card");
     const audios = document.querySelectorAll(".post-audio");
+    const videos = document.querySelectorAll(".post-video");
 
     let activeAudio = null;
+    let activeCard = null;
+    let userTurnedAudioOff = false;
+    let scrollTimer = null;
 
     function stopAllAudios(exceptAudio = null) {
-
         audios.forEach(audio => {
-
             if (audio !== exceptAudio) {
                 audio.pause();
                 audio.currentTime = 0;
             }
-
         });
-
     }
 
+    function stopVideoSounds(exceptVideo = null) {
+        videos.forEach(video => {
+            if (video !== exceptVideo) {
+                video.muted = true;
+            }
+        });
+    }
 
-    function playAudio(audio) {
+    function playAudio(audio, card) {
+        if (!audio || userTurnedAudioOff) return;
 
-        if (!audio) return;
+        if (activeAudio === audio && !audio.paused) return;
 
         stopAllAudios(audio);
+        stopVideoSounds();
 
         activeAudio = audio;
+        activeCard = card;
+        audio.volume = 1;
 
-        audio.volume = 1.0;
+        if (audio.readyState === 0) audio.load();
 
-        /*
-         * Browser ko source load karne ke liye force
-         */
-        if (audio.readyState === 0) {
-            audio.load();
-        }
-
-        audio.play()
-            .then(() => {
-                console.log(
-                    "VIEW POST AUDIO PLAYING:",
-                    audio.src
-                );
-            })
-            .catch(error => {
-
-                console.log(
-                    "VIEW POST AUDIO BLOCKED:",
-                    error.name,
-                    error.message
-                );
-
-            });
-
+        audio.play().catch(error => {
+            console.log("POST VIEW AUDIO:", error.name);
+        });
     }
 
+    window.inschatTogglePostSound = function(card, video) {
 
-    /*
-     * PAGE LOAD
-     */
-    if (audios.length > 0) {
+        const audio = card
+            ? card.querySelector(".post-audio")
+            : null;
 
-        const audio = audios[0];
-
-        if (audio.readyState >= 2) {
-
-            playAudio(audio);
-
-        } else {
-
-            audio.addEventListener("canplay", function startAudio() {
-
-                audio.removeEventListener(
-                    "canplay",
-                    startAudio
-                );
-
-                playAudio(audio);
-
-            });
-
-        }
-
-    }
-
-
-    /*
-     * USER TOUCH
-     *
-     * Browser autoplay block ho to
-     * first touch par music start hoga.
-     */
-    document.addEventListener("pointerdown", () => {
-
-        if (activeAudio && !activeAudio.paused) {
-            return;
-        }
-
-        if (audios.length > 0) {
-            playAudio(audios[0]);
-        }
-
-    }, {
-        passive: true
-    });
-
-
-    /*
-     * CLICK FALLBACK
-     */
-    document.addEventListener("click", () => {
-
-        if (activeAudio && !activeAudio.paused) {
-            return;
-        }
-
-        if (audios.length > 0) {
-            playAudio(audios[0]);
-        }
-
-    });
-
-
-    /*
-     * AUDIO ERROR DEBUG
-     */
-    audios.forEach(audio => {
-
-        audio.addEventListener("error", () => {
-
-            console.log(
-                "VIEW POST AUDIO ERROR:",
-                audio.error,
-                audio.src
-            );
-
-        });
-
-    });
-
-
-/*
- * SCROLL AUTO PLAY
- *
- * Screen ke center ke sabse paas wala post
- * current post maana jayega.
- *
- * Audio hai:
- *     automatically play
- *
- * Audio nahi hai:
- *     previous audio stop
- */
-
-let scrollTimer = null;
-
-window.addEventListener("scroll", () => {
-
-    clearTimeout(scrollTimer);
-
-    scrollTimer = setTimeout(() => {
-
-        let closestCard = null;
-        let closestDistance = Infinity;
-
-        const screenCenter = window.innerHeight / 2;
-
-        postCards.forEach(card => {
-
-            const rect = card.getBoundingClientRect();
-
-            if (
-                rect.bottom <= 0 ||
-                rect.top >= window.innerHeight
-            ) {
-                return;
-            }
-
-            const cardCenter =
-                rect.top + (rect.height / 2);
-
-            const distance =
-                Math.abs(cardCenter - screenCenter);
-
-            if (distance < closestDistance) {
-
-                closestDistance = distance;
-                closestCard = card;
-
-            }
-
-        });
-
-
-        if (!closestCard) return;
-
-
-        const audio =
-            closestCard.querySelector(".post-audio");
-
-
-        /*
-         * Current post me audio hai
-         */
         if (audio) {
 
-            /*
-             * Already isi audio ka music chal raha hai
-             * to dobara restart mat karo.
-             */
-            if (
-                activeAudio === audio &&
-                !audio.paused
-            ) {
+            if (activeAudio === audio && !audio.paused) {
+                audio.pause();
+                audio.currentTime = 0;
+                activeAudio = null;
+                activeCard = null;
+                userTurnedAudioOff = true;
+            } else {
+                userTurnedAudioOff = false;
+                playAudio(audio, card);
+            }
+
+            return;
+        }
+
+        if (video) {
+            if (video.muted) {
+                stopAllAudios();
+                activeAudio = null;
+                activeCard = null;
+                stopVideoSounds(video);
+                video.muted = false;
+                video.volume = 1;
+            } else {
+                video.muted = true;
+            }
+        }
+    };
+
+    // Initial post audio
+    if (postCards.length > 0) {
+        const firstCard = postCards[0];
+        const firstAudio = firstCard.querySelector(".post-audio");
+
+        if (firstAudio) {
+            firstAudio.addEventListener("canplay", function startFirstAudio() {
+                firstAudio.removeEventListener("canplay", startFirstAudio);
+
+                if (!userTurnedAudioOff) {
+                    playAudio(firstAudio, firstCard);
+                }
+            });
+
+            if (firstAudio.readyState >= 2) {
+                playAudio(firstAudio, firstCard);
+            }
+        }
+    }
+
+    // Scroll: play audio of the nearest visible post
+    window.addEventListener("scroll", () => {
+
+        clearTimeout(scrollTimer);
+
+        scrollTimer = setTimeout(() => {
+
+            let closestCard = null;
+            let closestDistance = Infinity;
+
+            const screenCenter = window.innerHeight / 2;
+
+            postCards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+
+                if (rect.bottom <= 0 || rect.top >= window.innerHeight) {
+                    return;
+                }
+
+                const distance = Math.abs(
+                    rect.top + rect.height / 2 - screenCenter
+                );
+
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestCard = card;
+                }
+            });
+
+            if (!closestCard) return;
+
+            if (closestCard === activeCard && activeAudio && !activeAudio.paused) {
                 return;
             }
 
-            playAudio(audio);
+            const audio = closestCard.querySelector(".post-audio");
 
-        }
+            if (audio) {
+                if (!userTurnedAudioOff) {
+                    playAudio(audio, closestCard);
+                }
+            } else {
+                stopAllAudios();
+                activeAudio = null;
+                activeCard = null;
+            }
 
+        }, 120);
 
-        /*
-         * Current post me audio nahi hai
-         */
-        else {
+    }, { passive: true });
 
-            stopAllAudios();
-            activeAudio = null;
-
-        }
-
-    }, 100);
-
-}, {
-    passive: true
-});
-
-    /*
-     * PAGE HIDE
-     */
-    document.addEventListener("visibilitychange", () => {
-
-        if (document.hidden) {
-
-            stopAllAudios();
-            activeAudio = null;
-
-        }
-
+    audios.forEach(audio => {
+        audio.addEventListener("error", () => {
+            console.log("POST VIEW AUDIO ERROR:", audio.error, audio.src);
+        });
     });
 
-
-    window.addEventListener("pagehide", () => {
-
+    function stopPageMedia() {
         stopAllAudios();
+        stopVideoSounds();
         activeAudio = null;
+        activeCard = null;
+    }
 
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) stopPageMedia();
     });
+
+    window.addEventListener("pagehide", stopPageMedia);
 
 });
 </script>
@@ -1225,15 +1137,10 @@ document.querySelectorAll(".video-touch-layer").forEach(layer => {
 
                 /* 1 TAP = SOUND */
 
-                if(video.muted){
+                const card = layer.closest(".post-card");
 
-                    video.muted = false;
-                    video.volume = 1;
-
-                }else{
-
-                    video.muted = true;
-
+                if (window.inschatTogglePostSound) {
+                    window.inschatTogglePostSound(card, video);
                 }
 
             }else if(tapCount >= 2){

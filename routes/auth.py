@@ -242,7 +242,7 @@ def login():
         session.permanent = True
 
         flash("Login successful!", "success")
-        return redirect(url_for("posts.feed"))
+        return redirect("/app")
 
     return render_template("login.html")
 
@@ -591,7 +591,7 @@ def google_callback():
         session["user_id"] = user_id
         session.permanent = True
 
-        return redirect(url_for("posts.feed"))
+        return redirect("/app")
 
     # Google info save
     session["google_email"] = email

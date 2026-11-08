@@ -8,9 +8,7 @@ def splash():
 
 @basic_bp.route("/home")
 def home():
-    # Agar user login hai to feed
     if session.get("user_id"):
-        return redirect("/posts/feed")
+        return redirect("/app")
 
-    # Nahi to login page
     return redirect("/auth/login")
