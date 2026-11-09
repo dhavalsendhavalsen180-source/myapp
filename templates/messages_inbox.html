@@ -3,10 +3,10 @@
 <link rel="stylesheet" href="/static/css/messages.css">
 <link rel="stylesheet" href="/static/css/magic_search.css">
 
-<div class="dm-container bg-slate-50 min-h-screen">
+<div class="dm-container dm-inbox-page bg-slate-50">
 
     <!-- Top Header -->
-<div class="sticky top-0 z-20 bg-transparent backdrop-blur-xl border-b border-slate-200">
+    <div class="dm-inbox-header bg-transparent backdrop-blur-xl border-b border-slate-200">
 
     <div class="px-5 pt-5 pb-3">
         <h2 class="text-3xl font-extrabold text-slate-800">
@@ -79,7 +79,7 @@
 
 
     <!-- Chat List -->
-    <div class="px-4 pb-24 space-y-3">
+    <div class="dm-chat-scroll px-4 pb-24 space-y-3">
 
         {% for c in chats %}
 

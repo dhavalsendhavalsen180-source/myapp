@@ -741,13 +741,18 @@ body.chat-page {
    ONLY .messages SCROLLS
 ========================================================= */
 
-/* Page itself never scrolls */
-html,
-body {
-    width: 100%;
-    height: 100%;
-    margin: 0;
+/* Only chat page should lock scrolling */
+body.chat-page {
     overflow: hidden;
+}
+
+body:not(.chat-page) {
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    height: auto;
+    min-height: 100%;
+    padding-bottom: 90px;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Normal messages list page */
@@ -954,14 +959,36 @@ body.chat-page {
 /* =========================================================
    MOBILE
 ========================================================= */
-
 @media (max-width: 600px) {
 
     html,
     body {
-        overflow: hidden;
+        overflow-x: hidden;
+    }
+
+    body:not(.chat-page) {
+        overflow-y: auto !important;
+        overscroll-behavior-y: auto;
+        touch-action: pan-y;
+    }
+
+    body.chat-page {
+        overflow: hidden !important;
         overscroll-behavior: none;
     }
+
+    .chat-container {
+        width: 100%;
+        max-width: 100%;
+
+        height: 100vh;
+        height: 100dvh;
+
+        overflow: hidden;
+    }
+
+    /* नीचे की बाकी पुरानी CSS वैसी ही रहने दें */
+}
 
     .chat-container {
         width: 100%;
@@ -1055,4 +1082,41 @@ body.chat-page {
         max-width: 250px;
     }
 
+}
+
+/* =====================================
+   INSCHAT INBOX SCROLL FIX
+===================================== */
+
+body:not(.chat-page) {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: 100vh;
+    padding-bottom: 100px !important;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+}
+
+.dm-container {
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important;
+}
+
+/* FIXED INBOX CHATS HEADER */
+
+.dm-inbox-page {
+    padding-top: 65px;
+}
+
+.dm-inbox-header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 600px !important;
+    margin: 0 auto !important;
+    z-index: 1000 !important;
 }
