@@ -4,7 +4,7 @@
 // Child iframe pages must not create duplicate connections.
 if (window.parent !== window) {
     console.log("Shared call listener handled by parent");
-} else if (typeof io !== "undefined" && window.me) {
+} else if (typeof io !== "undefined") {
 
     if (!window.InsChatGlobalCallLoaded) {
         window.InsChatGlobalCallLoaded = true;
@@ -19,11 +19,19 @@ if (window.parent !== window) {
 
         console.log("InsChat shared call listener loaded");
 
-        globalSocket.on("connect", () => {
-            console.log("GLOBAL SOCKET:", globalSocket.id);
+        function joinGlobalUserRoom() {
+            if (!globalSocket.connected) return;
 
+            console.log("JOINING GLOBAL USER ROOM:", globalSocket.id);
             globalSocket.emit("join_user_room");
-        });
+        }
+
+        globalSocket.on("connect", joinGlobalUserRoom);
+
+        // Socket pehle se connected ho to bhi room join kare
+        if (globalSocket.connected) {
+            joinGlobalUserRoom();
+        }
 
         globalSocket.on("incoming_call", (d) => {
 

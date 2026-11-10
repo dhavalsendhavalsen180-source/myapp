@@ -17,29 +17,6 @@ console.log("socket =", socket);
 console.log("connected =", socket.connected);
 console.log("chatId =", chatId);
 
-// JOIN CALL ROOM
-if (socket && chatId) {
-
-  if (socket.connected) {
-    console.log("JOIN CALL ROOM:", chatId);
-
-    socket.emit("join_call_chat", {
-      chat_id: chatId
-    });
-
-  } else {
-
-    socket.on("connect", () => {
-      console.log("SOCKET CONNECTED:", socket.id);
-
-      socket.emit("join_call_chat", {
-        chat_id: chatId
-      });
-    });
-
-  }
-}
-
 const ice = {
   iceServers: [
     {
@@ -142,40 +119,62 @@ async function startOutgoing() {
   console.log("EMITTING CALL REQUEST", chatId, callType);
   socket.emit("call_request", { chat_id: chatId, type: callType });
 }
-// ---------- ACCEPT INCOMING ----------
+
+// ACCEPT INCOMING
 if (acceptBtn) {
-  acceptBtn.onclick = async () => {
+  acceptBtn.type = "button";
+
+  acceptBtn.onclick = async (event) => {
+    event.preventDefault();
 
     console.log("ACCEPT BUTTON CLICKED");
 
-    ring.pause();
-    overlay.style.display = "none";
-    callStatus.innerText = "Connecting...";
+    if (callStatus) {
+      callStatus.innerText = "Camera aur microphone connect ho rahe hain...";
+    }
 
     try {
-
       localStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: callType === "video"
       });
 
+      console.log("MEDIA ACCESS GRANTED");
+
       createPeer();
 
       localVideo.srcObject = localStream;
+      localVideo.muted = true;
+      localVideo.play().catch(() => {});
 
       localStream.getTracks().forEach(track => {
         pc.addTrack(track, localStream);
       });
 
+      if (callStatus) {
+        callStatus.innerText = "Connecting...";
+      }
+
       socket.emit("call_accept", {
         chat_id: chatId
       });
 
-    } catch (e) {
-      console.error(e);
-      alert("Camera / Microphone permission required.");
-    }
+      console.log("CALL ACCEPT EMITTED");
 
+      // IMPORTANT:
+      // callOverlay ko hide nahi karna hai.
+      // Isi ke andar remote video aur call screen hai.
+
+    } catch (e) {
+      console.error("ACCEPT MEDIA ERROR:", e);
+
+      if (callStatus) {
+        callStatus.innerText =
+          "Camera/Microphone error: " + (e.message || e.name);
+      }
+
+      alert("Camera/Microphone error: " + (e.message || e.name));
+    }
   };
 }
 
@@ -294,15 +293,34 @@ socket.on("webrtc_ice", async d => {
 
 });
 
-socket.on("connect", () => {
-    console.log("Socket Connected");
-    socket.emit("join_call_chat", { chat_id: chatId });
-    if (window.IS_CALLER) {
-        console.log("STARTING OUTGOING");
+// ================= CALL SOCKET READY =================
+
+let callStarted = false;
+
+function onCallSocketReady() {
+    console.log("CALL SOCKET CONNECTED:", socket.id);
+
+    if (chatId) {
+        socket.emit("join_call_chat", {
+            chat_id: chatId
+        });
+    }
+
+    if (window.IS_CALLER && !callStarted) {
+        callStarted = true;
+
+        console.log("STARTING OUTGOING CALL");
+
         startOutgoing();
     }
-});
+}
 
+socket.on("connect", onCallSocketReady);
+
+// Socket pehle se connected ho to bhi call start hogi
+if (socket.connected) {
+    onCallSocketReady();
+}
 
 socket.on("call_rejected", () => {
   ring.pause();
