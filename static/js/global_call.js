@@ -17,6 +17,32 @@ if (window.parent !== window) {
 
         const globalSocket = window.socket;
 
+        // ================= GLOBAL PRESENCE =================
+        window.InsChatPresenceLoaded = true;
+        let presenceHeartbeat = null;
+
+        function startGlobalPresence() {
+            if (!globalSocket.connected) return;
+
+            globalSocket.emit("presence_start");
+
+            if (presenceHeartbeat) {
+                clearInterval(presenceHeartbeat);
+            }
+
+            presenceHeartbeat = setInterval(() => {
+                if (globalSocket.connected) {
+                    globalSocket.emit("presence_heartbeat");
+                }
+            }, 20000);
+        }
+
+        globalSocket.on("connect", startGlobalPresence);
+
+        if (globalSocket.connected) {
+            startGlobalPresence();
+        }
+
         console.log("InsChat shared call listener loaded");
 
         function joinGlobalUserRoom() {

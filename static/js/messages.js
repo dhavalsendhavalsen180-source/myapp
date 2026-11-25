@@ -988,15 +988,33 @@ socket.on("deleted_for_me", d=>{
         },1200);
     });
 
-    /* ================= PRESENCE ================= */
-    socket.on("presence", d=>{
-        if(!d || d.chat_id !== chat_id) return;
-        if(d.status === "online"){
-            if(statusText) statusText.innerText = "Active now";
-            if(activeDot) activeDot.classList.add("online");
-        }else{
-            if(statusText) statusText.innerText = "Offline";
-            if(activeDot) activeDot.classList.remove("online");
+    // ============== GLOBAL ACTIVE / OFFLINE ==============
+
+    function watchOtherPresence() {
+        if (!window.otherUserId) return;
+
+        socket.emit("presence_watch", {
+            user_id: Number(window.otherUserId)
+        });
+    }
+
+    socket.on("connect", watchOtherPresence);
+
+    if (socket.connected) {
+        watchOtherPresence();
+    }
+
+    socket.on("global_presence", d => {
+        if (!d || Number(d.user_id) !== Number(window.otherUserId)) {
+            return;
+        }
+
+        if (d.status === "online") {
+            if (statusText) statusText.innerText = "Active now";
+            if (activeDot) activeDot.classList.add("online");
+        } else {
+            if (statusText) statusText.innerText = "Offline";
+            if (activeDot) activeDot.classList.remove("online");
         }
     });
 

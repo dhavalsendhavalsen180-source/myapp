@@ -67,6 +67,38 @@ if (window.socket) {
 <script src="/static/js/global_call.js"></script>
 
 <script>
+(function () {
+    if (window.InsChatPresenceLoaded) return;
+    window.InsChatPresenceLoaded = true;
+
+    const presenceSocket = window.socket;
+    if (!presenceSocket) return;
+
+    let heartbeat = null;
+
+    function startPresence() {
+        if (!presenceSocket.connected) return;
+
+        presenceSocket.emit("presence_start");
+
+        if (heartbeat) clearInterval(heartbeat);
+
+        heartbeat = setInterval(function () {
+            if (presenceSocket.connected) {
+                presenceSocket.emit("presence_heartbeat");
+            }
+        }, 20000);
+    }
+
+    presenceSocket.on("connect", startPresence);
+
+    if (presenceSocket.connected) {
+        startPresence();
+    }
+})();
+</script>
+
+<script>
 document.addEventListener("click", function (event) {
     const link = event.target.closest('a[href="/posts/feed"]');
     if (!link) return;

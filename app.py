@@ -34,6 +34,7 @@ from routes.call_socket import call_bp
 from routes.auth import oauth
 import auth_backend
 import routes.call_socket
+import routes.presence_socket
 import sqlite3
 
 app = Flask(__name__)
